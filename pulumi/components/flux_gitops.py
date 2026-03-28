@@ -6,14 +6,19 @@ import pulumi
 import pulumi_kubernetes as k8s
 
 from config import FLUX_INSTALL_URL, NS_FLUX_SYSTEM, TIMEOUT_WAIT, OpenChoreoConfig
-from helpers.dynamic_providers import WaitDeployments
+from helpers.dynamic_providers import WaitCustomResourceCondition, WaitDeployments
 
 
 class FluxGitOpsResult:
     """Outputs from the flux gitops component."""
 
-    def __init__(self, kustomization_projects: k8s.apiextensions.CustomResource):
+    def __init__(
+        self,
+        kustomization_projects: k8s.apiextensions.CustomResource,
+        kustomizations_ready: WaitCustomResourceCondition,
+    ):
         self.kustomization_projects = kustomization_projects
+        self.kustomizations_ready = kustomizations_ready
 
 
 def deploy(
@@ -118,4 +123,22 @@ def deploy(
         opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[kust_platform]),
     )
 
-    return FluxGitOpsResult(kustomization_projects=kust_projects)
+    # ─── 4. Wait for the final Kustomization to become Ready ───
+    kust_ready = WaitCustomResourceCondition(
+        "wait-kustomization-projects-ready",
+        kubeconfig_path=cfg.kubeconfig_path,
+        context=cfg.kubeconfig_context,
+        group="kustomize.toolkit.fluxcd.io",
+        version="v1",
+        plural="kustomizations",
+        resource_name="oc-demo-projects",
+        namespace=NS_FLUX_SYSTEM,
+        condition_type="Ready",
+        timeout=TIMEOUT_WAIT,
+        opts=pulumi.ResourceOptions(depends_on=[kust_projects]),
+    )
+
+    return FluxGitOpsResult(
+        kustomization_projects=kust_projects,
+        kustomizations_ready=kust_ready,
+    )

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import pulumi
 
+from platforms import PlatformProfile, resolve_platform
+
 # ──────────────────────────────────────────────────────────────
 # Constants — single source of truth for all magic strings
 # ──────────────────────────────────────────────────────────────
@@ -69,6 +71,9 @@ SLEEP_AFTER_ESO_SYNC = 15
 class OpenChoreoConfig:
     """All configuration values for the OpenChoreo stack."""
 
+    # Platform profile — first-class platform identity
+    platform: PlatformProfile
+
     # Cluster connection
     kubeconfig_path: str
     kubeconfig_context: str
@@ -111,13 +116,8 @@ class OpenChoreoConfig:
     gitops_repo_branch: str
     enable_flux: bool
     enable_observability: bool
-    enable_cilium: bool
 
-    # Cilium-specific (used when kubeProxyReplacement is enabled, i.e. non-k3d)
-    cilium_k8s_api_host: str
-
-    # k3d-specific
-    is_k3d: bool
+    # k3d-specific (used by observability machine-id fix)
     k3d_cluster_name: str
 
     # Derived values
@@ -220,14 +220,12 @@ def load_config() -> OpenChoreoConfig:
     gitops_repo_branch = cfg.get("gitops_repo_branch") or "main"
     enable_flux = cfg.get_bool("enable_flux") or False
     enable_observability = cfg.get_bool("enable_observability") or False
-    enable_cilium = cfg.get_bool("enable_cilium") or False
 
-    # Cilium-specific
-    cilium_k8s_api_host = cfg.get("cilium_k8s_api_host") or ""
-
-    # k3d-specific
-    is_k3d = cfg.get_bool("is_k3d") or False
+    # k3d-specific (still needed for docker exec in observability machine-id fix)
     k3d_cluster_name = cfg.get("k3d_cluster_name") or "openchoreo"
+
+    # ── Platform profile resolution ──
+    platform = resolve_platform(cfg)
 
     # Derived values
     raw_base = f"https://raw.githubusercontent.com/openchoreo/openchoreo/{openchoreo_ref}"
@@ -258,6 +256,7 @@ def load_config() -> OpenChoreoConfig:
     ]
 
     return OpenChoreoConfig(
+        platform=platform,
         kubeconfig_path=kubeconfig_path,
         kubeconfig_context=kubeconfig_context,
         domain_base=domain_base,
@@ -291,9 +290,6 @@ def load_config() -> OpenChoreoConfig:
         gitops_repo_branch=gitops_repo_branch,
         enable_flux=enable_flux,
         enable_observability=enable_observability,
-        enable_cilium=enable_cilium,
-        cilium_k8s_api_host=cilium_k8s_api_host,
-        is_k3d=is_k3d,
         k3d_cluster_name=k3d_cluster_name,
         raw_base=raw_base,
         scheme=scheme,

@@ -120,8 +120,9 @@ def deploy(
         "secretStoreRef": {"name": "default"},
     }
 
-    # Allow Cilium gateway ingress to data-plane workloads
-    gw_policy = _allow_gateway_ingress(k8s_provider, depends=[dp_chart])
+    # Allow Cilium gateway ingress to data-plane workloads (Cilium-only)
+    if cfg.platform.gateway_mode == "cilium":
+        _allow_gateway_ingress(k8s_provider, depends=[dp_chart])
 
     register = register_plane(
         name="data-plane",

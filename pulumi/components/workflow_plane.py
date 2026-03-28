@@ -92,7 +92,10 @@ def deploy(
     # installed by the wp_chart; yaml.v2.ConfigGroup fails at preview time
     # before the CRDs exist.
     registry_endpoint = f"registry.{NS_WORKFLOW_PLANE}.svc.cluster.local:{cfg.wp_registry_port}"
-    gateway_endpoint = f"cilium-gateway-gateway-default.{NS_CONTROL_PLANE}.svc.cluster.local:{cfg.cp_http_port}"
+    if cfg.platform.gateway_mode == "cilium":
+        gateway_endpoint = f"cilium-gateway-gateway-default.{NS_CONTROL_PLANE}.svc.cluster.local:{cfg.cp_http_port}"
+    else:
+        gateway_endpoint = f"gateway-default.{NS_CONTROL_PLANE}.svc.cluster.local:{cfg.cp_http_port}"
     # Patching: download → sed replace k3d-specific endpoints → apply.
     # Templates with k3d hostnames are patched inline before apply so the
     # resource never contains host.k3d.internal references.

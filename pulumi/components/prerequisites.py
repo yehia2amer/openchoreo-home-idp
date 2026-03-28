@@ -20,9 +20,15 @@ from config import (
     SLEEP_AFTER_OPENBAO,
     TIMEOUT_DEFAULT,
     TIMEOUT_TLS_WAIT,
+    TIMEOUT_WAIT,
     OpenChoreoConfig,
 )
-from helpers.dynamic_providers import OpenBaoSecrets, WaitPodReady
+from helpers.dynamic_providers import (
+    OpenBaoSecrets,
+    ValidateOpenBaoSecrets,
+    WaitCustomResourceCondition,
+    WaitPodReady,
+)
 from helpers.wait import sleep
 from values.openbao import get_values as openbao_values
 
@@ -34,10 +40,14 @@ class PrerequisitesResult:
         self,
         openbao_ready: WaitPodReady,
         cluster_secret_store: k8s.apiextensions.CustomResource,
+        cluster_secret_store_ready: WaitCustomResourceCondition,
+        openbao_validated: ValidateOpenBaoSecrets,
         control_plane_ns: k8s.core.v1.Namespace,
     ):
         self.openbao_ready = openbao_ready
         self.cluster_secret_store = cluster_secret_store
+        self.cluster_secret_store_ready = cluster_secret_store_ready
+        self.openbao_validated = openbao_validated
         self.control_plane_ns = control_plane_ns
 
 
@@ -48,11 +58,12 @@ def deploy(
 ) -> PrerequisitesResult:
     """Deploy all prerequisite resources. Returns handles for downstream depends_on."""
     base_depends = extra_depends or []
+    p = cfg.platform  # Platform profile
 
     # ─── 1. Gateway API CRDs ───
-    # When Cilium is enabled, CRDs are installed in __main__.py (before Cilium)
-    # so we only install them here for the non-Cilium path.
-    if cfg.enable_cilium:
+    # When Cilium is the gateway controller, CRDs are installed in __main__.py
+    # (before Cilium) so we only install them here for the kgateway path.
+    if p.gateway_mode == "cilium":
         # CRDs already installed; just wire up the dependency chain
         wait_gw = sleep("gateway-api", SLEEP_AFTER_GATEWAY_API, opts=pulumi.ResourceOptions(depends_on=base_depends))
     else:
@@ -134,7 +145,7 @@ def deploy(
         ),
     )
 
-    if cfg.enable_cilium:
+    if p.gateway_mode == "cilium":
         # Cilium is the Gateway API controller.  The OpenChoreo Helm charts
         # hardcode gatewayClassName: kgateway, so we create a GatewayClass
         # with that name backed by Cilium's controller.  No kgateway
@@ -214,8 +225,9 @@ def deploy(
     )
 
     # ─── 7. Store GitHub PAT (conditional) ───
+    pat_depends: list[pulumi.Resource] = [wait_poststart]
     if cfg.github_pat:
-        OpenBaoSecrets(
+        pat_store = OpenBaoSecrets(
             "store-github-pat",
             kubeconfig_path=cfg.kubeconfig_path,
             context=cfg.kubeconfig_context,
@@ -227,6 +239,27 @@ def deploy(
             ],
             opts=pulumi.ResourceOptions(depends_on=[wait_poststart]),
         )
+        pat_depends.append(pat_store)
+    elif cfg.enable_flux or cfg.gitops_repo_url:
+        pulumi.log.warn(
+            "github_pat is not set but Flux/GitOps features are enabled. "
+            "Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.",
+            resource=None,
+        )
+
+    # ─── 7b. Validate OpenBao secrets ───
+    openbao_validated = ValidateOpenBaoSecrets(
+        "validate-openbao-secrets",
+        kubeconfig_path=cfg.kubeconfig_path,
+        context=cfg.kubeconfig_context,
+        namespace=NS_OPENBAO,
+        root_token=cfg.openbao_root_token,
+        expected_paths=[
+            {"path": "git-token", "fields": ["git-token"]},
+            {"path": "gitops-token", "fields": ["git-token"]},
+        ],
+        opts=pulumi.ResourceOptions(depends_on=pat_depends),
+    )
 
     # ─── 8. ServiceAccount + ClusterSecretStore ───
     eso_sa = k8s.core.v1.ServiceAccount(
@@ -268,8 +301,23 @@ def deploy(
         opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[eso_sa, wait_poststart, external_secrets]),
     )
 
-    # ─── 9. CoreDNS rewrite (k3d only) ───
-    if cfg.is_k3d:
+    # ─── 8b. Wait for ClusterSecretStore to be Ready ───
+    css_ready = WaitCustomResourceCondition(
+        "wait-cluster-secret-store-ready",
+        kubeconfig_path=cfg.kubeconfig_path,
+        context=cfg.kubeconfig_context,
+        group="external-secrets.io",
+        version="v1",
+        plural="clustersecretstores",
+        resource_name=CLUSTER_SECRET_STORE_NAME,
+        namespace=None,
+        condition_type="Ready",
+        timeout=TIMEOUT_WAIT,
+        opts=pulumi.ResourceOptions(depends_on=[cluster_secret_store, openbao_validated]),
+    )
+
+    # ─── 9. CoreDNS rewrite (platform-specific) ───
+    if p.requires_coredns_rewrite:
         k8s.yaml.v2.ConfigGroup(
             "coredns-rewrite",
             files=[cfg.coredns_rewrite_url],
@@ -279,5 +327,7 @@ def deploy(
     return PrerequisitesResult(
         openbao_ready=openbao_ready,
         cluster_secret_store=cluster_secret_store,
+        cluster_secret_store_ready=css_ready,
+        openbao_validated=openbao_validated,
         control_plane_ns=control_plane_ns,
     )

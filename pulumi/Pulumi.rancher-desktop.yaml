@@ -1,10 +1,10 @@
-encryptionsalt: v1:U6MmvaoOScQ=:v1:fJ/0lVYXXQZRN1tR:I1GyvUJJTIDHW0iuG11pwQZJykaR4Q==
+encryptionsalt: v1:mV/T1RxujEc=:v1:OWIkwSM7un2fG/Ci:kDrPPFvZuAJpr4Kl25r59CU0gwwOaQ==
 config:
-  openchoreo-k3d:kubeconfig_context: rancher-desktop
-  openchoreo-k3d:enable_cilium: "true"
-  openchoreo-k3d:cilium_k8s_api_host: 192.168.5.15
-  openchoreo-k3d:enable_flux: "true"
-  openchoreo-k3d:github_pat:
-    secure: v1:CpwEhO1CU4Sc5uTT:mz9ehULiKZFLCbwGi8Vy2xWTGodtYoHmPW1rjPw6IlAq4ngIQBEcGtxmrvNyH0f1OjgkI3ORWH8=
-  openchoreo-k3d:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
-  openchoreo-k3d:gitops_repo_branch: main
+  openchoreo:platform: rancher-desktop
+  openchoreo:kubeconfig_context: rancher-desktop
+  openchoreo:cilium_k8s_api_host: 192.168.5.15
+  openchoreo:enable_flux: "true"
+  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
+  openchoreo:gitops_repo_branch: main
+  openchoreo:github_pat:
+    secure: v1:EUNsQajJd13xjI5T:KRqiTfCyRTjYUrg2tetxS/is+VpnREuKoCWzyyX4uPNAb3CnfF98dNpme8KfHhhLYAamXDvhWrc=

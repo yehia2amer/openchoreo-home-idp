@@ -262,7 +262,7 @@ wheels = [
 ]
 
 [[package]]
-name = "openchoreo-k3d"
+name = "openchoreo"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

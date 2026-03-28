@@ -19,6 +19,7 @@ from __future__ import annotations
 import pulumi
 
 from config import (
+    CLUSTER_SECRET_STORE_NAME,
     NS_CERT_MANAGER,
     NS_CONTROL_PLANE,
     NS_DATA_PLANE,
@@ -30,11 +31,14 @@ from config import (
     OpenChoreoConfig,
 )
 from helpers.dynamic_providers import (
+    TEST_CR_CONDITION,
     TEST_CRD,
     TEST_DAEMONSET,
     TEST_DEPLOY_LABEL,
     TEST_DEPLOYMENT,
     TEST_HTTPROUTE_STATUS,
+    TEST_OPENBAO_SECRETS,
+    TEST_SECRET_EXISTS,
     TEST_SERVICE_HTTP,
     TEST_STATEFULSET,
     IntegrationTest,
@@ -89,7 +93,7 @@ def deploy(
 
     # ─── Cilium (optional) ────────────────────────────────────
 
-    if cfg.enable_cilium:
+    if cfg.platform.gateway_mode == "cilium":
         _test(
             test_name="cilium-operator-deployment",
             test_type=TEST_DEPLOYMENT,
@@ -278,6 +282,139 @@ def deploy(
             test_type=TEST_CRD,
             crd_name="clusterobservabilityplanes.openchoreo.dev",
         )
+
+    # ═══════════════════════════════════════════════════════════
+    # E2E Validation Tests
+    # ═══════════════════════════════════════════════════════════
+
+    # ─── OpenBao Secrets E2E ──────────────────────────────────
+    # Verify the critical secrets that workflows depend on actually
+    # exist in OpenBao with the correct fields.
+
+    _test(
+        test_name="e2e-openbao-secrets",
+        test_type=TEST_OPENBAO_SECRETS,
+        namespace=NS_OPENBAO,
+        root_token=cfg.openbao_root_token,
+        expected_paths=[
+            {"path": "git-token", "fields": ["git-token"]},
+            {"path": "gitops-token", "fields": ["git-token"]},
+        ],
+    )
+
+    # ─── ClusterSecretStore E2E ───────────────────────────────
+    # Verify the ClusterSecretStore is Ready — ESO can talk to OpenBao.
+
+    _test(
+        test_name="e2e-clustersecretstore-ready",
+        test_type=TEST_CR_CONDITION,
+        cr_group="external-secrets.io",
+        cr_version="v1beta1",
+        cr_plural="clustersecretstores",
+        resource_name=CLUSTER_SECRET_STORE_NAME,
+        condition_type="Ready",
+    )
+
+    # ─── Backstage Secret Bridge E2E ──────────────────────────
+    # Verify the Backstage ExternalSecret has synced and created
+    # the actual Kubernetes secret with expected keys.
+
+    _test(
+        test_name="e2e-backstage-externalsecret-synced",
+        test_type=TEST_CR_CONDITION,
+        cr_group="external-secrets.io",
+        cr_version="v1beta1",
+        cr_plural="externalsecrets",
+        resource_name="backstage-secrets",
+        namespace=NS_CONTROL_PLANE,
+        condition_type="Ready",
+    )
+
+    _test(
+        test_name="e2e-backstage-secret-exists",
+        test_type=TEST_SECRET_EXISTS,
+        namespace=NS_CONTROL_PLANE,
+        resource_name="backstage-secrets",
+        expected_keys=["backend-secret", "client-secret"],
+    )
+
+    # ─── Plane Registration E2E ───────────────────────────────
+    # Verify that all registered planes exist as cluster CRDs.
+
+    _test(
+        test_name="e2e-clusterdataplane-exists",
+        test_type=TEST_CR_CONDITION,
+        cr_group="openchoreo.dev",
+        cr_version="v1alpha1",
+        cr_plural="clusterdataplanes",
+        resource_name="default",
+        condition_type="Ready",
+    )
+
+    _test(
+        test_name="e2e-clusterworkflowplane-exists",
+        test_type=TEST_CR_CONDITION,
+        cr_group="openchoreo.dev",
+        cr_version="v1alpha1",
+        cr_plural="clusterworkflowplanes",
+        resource_name="default",
+        condition_type="Ready",
+    )
+
+    if cfg.enable_observability:
+        _test(
+            test_name="e2e-clusterobservabilityplane-exists",
+            test_type=TEST_CR_CONDITION,
+            cr_group="openchoreo.dev",
+            cr_version="v1alpha1",
+            cr_plural="clusterobservabilityplanes",
+            resource_name="default",
+            condition_type="Ready",
+        )
+
+    # ─── Gateway E2E ──────────────────────────────────────────
+    # Verify the control-plane Gateway resource is programmed.
+
+    _test(
+        test_name="e2e-cp-gateway-programmed",
+        test_type=TEST_CR_CONDITION,
+        cr_group="gateway.networking.k8s.io",
+        cr_version="v1",
+        cr_plural="gateways",
+        resource_name="openchoreo-control-plane",
+        namespace=NS_CONTROL_PLANE,
+        condition_type="Programmed",
+    )
+
+    # ─── Flux Kustomization E2E (optional) ────────────────────
+
+    if cfg.enable_flux and cfg.gitops_repo_url:
+        for kust in ("oc-namespaces", "oc-platform-shared", "oc-platform", "oc-demo-projects"):
+            _test(
+                test_name=f"e2e-flux-kustomization-{kust}",
+                test_type=TEST_CR_CONDITION,
+                cr_group="kustomize.toolkit.fluxcd.io",
+                cr_version="v1",
+                cr_plural="kustomizations",
+                resource_name=kust,
+                namespace=NS_FLUX_SYSTEM,
+                condition_type="Ready",
+            )
+
+    # ─── Observability Secrets E2E (optional) ─────────────────
+
+    if cfg.enable_observability:
+        for es_name in ("opensearch-admin-credentials", "observer-opensearch-credentials", "observer-secret"):
+            _test(
+                test_name=f"e2e-obs-externalsecret-{es_name}",
+                test_type=TEST_CR_CONDITION,
+                cr_group="external-secrets.io",
+                cr_version="v1beta1",
+                cr_plural="externalsecrets",
+                resource_name=es_name,
+                namespace="openchoreo-observability-plane",
+                condition_type="Ready",
+            )
 
     # ─── Summary export ───────────────────────────────────────
 

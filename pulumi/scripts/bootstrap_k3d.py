@@ -166,12 +166,12 @@ def main():
         "--stack",
         "dev",
         "--config",
-        f"openchoreo-k3d:kubeconfig_context=k3d-{cluster_name}",
+        "openchoreo:platform=k3d",
         "--config",
-        f"openchoreo-k3d:k3d_cluster_name={cluster_name}",
+        f"openchoreo:kubeconfig_context=k3d-{cluster_name}",
+        "--config",
+        f"openchoreo:k3d_cluster_name={cluster_name}",
     ]
-    if enable_cilium:
-        pulumi_cmd.extend(["--config", "openchoreo-k3d:enable_cilium=true"])
     run(pulumi_cmd, cwd=str(PULUMI_DIR))
 
     # Print results

@@ -109,8 +109,8 @@ def deploy(
         opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[ns]),
     )
 
-    # ─── 4. Machine-id (k3d only) ───
-    if cfg.is_k3d:
+    # ─── 4. Machine-id (platform-specific) ───
+    if cfg.platform.requires_machine_id_fix:
         command.local.Command(
             "machine-id",
             create=(

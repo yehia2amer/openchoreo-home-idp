@@ -1,4 +1,4 @@
-"""OpenChoreo v1.0 on k3d — Pulumi Python entry point."""
+"""OpenChoreo v1.0 — Pulumi Python entry point."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def main() -> None:
 
     # ─── Step 0: Cilium CNI + Gateway API (optional) ───
     cilium_install = None
-    if cfg.enable_cilium:
+    if cfg.platform.cni_mode == "cilium" or cfg.platform.gateway_mode == "cilium":
         from components import cilium
 
         # Gateway API CRDs must exist before Cilium starts so it can
@@ -61,7 +61,7 @@ def main() -> None:
     cp = control_plane.deploy(
         cfg,
         k8s_provider,
-        depends=[prereqs.cluster_secret_store, prereqs.control_plane_ns],
+        depends=[prereqs.cluster_secret_store_ready, prereqs.control_plane_ns],
     )
 
     # ─── Step 3: Data Plane ───
@@ -113,10 +113,11 @@ def main() -> None:
     pulumi.export("kubeconfig_context", cfg.kubeconfig_context)
     pulumi.export("domain_base", cfg.domain_base)
     pulumi.export("openchoreo_version", cfg.openchoreo_version)
-    pulumi.export("edition", "cilium" if cfg.enable_cilium else "generic-cni")
+    pulumi.export("platform", cfg.platform.name)
+    pulumi.export("edition", "cilium" if cfg.platform.gateway_mode == "cilium" else "generic-cni")
 
     # ─── Outputs: Feature Flags ───
-    pulumi.export("cilium_enabled", cfg.enable_cilium)
+    pulumi.export("cilium_enabled", cfg.platform.gateway_mode == "cilium")
     pulumi.export("flux_enabled", cfg.enable_flux)
     pulumi.export("observability_enabled", cfg.enable_observability)
 
@@ -148,8 +149,9 @@ def main() -> None:
         "KUBECONFIG_CONTEXT": cfg.kubeconfig_context,
         "DOMAIN_BASE": cfg.domain_base,
         "OPENCHOREO_VERSION": cfg.openchoreo_version,
-        "EDITION": "cilium" if cfg.enable_cilium else "generic-cni",
-        "CILIUM_ENABLED": str(cfg.enable_cilium).lower(),
+        "PLATFORM": cfg.platform.name,
+        "EDITION": "cilium" if cfg.platform.gateway_mode == "cilium" else "generic-cni",
+        "CILIUM_ENABLED": str(cfg.platform.gateway_mode == "cilium").lower(),
         "FLUX_ENABLED": str(cfg.enable_flux).lower(),
         "OBSERVABILITY_ENABLED": str(cfg.enable_observability).lower(),
         "NS_CONTROL_PLANE": NS_CONTROL_PLANE,

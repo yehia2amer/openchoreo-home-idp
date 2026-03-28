@@ -520,3 +520,192 @@ def check_deployments_by_label(
         return {"passed": all_available, "deployments": details}
     except k8s_client.ApiException as e:
         return {"passed": False, "error": f"API error {e.status}: {e.reason}"}
+
+
+def check_custom_resource_condition(
+    kubeconfig_path: str,
+    context: str,
+    group: str,
+    version: str,
+    plural: str,
+    name: str,
+    namespace: str | None,
+    condition_type: str = "Ready",
+) -> dict[str, object]:
+    """Check if a CR reports the given condition as True (non-blocking)."""
+    _load_config(kubeconfig_path, context)
+    api = k8s_client.CustomObjectsApi()
+    try:
+        if namespace:
+            obj = api.get_namespaced_custom_object(group, version, namespace, plural, name)
+        else:
+            obj = api.get_cluster_custom_object(group, version, plural, name)
+
+        for cond in (obj.get("status") or {}).get("conditions", []):
+            if cond.get("type") == condition_type and cond.get("status") == "True":
+                return {"passed": True, "resource": f"{plural}/{name}", "condition": condition_type}
+        return {
+            "passed": False,
+            "resource": f"{plural}/{name}",
+            "condition": condition_type,
+            "error": "condition not True",
+        }
+    except k8s_client.ApiException as e:
+        if e.status == 404:
+            return {"passed": False, "resource": f"{plural}/{name}", "error": "not found"}
+        return {"passed": False, "resource": f"{plural}/{name}", "error": f"API error {e.status}"}
+
+
+def check_secret_exists(
+    kubeconfig_path: str,
+    context: str,
+    name: str,
+    namespace: str,
+    expected_keys: list[str] | None = None,
+) -> dict[str, object]:
+    """Check a Kubernetes Secret exists and optionally has expected data keys."""
+    _load_config(kubeconfig_path, context)
+    v1 = k8s_client.CoreV1Api()
+    try:
+        secret = v1.read_namespaced_secret(name, namespace)
+        data_keys = list((secret.data or {}).keys())
+        if expected_keys:
+            missing = [k for k in expected_keys if k not in data_keys]
+            if missing:
+                return {"passed": False, "secret": f"{namespace}/{name}", "missing_keys": missing}
+        return {"passed": True, "secret": f"{namespace}/{name}", "keys": data_keys}
+    except k8s_client.ApiException as e:
+        if e.status == 404:
+            return {"passed": False, "secret": f"{namespace}/{name}", "error": "not found"}
+        return {"passed": False, "secret": f"{namespace}/{name}", "error": f"API error {e.status}"}
+
+
+def check_openbao_secrets(
+    kubeconfig_path: str,
+    context: str,
+    namespace: str,
+    root_token: str,
+    expected_paths: list[dict],
+    pod_name: str = "openbao-0",
+    local_port: int = 18202,
+) -> dict[str, object]:
+    """Check that expected secrets exist in OpenBao (non-blocking, returns result dict)."""
+    import subprocess
+    import time as _time
+
+    import hvac
+
+    port = int(local_port)
+    pf = subprocess.Popen(
+        ["kubectl", "port-forward", f"pod/{pod_name}", f"{port}:8200", "-n", namespace],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        _time.sleep(3)
+        client = hvac.Client(url=f"http://127.0.0.1:{port}", token=root_token)
+        errors = []
+        for entry in expected_paths:
+            path = entry["path"]
+            try:
+                resp = client.secrets.kv.v2.read_secret_version(path=path, mount_point="secret")
+                data = resp.get("data", {}).get("data", {})
+                for field in entry.get("fields", []):
+                    if field not in data or not data[field]:
+                        errors.append(f"secret/{path}: field '{field}' missing or empty")
+            except Exception:
+                errors.append(f"secret/{path}: does not exist")
+        if errors:
+            return {"passed": False, "errors": errors}
+        return {"passed": True, "validated_paths": [e["path"] for e in expected_paths]}
+    except Exception as e:
+        return {"passed": False, "errors": [str(e)]}
+    finally:
+        pf.terminate()
+        pf.wait(timeout=5)
+
+
+def wait_for_custom_resource_condition(
+    kubeconfig_path: str,
+    context: str,
+    group: str,
+    version: str,
+    plural: str,
+    name: str,
+    namespace: str | None,
+    condition_type: str = "Ready",
+    timeout: int = 300,
+) -> None:
+    """Poll a custom resource until it reports the given condition as True.
+
+    Works for both namespaced and cluster-scoped resources.
+    Raises RuntimeError on timeout.
+    """
+    _load_config(kubeconfig_path, context)
+    api = k8s_client.CustomObjectsApi()
+    deadline = time.time() + timeout
+
+    while time.time() < deadline:
+        try:
+            if namespace:
+                obj = api.get_namespaced_custom_object(group, version, namespace, plural, name)
+            else:
+                obj = api.get_cluster_custom_object(group, version, plural, name)
+
+            for cond in (obj.get("status") or {}).get("conditions", []):
+                if cond.get("type") == condition_type and cond.get("status") == "True":
+                    return
+        except k8s_client.ApiException:
+            pass
+        time.sleep(5)
+
+    scope = f"{namespace}/{name}" if namespace else name
+    raise RuntimeError(f"Timeout waiting for {plural}/{scope} condition {condition_type}=True after {timeout}s")
+
+
+def validate_openbao_secrets(
+    kubeconfig_path: str,
+    context: str,
+    namespace: str,
+    root_token: str,
+    expected_paths: list[dict],
+    pod_name: str = "openbao-0",
+    local_port: int = 18201,
+) -> None:
+    """Validate that expected secrets exist in OpenBao with the right fields.
+
+    Each entry in expected_paths should be:
+      {"path": "git-token", "fields": ["git-token"]}
+
+    Raises RuntimeError if any secret or field is missing.
+    """
+    import subprocess
+    import time as _time
+
+    import hvac
+
+    port = int(local_port)
+    pf = subprocess.Popen(
+        ["kubectl", "port-forward", f"pod/{pod_name}", f"{port}:8200", "-n", namespace],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        _time.sleep(3)
+        client = hvac.Client(url=f"http://127.0.0.1:{port}", token=root_token)
+        errors = []
+        for entry in expected_paths:
+            path = entry["path"]
+            try:
+                resp = client.secrets.kv.v2.read_secret_version(path=path, mount_point="secret")
+                data = resp.get("data", {}).get("data", {})
+                for field in entry.get("fields", []):
+                    if field not in data or not data[field]:
+                        errors.append(f"secret/{path}: field '{field}' missing or empty")
+            except Exception:
+                errors.append(f"secret/{path}: does not exist")
+        if errors:
+            raise RuntimeError("OpenBao validation failed:\n  " + "\n  ".join(errors))
+    finally:
+        pf.terminate()
+        pf.wait(timeout=5)

@@ -541,6 +541,129 @@ class OpenBaoSecrets(pulumi.dynamic.Resource):
 
 
 # ──────────────────────────────────────────────────────────────
+# ValidateOpenBaoSecrets: check that expected secrets exist in OpenBao
+# ──────────────────────────────────────────────────────────────
+
+
+class _ValidateOpenBaoSecretsProvider(ResourceProvider):
+    def create(self, inputs: dict[str, Any]) -> CreateResult:
+        k8s_ops.validate_openbao_secrets(
+            inputs["kubeconfig_path"],
+            inputs["context"],
+            inputs["namespace"],
+            inputs["root_token"],
+            inputs["expected_paths"],
+            pod_name=inputs.get("pod_name", "openbao-0"),
+            local_port=inputs.get("local_port", 18201),
+        )
+        return CreateResult(id_="validate-openbao", outs=inputs)
+
+    def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
+        return _input_diff(olds, news, ["expected_paths"])
+
+    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> UpdateResult:
+        result = self.create(news)
+        return UpdateResult(outs=result.outs)
+
+    def delete(self, _id: str, props: dict[str, Any]) -> None:
+        pass  # read-only validation
+
+
+class ValidateOpenBaoSecrets(pulumi.dynamic.Resource):
+    """Validate that expected secrets exist in OpenBao with correct fields."""
+
+    def __init__(
+        self,
+        name: str,
+        kubeconfig_path: str,
+        context: str,
+        namespace: str,
+        root_token: str,
+        expected_paths: list[dict],
+        pod_name: str = "openbao-0",
+        local_port: int = 18201,
+        opts: pulumi.ResourceOptions | None = None,
+    ):
+        super().__init__(
+            _ValidateOpenBaoSecretsProvider(),
+            name,
+            {
+                "kubeconfig_path": kubeconfig_path,
+                "context": context,
+                "namespace": namespace,
+                "root_token": root_token,
+                "expected_paths": expected_paths,
+                "pod_name": pod_name,
+                "local_port": local_port,
+            },
+            opts,
+        )
+
+
+# ──────────────────────────────────────────────────────────────
+# WaitCustomResourceCondition: wait for a CR condition to be True
+# ──────────────────────────────────────────────────────────────
+
+
+class _WaitCRConditionProvider(ResourceProvider):
+    def create(self, inputs: dict[str, Any]) -> CreateResult:
+        k8s_ops.wait_for_custom_resource_condition(
+            inputs["kubeconfig_path"],
+            inputs["context"],
+            inputs["group"],
+            inputs["version"],
+            inputs["plural"],
+            inputs["name"],
+            inputs.get("namespace"),
+            condition_type=inputs.get("condition_type", "Ready"),
+            timeout=inputs.get("timeout", 300),
+        )
+        resource_id = f"{inputs['plural']}/{inputs.get('namespace', 'cluster')}/{inputs['name']}"
+        return CreateResult(id_=resource_id, outs=inputs)
+
+    def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
+        return _input_diff(olds, news, ["group", "version", "plural", "name", "namespace", "condition_type"])
+
+    def delete(self, _id: str, props: dict[str, Any]) -> None:
+        pass  # read-only wait
+
+
+class WaitCustomResourceCondition(pulumi.dynamic.Resource):
+    """Wait for a custom resource to report a condition as True."""
+
+    def __init__(
+        self,
+        name: str,
+        kubeconfig_path: str,
+        context: str,
+        group: str,
+        version: str,
+        plural: str,
+        resource_name: str,
+        namespace: str | None = None,
+        condition_type: str = "Ready",
+        timeout: int = 300,
+        opts: pulumi.ResourceOptions | None = None,
+    ):
+        super().__init__(
+            _WaitCRConditionProvider(),
+            name,
+            {
+                "kubeconfig_path": kubeconfig_path,
+                "context": context,
+                "group": group,
+                "version": version,
+                "plural": plural,
+                "name": resource_name,
+                "namespace": namespace,
+                "condition_type": condition_type,
+                "timeout": timeout,
+            },
+            opts,
+        )
+
+
+# ──────────────────────────────────────────────────────────────
 # IntegrationTest: run a health check against a deployed service
 # ──────────────────────────────────────────────────────────────
 
@@ -552,6 +675,9 @@ TEST_STATEFULSET = "statefulset"
 TEST_DAEMONSET = "daemonset"
 TEST_CRD = "crd"
 TEST_DEPLOY_LABEL = "deploy_label"
+TEST_CR_CONDITION = "cr_condition"
+TEST_SECRET_EXISTS = "secret_exists"
+TEST_OPENBAO_SECRETS = "openbao_secrets"
 
 
 class _IntegrationTestProvider(ResourceProvider):
@@ -609,6 +735,35 @@ class _IntegrationTestProvider(ResourceProvider):
                 ctx,
                 inputs["namespace"],
                 inputs["label_selector"],
+            )
+        elif test_type == TEST_CR_CONDITION:
+            result = k8s_ops.check_custom_resource_condition(
+                kp,
+                ctx,
+                inputs["cr_group"],
+                inputs["cr_version"],
+                inputs["cr_plural"],
+                inputs["resource_name"],
+                inputs.get("namespace") or None,
+                condition_type=inputs.get("condition_type", "Ready"),
+            )
+        elif test_type == TEST_SECRET_EXISTS:
+            result = k8s_ops.check_secret_exists(
+                kp,
+                ctx,
+                inputs["resource_name"],
+                inputs["namespace"],
+                expected_keys=inputs.get("expected_keys"),
+            )
+        elif test_type == TEST_OPENBAO_SECRETS:
+            result = k8s_ops.check_openbao_secrets(
+                kp,
+                ctx,
+                inputs["namespace"],
+                inputs["root_token"],
+                inputs["expected_paths"],
+                pod_name=inputs.get("pod_name", "openbao-0"),
+                local_port=inputs.get("local_port", 18202),
             )
         else:
             msg = f"Unknown test type: {test_type}"
@@ -673,6 +828,18 @@ class IntegrationTest(pulumi.dynamic.Resource):
         label_selector: str = "",
         # For CRD tests
         crd_name: str = "",
+        # For CR condition tests
+        cr_group: str = "",
+        cr_version: str = "",
+        cr_plural: str = "",
+        condition_type: str = "Ready",
+        # For secret exists tests
+        expected_keys: list[str] | None = None,
+        # For OpenBao secret validation tests
+        root_token: str = "",
+        expected_paths: list[dict] | None = None,
+        pod_name: str = "openbao-0",
+        local_port: int = 18202,
         opts: pulumi.ResourceOptions | None = None,
     ):
         super().__init__(
@@ -694,6 +861,15 @@ class IntegrationTest(pulumi.dynamic.Resource):
                 "resource_name": resource_name,
                 "label_selector": label_selector,
                 "crd_name": crd_name,
+                "cr_group": cr_group,
+                "cr_version": cr_version,
+                "cr_plural": cr_plural,
+                "condition_type": condition_type,
+                "expected_keys": expected_keys,
+                "root_token": root_token,
+                "expected_paths": expected_paths or [],
+                "pod_name": pod_name,
+                "local_port": local_port,
                 "passed": None,
                 "result": None,
             },

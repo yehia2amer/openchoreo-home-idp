@@ -97,12 +97,13 @@ def deploy(
 ) -> k8s.helm.v4.Chart:
     """Install Cilium CNI + Gateway API controller via OCI Helm chart."""
 
-    kpr_enabled = not cfg.is_k3d  # k3d eBPF blocks Docker port-forwarding
+    p = cfg.platform  # Platform profile drives all environment-specific tuning
+    kpr_enabled = p.enable_kube_proxy_replacement
 
-    # On non-k3d environments (Rancher Desktop, bare-metal), fix BPF mount
-    # propagation before Cilium starts.  k3d's bootstrap script handles this.
+    # On platforms that need it (e.g. Rancher Desktop), fix BPF mount
+    # propagation before Cilium starts.
     extra_depends = list(depends or [])
-    if not cfg.is_k3d:
+    if p.requires_bpf_mount_fix:
         bpf_fix = _ensure_bpf_shared_mount(k8s_provider, depends)
         extra_depends.append(bpf_fix)
 
@@ -115,7 +116,7 @@ def deploy(
         # listeners that are invisible to Lima's guest-agent.
         "gatewayAPI": {
             "enabled": kpr_enabled,
-            "hostNetwork": {"enabled": not cfg.is_k3d},
+            "hostNetwork": {"enabled": p.cilium_host_network_gateway},
         },
         # IPAM — use Kubernetes pod CIDR allocation (k3s default: 10.42.0.0/16)
         "ipam": {
@@ -127,9 +128,9 @@ def deploy(
         #   so autoMount must be disabled (Docker mount propagation limitation).
         # - Rancher Desktop / bare-metal: let Cilium auto-mount BPF and cgroup
         #   since the host/VM doesn't pre-configure shared propagation.
-        "bpf": {"autoMount": {"enabled": not cfg.is_k3d}},
+        "bpf": {"autoMount": {"enabled": p.cilium_auto_mount_bpf}},
         "cgroup": {
-            "autoMount": {"enabled": not cfg.is_k3d},
+            "autoMount": {"enabled": p.cilium_auto_mount_bpf},
             "hostRoot": "/sys/fs/cgroup",
         },
         # Socket-based load balancing — required alongside kubeProxyReplacement
@@ -151,13 +152,13 @@ def deploy(
     }
 
     # When replacing kube-proxy, Cilium must know the API server's direct IP
-    if kpr_enabled and cfg.cilium_k8s_api_host:
-        values["k8sServiceHost"] = cfg.cilium_k8s_api_host
+    if kpr_enabled and p.k8s_service_host:
+        values["k8sServiceHost"] = p.k8s_service_host
         values["k8sServicePort"] = 6443
 
-    # Rancher Desktop k3s uses /usr/libexec/cni instead of /opt/cni/bin
-    if not cfg.is_k3d:
-        values["cni"] = {"binPath": "/usr/libexec/cni"}
+    # Platform-specific CNI binary path override
+    if p.cilium_cni_bin_path:
+        values["cni"] = {"binPath": p.cilium_cni_bin_path}
 
     return k8s.helm.v4.Chart(
         "cilium",

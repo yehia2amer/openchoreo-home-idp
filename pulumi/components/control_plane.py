@@ -300,17 +300,23 @@ def deploy(
     # The control-plane chart creates Workflow CRDs with k3d-specific
     # hostnames (host.k3d.internal) that don't resolve on non-k3d clusters.
     # Patch them to use cluster-internal service DNS names.
+    # Only needed when workflow_template_mode is k3d-patch.
     registry_endpoint = f"registry.{NS_WORKFLOW_PLANE}.svc.cluster.local:{cfg.wp_registry_port}"
-    patch_workflows = command.local.Command(
-        "patch-workflow-crds",
-        create=(
-            f"kubectl get workflow.openchoreo.dev --all-namespaces -o yaml"
-            f" --context {cfg.kubeconfig_context}"
-            f" | sed 's|host.k3d.internal:10082|{registry_endpoint}|g'"
-            f" | kubectl apply --context {cfg.kubeconfig_context} -f -"
-        ),
-        opts=pulumi.ResourceOptions(depends_on=[cp_chart]),
-    )
+    if cfg.platform.workflow_template_mode == "k3d-patch":
+        patch_workflows = command.local.Command(
+            "patch-workflow-crds",
+            create=(
+                f"OBJS=$(kubectl get workflow.openchoreo.dev --all-namespaces -o yaml"
+                f" --context {cfg.kubeconfig_context} 2>/dev/null);"
+                f" if echo \"$OBJS\" | grep -q 'host.k3d.internal'; then"
+                f" echo \"$OBJS\" | sed 's|host.k3d.internal:10082|{registry_endpoint}|g'"
+                f" | kubectl apply --context {cfg.kubeconfig_context} -f -;"
+                f" else echo 'No k3d-specific workflow CRDs to patch'; fi"
+            ),
+            opts=pulumi.ResourceOptions(depends_on=[cp_chart]),
+        )
+    else:
+        patch_workflows = cp_chart  # no patching needed
 
     # ─── 5. Label namespace ───
     label_ns = LabelNamespace(
