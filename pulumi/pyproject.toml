@@ -1,0 +1,42 @@
+[project]
+name = "openchoreo-k3d"
+version = "1.0.0"
+description = "OpenChoreo v1.0 on k3d — Pulumi Python IaC"
+requires-python = ">=3.12"
+dependencies = [
+    "pulumi>=3.0.0,<4.0.0",
+    "pulumi-kubernetes>=4.0.0,<5.0.0",
+    "pulumi-command>=1.0.0,<2.0.0",
+    "pulumi-kubernetes-cert-manager>=0.2.0",
+    "pyyaml>=6.0",
+    "kubernetes>=31.0.0",
+    "hvac>=2.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11",
+    "ty>=0.0.1a7",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "SIM", # simplify
+    "RUF", # ruff-specific
+]
+
+[tool.ty]
+environment = { python-version = "3.12" }
+# pulumi-kubernetes re-exports classes via __init__.py modules — ty can't resolve the dual module/class pattern
+[tool.ty.rules]
+call-non-callable = "warn"

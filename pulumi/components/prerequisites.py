@@ -1,0 +1,283 @@
+"""Prerequisites component: Gateway API CRDs, cert-manager, ESO, kgateway, OpenBao, ClusterSecretStore."""
+
+from __future__ import annotations
+
+import pulumi
+import pulumi_kubernetes as k8s
+from pulumi_kubernetes_cert_manager import CertManager
+
+from config import (
+    CLUSTER_SECRET_STORE_NAME,
+    EXTERNAL_SECRETS_CHART_REPO,
+    KGATEWAY_CHART_REPO,
+    NS_CERT_MANAGER,
+    NS_CONTROL_PLANE,
+    NS_EXTERNAL_SECRETS,
+    NS_OPENBAO,
+    OPENBAO_CHART_REPO,
+    SA_ESO_OPENBAO,
+    SLEEP_AFTER_GATEWAY_API,
+    SLEEP_AFTER_OPENBAO,
+    TIMEOUT_DEFAULT,
+    TIMEOUT_TLS_WAIT,
+    OpenChoreoConfig,
+)
+from helpers.dynamic_providers import OpenBaoSecrets, WaitPodReady
+from helpers.wait import sleep
+from values.openbao import get_values as openbao_values
+
+
+class PrerequisitesResult:
+    """Outputs from the prerequisites component."""
+
+    def __init__(
+        self,
+        openbao_ready: WaitPodReady,
+        cluster_secret_store: k8s.apiextensions.CustomResource,
+        control_plane_ns: k8s.core.v1.Namespace,
+    ):
+        self.openbao_ready = openbao_ready
+        self.cluster_secret_store = cluster_secret_store
+        self.control_plane_ns = control_plane_ns
+
+
+def deploy(
+    cfg: OpenChoreoConfig,
+    k8s_provider: k8s.Provider,
+    extra_depends: list[pulumi.Resource] | None = None,
+) -> PrerequisitesResult:
+    """Deploy all prerequisite resources. Returns handles for downstream depends_on."""
+    base_depends = extra_depends or []
+
+    # ─── 1. Gateway API CRDs ───
+    # When Cilium is enabled, CRDs are installed in __main__.py (before Cilium)
+    # so we only install them here for the non-Cilium path.
+    if cfg.enable_cilium:
+        # CRDs already installed; just wire up the dependency chain
+        wait_gw = sleep("gateway-api", SLEEP_AFTER_GATEWAY_API, opts=pulumi.ResourceOptions(depends_on=base_depends))
+    else:
+        gateway_api_crds = k8s.yaml.v2.ConfigGroup(
+            "gateway-api-crds",
+            files=[cfg.gateway_api_crds_url],
+            opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=base_depends),
+        )
+        wait_gw = sleep(
+            "gateway-api", SLEEP_AFTER_GATEWAY_API, opts=pulumi.ResourceOptions(depends_on=[gateway_api_crds])
+        )
+
+    # ─── 2. cert-manager ───
+    cert_manager_ns = k8s.core.v1.Namespace(
+        NS_CERT_MANAGER,
+        metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_CERT_MANAGER),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[wait_gw]),
+    )
+
+    cert_manager = CertManager(
+        "cert-manager",
+        install_crds=True,
+        helm_options={
+            "namespace": NS_CERT_MANAGER,
+            "version": cfg.cert_manager_version,
+            "timeout": TIMEOUT_DEFAULT,
+        },
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[cert_manager_ns],
+            custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_DEFAULT}s"),
+        ),
+    )
+
+    # ─── 3. External Secrets Operator ───
+    external_secrets_ns = k8s.core.v1.Namespace(
+        NS_EXTERNAL_SECRETS,
+        metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_EXTERNAL_SECRETS),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[cert_manager]),
+    )
+
+    external_secrets = k8s.helm.v4.Chart(
+        "external-secrets",
+        k8s.helm.v4.ChartArgs(
+            chart=f"{EXTERNAL_SECRETS_CHART_REPO}/external-secrets",
+            version=cfg.external_secrets_version,
+            namespace=NS_EXTERNAL_SECRETS,
+            values={"installCRDs": True},
+        ),
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[external_secrets_ns],
+        ),
+    )
+
+    # ─── 4. Control Plane Namespace ───
+    control_plane_ns = k8s.core.v1.Namespace(
+        NS_CONTROL_PLANE,
+        metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_CONTROL_PLANE),
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[cert_manager],
+        ),
+    )
+
+    # ─── 5. Gateway controller ───
+    # kgateway CRDs are always needed — the CP Helm chart uses kgateway-specific
+    # resources like TrafficPolicy.
+    kgateway_crds = k8s.helm.v4.Chart(
+        "kgateway-crds",
+        k8s.helm.v4.ChartArgs(
+            chart=f"{KGATEWAY_CHART_REPO}/kgateway-crds",
+            version=cfg.kgateway_version,
+            namespace=NS_CONTROL_PLANE,
+        ),
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[control_plane_ns],
+        ),
+    )
+
+    if cfg.enable_cilium:
+        # Cilium is the Gateway API controller.  The OpenChoreo Helm charts
+        # hardcode gatewayClassName: kgateway, so we create a GatewayClass
+        # with that name backed by Cilium's controller.  No kgateway
+        # controller is deployed — Cilium handles everything.
+        k8s.apiextensions.CustomResource(
+            "gatewayclass-kgateway",
+            api_version="gateway.networking.k8s.io/v1",
+            kind="GatewayClass",
+            metadata=k8s.meta.v1.ObjectMetaArgs(name="kgateway"),
+            spec={"controllerName": "io.cilium/gateway-controller"},
+            opts=pulumi.ResourceOptions(
+                provider=k8s_provider,
+                depends_on=base_depends + [kgateway_crds],
+            ),
+        )
+    else:
+        k8s.helm.v4.Chart(
+            "kgateway",
+            k8s.helm.v4.ChartArgs(
+                chart=f"{KGATEWAY_CHART_REPO}/kgateway",
+                version=cfg.kgateway_version,
+                namespace=NS_CONTROL_PLANE,
+                values={
+                    "controller": {
+                        "extraEnv": {
+                            "KGW_ENABLE_GATEWAY_API_EXPERIMENTAL_FEATURES": "true",
+                        },
+                    },
+                },
+            ),
+            opts=pulumi.ResourceOptions(
+                provider=k8s_provider,
+                depends_on=[kgateway_crds],
+            ),
+        )
+
+    # ─── 6. OpenBao ───
+    openbao_ns = k8s.core.v1.Namespace(
+        NS_OPENBAO,
+        metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_OPENBAO),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[external_secrets]),
+    )
+
+    openbao = k8s.helm.v4.Chart(
+        "openbao",
+        k8s.helm.v4.ChartArgs(
+            chart=f"{OPENBAO_CHART_REPO}/openbao",
+            version=cfg.openbao_version,
+            namespace=NS_OPENBAO,
+            values=openbao_values(
+                cfg.openbao_root_token,
+                cfg.opensearch_username,
+                cfg.opensearch_password,
+            ),
+        ),
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[openbao_ns],
+        ),
+    )
+
+    # Wait for OpenBao pod ready + postStart to finish
+    openbao_ready = WaitPodReady(
+        "openbao-ready",
+        kubeconfig_path=cfg.kubeconfig_path,
+        context=cfg.kubeconfig_context,
+        pod_name="openbao-0",
+        namespace=NS_OPENBAO,
+        timeout=TIMEOUT_TLS_WAIT,
+        opts=pulumi.ResourceOptions(depends_on=[openbao]),
+    )
+
+    wait_poststart = sleep(
+        "openbao-poststart",
+        SLEEP_AFTER_OPENBAO,
+        opts=pulumi.ResourceOptions(depends_on=[openbao_ready]),
+    )
+
+    # ─── 7. Store GitHub PAT (conditional) ───
+    if cfg.github_pat:
+        OpenBaoSecrets(
+            "store-github-pat",
+            kubeconfig_path=cfg.kubeconfig_path,
+            context=cfg.kubeconfig_context,
+            namespace=NS_OPENBAO,
+            root_token=cfg.openbao_root_token,
+            secrets=[
+                {"path": "git-token", "data": {"git-token": cfg.github_pat}},
+                {"path": "gitops-token", "data": {"git-token": cfg.github_pat}},
+            ],
+            opts=pulumi.ResourceOptions(depends_on=[wait_poststart]),
+        )
+
+    # ─── 8. ServiceAccount + ClusterSecretStore ───
+    eso_sa = k8s.core.v1.ServiceAccount(
+        SA_ESO_OPENBAO,
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            name=SA_ESO_OPENBAO,
+            namespace=NS_OPENBAO,
+        ),
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[openbao],
+        ),
+    )
+
+    cluster_secret_store = k8s.apiextensions.CustomResource(
+        "cluster-secret-store",
+        api_version="external-secrets.io/v1",
+        kind="ClusterSecretStore",
+        metadata=k8s.meta.v1.ObjectMetaArgs(name=CLUSTER_SECRET_STORE_NAME),
+        spec={
+            "provider": {
+                "vault": {
+                    "server": f"http://openbao.{NS_OPENBAO}.svc:8200",
+                    "path": "secret",
+                    "version": "v2",
+                    "auth": {
+                        "kubernetes": {
+                            "mountPath": "kubernetes",
+                            "role": "openchoreo-secret-writer-role",
+                            "serviceAccountRef": {
+                                "name": SA_ESO_OPENBAO,
+                                "namespace": NS_OPENBAO,
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[eso_sa, wait_poststart, external_secrets]),
+    )
+
+    # ─── 9. CoreDNS rewrite (k3d only) ───
+    if cfg.is_k3d:
+        k8s.yaml.v2.ConfigGroup(
+            "coredns-rewrite",
+            files=[cfg.coredns_rewrite_url],
+            opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[wait_gw]),
+        )
+
+    return PrerequisitesResult(
+        openbao_ready=openbao_ready,
+        cluster_secret_store=cluster_secret_store,
+        control_plane_ns=control_plane_ns,
+    )

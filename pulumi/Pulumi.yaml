@@ -1,0 +1,6 @@
+name: openchoreo-k3d
+runtime:
+  name: python
+  options:
+    toolchain: uv
+description: OpenChoreo v1.0 on k3d — Pulumi Python
