@@ -51,11 +51,13 @@ def main() -> None:
         cilium_install = cilium.deploy(cfg, k8s_provider, depends=[gateway_api_crds])
 
     # ─── Step 1: Prerequisites ───
-    prereqs = prerequisites.deploy(
-        cfg,
-        k8s_provider,
+    prereqs_component = prerequisites.Prerequisites(
+        "prerequisites",
+        cfg=cfg,
+        k8s_provider=k8s_provider,
         extra_depends=[cilium_install] if cilium_install else [],
     )
+    prereqs = prereqs_component.result
 
     # ─── Step 2: Control Plane ───
     cp = control_plane.deploy(
