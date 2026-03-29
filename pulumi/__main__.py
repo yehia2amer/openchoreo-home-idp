@@ -60,11 +60,13 @@ def main() -> None:
     prereqs = prereqs_component.result
 
     # ─── Step 2: Control Plane ───
-    cp = control_plane.deploy(
-        cfg,
-        k8s_provider,
+    cp_component = control_plane.ControlPlane(
+        "control-plane",
+        cfg=cfg,
+        k8s_provider=k8s_provider,
         depends=[prereqs.cluster_secret_store_ready, prereqs.control_plane_ns],
     )
+    cp = cp_component.result
 
     # ─── Step 3: Data Plane ───
     dp = data_plane.deploy(cfg, k8s_provider, depends=[cp.helm_chart])
@@ -79,7 +81,7 @@ def main() -> None:
 
     # ─── Step 6: Link Planes (if observability enabled) ───
     if obs is not None:
-        link_depends = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
+        link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
         link_planes.deploy(cfg, depends=link_depends)
 
     # ─── Step 7: Flux CD & GitOps (optional) ───
