@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import Any
+from pathlib import Path
+from string import Template
 
 
 def get_values(
@@ -34,53 +36,28 @@ def get_values(
 
 
 def _post_start_script(token: str, os_user: str, os_pass: str, *, is_dev_stack: bool) -> str:
-    script = f"""\
-sleep 5
-export BAO_ADDR=http://127.0.0.1:8200
-export BAO_TOKEN={token}
+    template_path = Path(__file__).resolve().parent.parent / "templates" / "openbao_post_start.sh.tpl"
+    tpl = Template(template_path.read_text())
 
-bao auth enable kubernetes 2>/dev/null || true
-bao write auth/kubernetes/config \
-  kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
-
-bao policy write openchoreo-secret-reader-policy - <<POLICY
-path "secret/data/*" {{ capabilities = ["read"] }}
-path "secret/metadata/*" {{ capabilities = ["list", "read"] }}
-POLICY
-
-bao policy write openchoreo-secret-writer-policy - <<POLICY
-path "secret/data/*" {{ capabilities = ["create", "read", "update", "delete"] }}
-path "secret/metadata/*" {{ capabilities = ["create", "read", "update", "delete", "list"] }}
-POLICY
-
-bao write auth/kubernetes/role/openchoreo-secret-reader-role \
-  bound_service_account_names=default \
-  bound_service_account_namespaces="dp*" \
-  policies=openchoreo-secret-reader-policy ttl=20m
-
-bao write auth/kubernetes/role/openchoreo-secret-writer-role \
-  bound_service_account_names="*" \
-  bound_service_account_namespaces="openbao,openchoreo-workflow-plane" \
-  policies=openchoreo-secret-writer-policy ttl=20m
-
-"""
+    dev_secrets_block = ""
     if is_dev_stack:
-        script += f"""\
-bao kv put secret/npm-token value="fake-npm-token-for-development"
-bao kv put secret/docker-username value="dev-user"
-bao kv put secret/docker-password value="dev-password"
-bao kv put secret/github-pat value="fake-github-token-for-development"
-bao kv put secret/git-token git-token="fake-github-token-for-development"
-bao kv put secret/gitops-token git-token="fake-github-token-for-development"
-bao kv put secret/username value="dev-user"
-bao kv put secret/password value="dev-password"
+        dev_secrets_block = (
+            'bao kv put secret/npm-token value="fake-npm-token-for-development"\n'
+            'bao kv put secret/docker-username value="dev-user"\n'
+            'bao kv put secret/docker-password value="dev-password"\n'
+            'bao kv put secret/github-pat value="fake-github-token-for-development"\n'
+            'bao kv put secret/git-token git-token="fake-github-token-for-development"\n'
+            'bao kv put secret/gitops-token git-token="fake-github-token-for-development"\n'
+            'bao kv put secret/username value="dev-user"\n'
+            'bao kv put secret/password value="dev-password"\n'
+            "\n"
+            'bao kv put secret/backstage-backend-secret value="local-dev-backend-secret"\n'
+            'bao kv put secret/backstage-client-secret value="backstage-portal-secret"\n'
+            'bao kv put secret/backstage-jenkins-api-key value="placeholder-not-in-use"\n'
+            'bao kv put secret/observer-oauth-client-secret value="openchoreo-observer-resource-reader-client-secret"\n'
+            'bao kv put secret/rca-oauth-client-secret value="openchoreo-rca-agent-secret"\n'
+            f'bao kv put secret/opensearch-username value="{os_user}"\n'
+            f'bao kv put secret/opensearch-password value="{os_pass}"\n'
+        )
 
-bao kv put secret/backstage-backend-secret value="local-dev-backend-secret"
-bao kv put secret/backstage-client-secret value="backstage-portal-secret"
-bao kv put secret/backstage-jenkins-api-key value="placeholder-not-in-use"
-bao kv put secret/observer-oauth-client-secret value="openchoreo-observer-resource-reader-client-secret"
-bao kv put secret/rca-oauth-client-secret value="openchoreo-rca-agent-secret"
-bao kv put secret/opensearch-username value="{os_user}"
-bao kv put secret/opensearch-password value="{os_pass}"
-"""
-    return script
+    return tpl.substitute(token=token, dev_secrets_block=dev_secrets_block)

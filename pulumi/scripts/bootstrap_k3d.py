@@ -30,20 +30,6 @@ CONFIG_URL = (
 
 PULUMI_DIR = Path(__file__).resolve().parent.parent
 
-# Script mounted into k3d containers to prepare BPF/cgroup mounts for Cilium.
-# k3d executes /bin/k3d-entrypoint-*.sh scripts before starting k3s.
-K3D_ENTRYPOINT_CILIUM = """\
-#!/bin/sh
-set -e
-echo "Mounting bpf on node"
-mount bpffs -t bpf /sys/fs/bpf
-mount --make-shared /sys/fs/bpf
-echo "Mounting cgroups v2 to /run/cilium/cgroupv2 on node"
-mkdir -p /run/cilium/cgroupv2
-mount -t cgroup2 none /run/cilium/cgroupv2
-mount --make-shared /run/cilium/cgroupv2/
-"""
-
 
 def check_tool(name: str) -> str:
     """Verify a CLI tool exists and return its path."""
@@ -89,8 +75,9 @@ def main():
 
         # Write the BPF/cgroup mount script and mount it into all k3d containers.
         # k3d auto-executes /bin/k3d-entrypoint-*.sh before starting k3s.
+        cilium_script = (PULUMI_DIR / "templates" / "k3d_entrypoint_cilium.sh").read_text()
         entrypoint_path = Path(tempfile.gettempdir()) / "k3d-entrypoint-cilium.sh"
-        entrypoint_path.write_text(K3D_ENTRYPOINT_CILIUM)
+        entrypoint_path.write_text(cilium_script)
         entrypoint_path.chmod(0o755)
         volumes = config.setdefault("volumes", [])
         volumes.append(
