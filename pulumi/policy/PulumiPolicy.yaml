@@ -1,0 +1,3 @@
+name: openchoreo-policy
+runtime: python
+description: OpenChoreo infrastructure policy enforcement
