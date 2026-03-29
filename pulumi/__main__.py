@@ -89,7 +89,13 @@ def main() -> None:
     # ─── Step 5: Observability Plane (optional) ───
     obs = None
     if cfg.enable_observability:
-        obs = observability_plane.deploy(cfg, k8s_provider, depends=[cp.helm_chart])
+        obs_component = observability_plane.ObservabilityPlane(
+            "observability-plane",
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+            depends=[cp.helm_chart],
+        )
+        obs = obs_component.result
 
     # ─── Step 6: Link Planes (if observability enabled) ───
     if obs is not None:
