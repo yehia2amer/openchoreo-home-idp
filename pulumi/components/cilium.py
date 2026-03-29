@@ -39,6 +39,7 @@ NS_CILIUM = "kube-system"
 def _ensure_bpf_shared_mount(
     k8s_provider: k8s.Provider,
     depends: list[pulumi.Resource] | None = None,
+    opts: pulumi.ResourceOptions | None = None,
 ) -> k8s.batch.v1.Job:
     """Run a privileged Job on every node to make /sys/fs/bpf a shared mount.
 
@@ -82,12 +83,127 @@ def _ensure_bpf_shared_mount(
                 ),
             ),
         ),
-        opts=pulumi.ResourceOptions(
+        opts=opts
+        or pulumi.ResourceOptions(
             provider=k8s_provider,
             depends_on=depends or [],
             custom_timeouts=pulumi.CustomTimeouts(create="120s"),
         ),
     )
+
+
+class Cilium(pulumi.ComponentResource):
+    def __init__(
+        self,
+        name: str,
+        cfg: OpenChoreoConfig,
+        k8s_provider: k8s.Provider,
+        depends: list[pulumi.Resource] | None = None,
+        opts: pulumi.ResourceOptions | None = None,
+    ):
+        super().__init__("openchoreo:components:Cilium", name, {}, opts)
+
+        p = cfg.platform  # Platform profile drives all environment-specific tuning
+        kpr_enabled = p.enable_kube_proxy_replacement
+
+        # On platforms that need it (e.g. Rancher Desktop), fix BPF mount
+        # propagation before Cilium starts.
+        extra_depends = list(depends or [])
+        if p.requires_bpf_mount_fix:
+            bpf_fix = _ensure_bpf_shared_mount(
+                k8s_provider,
+                depends,
+                opts=pulumi.ResourceOptions.merge(
+                    self._child_opts(provider=k8s_provider, depends_on=depends or []),
+                    pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create="120s")),
+                ),
+            )
+            extra_depends.append(bpf_fix)
+
+        values: dict = {
+            "kubeProxyReplacement": kpr_enabled,
+            # Gateway API controller (requires kubeProxyReplacement=true).
+            # hostNetwork.enabled makes envoy bind directly on the node's host
+            # ports so Lima/Rancher Desktop's SSH port-forwarder can detect them
+            # and forward traffic from macOS.  Without it, Cilium uses BPF-only
+            # listeners that are invisible to Lima's guest-agent.
+            "gatewayAPI": {
+                "enabled": kpr_enabled,
+                "hostNetwork": {"enabled": p.cilium_host_network_gateway},
+            },
+            # IPAM — use Kubernetes pod CIDR allocation (k3s default: 10.42.0.0/16)
+            "ipam": {
+                "mode": "kubernetes",
+                "operator": {"clusterPoolIPv4PodCIDRList": ["10.42.0.0/16"]},
+            },
+            # BPF/cgroup mount strategy:
+            # - k3d: the bootstrap script pre-mounts BPF with shared propagation,
+            #   so autoMount must be disabled (Docker mount propagation limitation).
+            # - Rancher Desktop / bare-metal: let Cilium auto-mount BPF and cgroup
+            #   since the host/VM doesn't pre-configure shared propagation.
+            "bpf": {"autoMount": {"enabled": p.cilium_auto_mount_bpf}},
+            "cgroup": {
+                "autoMount": {"enabled": p.cilium_auto_mount_bpf},
+                "hostRoot": "/sys/fs/cgroup",
+            },
+            # Socket-based load balancing — required alongside kubeProxyReplacement
+            # so the cgroup/connect eBPF hook properly translates ClusterIPs.
+            "socketLB": {"enabled": kpr_enabled},
+            # Hubble observability
+            "hubble": {
+                "relay": {"enabled": True},
+                "ui": {"enabled": True},
+            },
+            # L7 proxy for application-aware policies
+            "l7Proxy": True,
+            # Operator
+            "operator": {"replicas": 1},
+            # Prefer cached images in local dev
+            "image": {"pullPolicy": "IfNotPresent"},
+            # Label envoy pods so OpenChoreo NetworkPolicies allow gateway ingress
+            "envoy": {"podLabels": {"openchoreo.dev/system-component": "gateway"}},
+        }
+
+        # When replacing kube-proxy, Cilium must know the API server's direct IP
+        if kpr_enabled and p.k8s_service_host:
+            values["k8sServiceHost"] = p.k8s_service_host
+            values["k8sServicePort"] = 6443
+
+        # Platform-specific CNI binary path override
+        if p.cilium_cni_bin_path:
+            values["cni"] = {"binPath": p.cilium_cni_bin_path}
+
+        cilium_chart = k8s.helm.v4.Chart(
+            "cilium",
+            k8s.helm.v4.ChartArgs(
+                chart=CILIUM_CHART_OCI,
+                version=CILIUM_VERSION,
+                namespace=NS_CILIUM,
+                values=values,
+            ),
+            opts=pulumi.ResourceOptions.merge(
+                self._child_opts(provider=k8s_provider, depends_on=extra_depends),
+                pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create="600s")),
+            ),
+        )
+
+        self.result = cilium_chart
+        self.register_outputs({})
+
+    def _child_opts(
+        self,
+        depends_on: list[pulumi.Resource] | None = None,
+        provider: k8s.Provider | None = None,
+    ) -> pulumi.ResourceOptions:
+        opts_kwargs = {
+            "parent": self,
+            "aliases": [pulumi.Alias(parent=pulumi.ROOT_STACK_RESOURCE)],
+        }
+        if depends_on:
+            opts_kwargs["depends_on"] = depends_on
+        if provider:
+            opts_kwargs["provider"] = provider
+        return pulumi.ResourceOptions(**opts_kwargs)
 
 
 def deploy(
@@ -96,81 +212,4 @@ def deploy(
     depends: list[pulumi.Resource] | None = None,
 ) -> k8s.helm.v4.Chart:
     """Install Cilium CNI + Gateway API controller via OCI Helm chart."""
-
-    p = cfg.platform  # Platform profile drives all environment-specific tuning
-    kpr_enabled = p.enable_kube_proxy_replacement
-
-    # On platforms that need it (e.g. Rancher Desktop), fix BPF mount
-    # propagation before Cilium starts.
-    extra_depends = list(depends or [])
-    if p.requires_bpf_mount_fix:
-        bpf_fix = _ensure_bpf_shared_mount(k8s_provider, depends)
-        extra_depends.append(bpf_fix)
-
-    values: dict = {
-        "kubeProxyReplacement": kpr_enabled,
-        # Gateway API controller (requires kubeProxyReplacement=true).
-        # hostNetwork.enabled makes envoy bind directly on the node's host
-        # ports so Lima/Rancher Desktop's SSH port-forwarder can detect them
-        # and forward traffic from macOS.  Without it, Cilium uses BPF-only
-        # listeners that are invisible to Lima's guest-agent.
-        "gatewayAPI": {
-            "enabled": kpr_enabled,
-            "hostNetwork": {"enabled": p.cilium_host_network_gateway},
-        },
-        # IPAM — use Kubernetes pod CIDR allocation (k3s default: 10.42.0.0/16)
-        "ipam": {
-            "mode": "kubernetes",
-            "operator": {"clusterPoolIPv4PodCIDRList": ["10.42.0.0/16"]},
-        },
-        # BPF/cgroup mount strategy:
-        # - k3d: the bootstrap script pre-mounts BPF with shared propagation,
-        #   so autoMount must be disabled (Docker mount propagation limitation).
-        # - Rancher Desktop / bare-metal: let Cilium auto-mount BPF and cgroup
-        #   since the host/VM doesn't pre-configure shared propagation.
-        "bpf": {"autoMount": {"enabled": p.cilium_auto_mount_bpf}},
-        "cgroup": {
-            "autoMount": {"enabled": p.cilium_auto_mount_bpf},
-            "hostRoot": "/sys/fs/cgroup",
-        },
-        # Socket-based load balancing — required alongside kubeProxyReplacement
-        # so the cgroup/connect eBPF hook properly translates ClusterIPs.
-        "socketLB": {"enabled": kpr_enabled},
-        # Hubble observability
-        "hubble": {
-            "relay": {"enabled": True},
-            "ui": {"enabled": True},
-        },
-        # L7 proxy for application-aware policies
-        "l7Proxy": True,
-        # Operator
-        "operator": {"replicas": 1},
-        # Prefer cached images in local dev
-        "image": {"pullPolicy": "IfNotPresent"},
-        # Label envoy pods so OpenChoreo NetworkPolicies allow gateway ingress
-        "envoy": {"podLabels": {"openchoreo.dev/system-component": "gateway"}},
-    }
-
-    # When replacing kube-proxy, Cilium must know the API server's direct IP
-    if kpr_enabled and p.k8s_service_host:
-        values["k8sServiceHost"] = p.k8s_service_host
-        values["k8sServicePort"] = 6443
-
-    # Platform-specific CNI binary path override
-    if p.cilium_cni_bin_path:
-        values["cni"] = {"binPath": p.cilium_cni_bin_path}
-
-    return k8s.helm.v4.Chart(
-        "cilium",
-        k8s.helm.v4.ChartArgs(
-            chart=CILIUM_CHART_OCI,
-            version=CILIUM_VERSION,
-            namespace=NS_CILIUM,
-            values=values,
-        ),
-        opts=pulumi.ResourceOptions(
-            provider=k8s_provider,
-            depends_on=extra_depends,
-            custom_timeouts=pulumi.CustomTimeouts(create="600s"),
-        ),
-    )
+    return Cilium("cilium", cfg=cfg, k8s_provider=k8s_provider, depends=depends).result

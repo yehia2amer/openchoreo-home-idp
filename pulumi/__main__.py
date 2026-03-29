@@ -48,7 +48,12 @@ def main() -> None:
             files=[cfg.gateway_api_crds_url],
             opts=pulumi.ResourceOptions(provider=k8s_provider),
         )
-        cilium_install = cilium.deploy(cfg, k8s_provider, depends=[gateway_api_crds])
+        cilium_install = cilium.Cilium(
+            "cilium",
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+            depends=[gateway_api_crds],
+        ).result
 
     # ─── Step 1: Prerequisites ───
     prereqs_component = prerequisites.Prerequisites(
@@ -100,13 +105,14 @@ def main() -> None:
     # ─── Step 6: Link Planes (if observability enabled) ───
     if obs is not None:
         link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
-        link_planes.deploy(cfg, depends=link_depends)
+        link_planes.LinkPlanesComponent("link-planes", cfg=cfg, depends=link_depends)
 
     # ─── Step 7: Flux CD & GitOps (optional) ───
     if cfg.enable_flux and cfg.gitops_repo_url:
-        flux_gitops.deploy(
-            cfg,
-            k8s_provider,
+        flux_gitops.FluxGitOps(
+            "flux-gitops",
+            cfg=cfg,
+            k8s_provider=k8s_provider,
             depends=[cp.helm_chart, dp.register_cmd, wp.register_cmd],
         )
 
@@ -114,7 +120,7 @@ def main() -> None:
     test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]
     if obs is not None:
         test_depends.append(obs.register_cmd)
-    integration_tests.deploy(cfg, depends=test_depends)
+    integration_tests.IntegrationTests("integration-tests", cfg=cfg, depends=test_depends)
 
     # ─── Outputs: URLs ───
     pulumi.export("backstage_url", cfg.backstage_url)
