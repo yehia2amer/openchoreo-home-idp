@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pulumi
 import pulumi_kubernetes as k8s
 
 from config import NS_DATA_PLANE, TIMEOUT_DEFAULT, OpenChoreoConfig
 from helpers.copy_ca import copy_ca
-from helpers.dynamic_providers import RegisterPlane
 from helpers.register_plane import register_plane
 from values.data_plane import get_values as dp_values
+
+if TYPE_CHECKING:
+    from helpers.dynamic_providers import RegisterPlane
 
 
 class DataPlaneResult:

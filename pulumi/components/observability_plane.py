@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pulumi
 import pulumi_command as command
 import pulumi_kubernetes as k8s
@@ -18,9 +20,11 @@ from config import (
     OpenChoreoConfig,
 )
 from helpers.copy_ca import copy_ca
-from helpers.dynamic_providers import RegisterPlane
 from helpers.register_plane import register_plane
 from values.observability_plane import get_values as op_values
+
+if TYPE_CHECKING:
+    from helpers.dynamic_providers import RegisterPlane
 
 
 class ObservabilityPlaneResult:
