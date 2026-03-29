@@ -56,6 +56,7 @@ def deploy(
         opts=pulumi.ResourceOptions(
             provider=k8s_provider,
             depends_on=[ns],
+            custom_timeouts=pulumi.CustomTimeouts(create="10m", update="10m", delete="5m"),
         ),
     )
 

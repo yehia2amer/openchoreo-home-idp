@@ -116,6 +116,7 @@ def deploy(
         opts=pulumi.ResourceOptions(
             provider=k8s_provider,
             depends_on=[external_secrets_ns],
+            custom_timeouts=pulumi.CustomTimeouts(create="10m", update="10m", delete="5m"),
         ),
     )
 
@@ -142,6 +143,7 @@ def deploy(
         opts=pulumi.ResourceOptions(
             provider=k8s_provider,
             depends_on=[control_plane_ns],
+            custom_timeouts=pulumi.CustomTimeouts(create="10m", update="10m", delete="5m"),
         ),
     )
 
@@ -179,6 +181,7 @@ def deploy(
             opts=pulumi.ResourceOptions(
                 provider=k8s_provider,
                 depends_on=[kgateway_crds],
+                custom_timeouts=pulumi.CustomTimeouts(create="10m", update="10m", delete="5m"),
             ),
         )
 
@@ -205,6 +208,7 @@ def deploy(
         opts=pulumi.ResourceOptions(
             provider=k8s_provider,
             depends_on=[openbao_ns],
+            custom_timeouts=pulumi.CustomTimeouts(create="10m", update="10m", delete="5m"),
         ),
     )
 
