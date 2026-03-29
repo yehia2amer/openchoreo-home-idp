@@ -1,0 +1,12 @@
+# Learnings — Pulumi Remediation
+
+## 2026-03-29 Session Start
+- Project uses `uv` as toolchain (confirmed in Pulumi.yaml and pyproject.toml)
+- Verification triad: `uv run ruff check pulumi/` + `uv run ty check` + `pulumi preview -s dev` + `pulumi preview -s rancher-desktop`
+- Pre-existing LSP errors in k8s_ops.py (197+) and integration_tests.py (20+) — NOT in scope
+- Python >=3.12, Pulumi >=3.0.0,<4.0.0, pulumi-kubernetes >=4.0.0,<5.0.0
+- `is_dev_stack` defined at config.py:210 as `is_dev_stack = stack_name in ("dev", "rancher-desktop", "local", "test")`
+- Integration test harness already exists in components/integration_tests.py with ~35 tests
+- Reusable check functions exist in helpers/k8s_ops.py
+- For non-dev Pulumi stacks, insecure credential defaults should fail fast with `ValueError`, not warn-and-continue.
+- `cfg.get()` stays appropriate here because these values need to remain plain strings for dynamic providers.

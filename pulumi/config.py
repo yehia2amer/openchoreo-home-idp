@@ -207,12 +207,31 @@ def load_config() -> OpenChoreoConfig:
     traces_opensearch_version = cfg.get("traces_opensearch_version") or "0.3.10"
     metrics_prometheus_version = cfg.get("metrics_prometheus_version") or "0.2.5"
 
-    # Credentials — plain strings needed by dynamic providers and Command interpolation.
-    # Only github_pat is encrypted in Pulumi.dev.yaml via `pulumi config set --secret`;
-    # the others use dev-mode defaults and are NOT secret-encrypted.
-    openbao_root_token = cfg.get("openbao_root_token") or "root"
+    # Credentials — warn on non-dev stacks when using insecure defaults.
+    # Use cfg.get() for plain strings needed by dynamic providers.
+    stack_name = pulumi.get_stack()
+    is_dev_stack = stack_name in ("dev", "rancher-desktop", "local", "test")
+
+    openbao_root_token = cfg.get("openbao_root_token")
+    if not openbao_root_token:
+        if not is_dev_stack:
+            raise ValueError(
+                f"openbao_root_token not set for stack '{stack_name}'. "
+                "Using insecure default. Set via: pulumi config set --secret openbao_root_token <value>"
+            )
+        openbao_root_token = "root"
+
     opensearch_username = cfg.get("opensearch_username") or "admin"
-    opensearch_password = cfg.get("opensearch_password") or "ThisIsTheOpenSearchPassword1"
+
+    opensearch_password = cfg.get("opensearch_password")
+    if not opensearch_password:
+        if not is_dev_stack:
+            raise ValueError(
+                f"opensearch_password not set for stack '{stack_name}'. "
+                "Using insecure default. Set via: pulumi config set --secret opensearch_password <value>"
+            )
+        opensearch_password = "ThisIsTheOpenSearchPassword1"
+
     github_pat = cfg.get("github_pat") or ""
 
     # GitOps
