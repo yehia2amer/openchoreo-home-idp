@@ -496,8 +496,15 @@ class _OpenBaoSecretsProvider(ResourceProvider):
                     mount_point=inputs.get("mount_point", "secret"),
                 )
         finally:
-            pf.terminate()
-            pf.wait(timeout=5)
+            import contextlib
+
+            with contextlib.suppress(ProcessLookupError):
+                pf.terminate()
+            try:
+                pf.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pf.kill()
+                pf.wait()
 
         return CreateResult(id_="openbao-secrets", outs=inputs)
 

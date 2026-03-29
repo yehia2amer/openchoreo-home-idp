@@ -625,8 +625,15 @@ def check_openbao_secrets(
         pulumi.log.warn(f"OpenBao secret check failed: {e}")
         return {"passed": False, "errors": [str(e)]}
     finally:
-        pf.terminate()
-        pf.wait(timeout=5)
+        import contextlib
+
+        with contextlib.suppress(ProcessLookupError):
+            pf.terminate()
+        try:
+            pf.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pf.kill()
+            pf.wait()
 
 
 def wait_for_custom_resource_condition(
@@ -712,5 +719,12 @@ def validate_openbao_secrets(
         if errors:
             raise RuntimeError("OpenBao validation failed:\n  " + "\n  ".join(errors))
     finally:
-        pf.terminate()
-        pf.wait(timeout=5)
+        import contextlib
+
+        with contextlib.suppress(ProcessLookupError):
+            pf.terminate()
+        try:
+            pf.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pf.kill()
+            pf.wait()
