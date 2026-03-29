@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
 from pathlib import Path
 from string import Template
+from typing import Any
 
 
 def get_values(
