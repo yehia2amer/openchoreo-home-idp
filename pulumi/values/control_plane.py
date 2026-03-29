@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from config import SECRET_BACKSTAGE, THUNDER_INTERNAL_BASE
 
 
@@ -13,7 +15,7 @@ def get_values(
     cp_https_port: int,
     tls_enabled: bool,
     thunder_url: str,
-) -> dict:
+) -> dict[str, Any]:
     """Return Helm values for the OpenChoreo Control Plane chart."""
     backstage_base_url = f"{scheme}://{domain_base}:{cp_port}"
     backstage_redirect_url = f"{backstage_base_url}/api/auth/openchoreo-auth/handler/frame"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from config import SECRET_OBSERVER, SECRET_OPENSEARCH_ADMIN, THUNDER_INTERNAL_BASE
 
 
@@ -11,7 +13,7 @@ def get_values(
     tls_enabled: bool,
     op_http_port: int,
     op_https_port: int,
-) -> dict:
+) -> dict[str, Any]:
     """Return Helm values for the OpenChoreo Observability Plane chart."""
     return {
         "observer": {

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 
 def get_values(
     openbao_root_token: str,
     opensearch_username: str,
     opensearch_password: str,
     is_dev_stack: bool,
-) -> dict:
+) -> dict[str, Any]:
     """Return Helm values for the OpenBao chart (dev mode with postStart seed)."""
     return {
         "injector": {"enabled": False},

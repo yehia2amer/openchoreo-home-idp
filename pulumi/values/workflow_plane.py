@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
 
-def get_values(wp_argo_port: int) -> dict:
+
+def get_values(wp_argo_port: int) -> dict[str, Any]:
     """Return Helm values for the OpenChoreo Workflow Plane chart."""
     return {
         "argo-workflows": {
