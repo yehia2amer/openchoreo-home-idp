@@ -69,7 +69,13 @@ def main() -> None:
     cp = cp_component.result
 
     # ─── Step 3: Data Plane ───
-    dp = data_plane.deploy(cfg, k8s_provider, depends=[cp.helm_chart])
+    dp_component = data_plane.DataPlane(
+        "data-plane",
+        cfg=cfg,
+        k8s_provider=k8s_provider,
+        depends=[cp.helm_chart],
+    )
+    dp = dp_component.result
 
     # ─── Step 4: Workflow Plane ───
     wp = workflow_plane.deploy(cfg, k8s_provider, depends=[cp.helm_chart])
