@@ -78,7 +78,13 @@ def main() -> None:
     dp = dp_component.result
 
     # ─── Step 4: Workflow Plane ───
-    wp = workflow_plane.deploy(cfg, k8s_provider, depends=[cp.helm_chart])
+    wp_component = workflow_plane.WorkflowPlane(
+        "workflow-plane",
+        cfg=cfg,
+        k8s_provider=k8s_provider,
+        depends=[cp.helm_chart],
+    )
+    wp = wp_component.result
 
     # ─── Step 5: Observability Plane (optional) ───
     obs = None
