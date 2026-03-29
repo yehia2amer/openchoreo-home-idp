@@ -158,7 +158,7 @@ def deploy(
             spec={"controllerName": "io.cilium/gateway-controller"},
             opts=pulumi.ResourceOptions(
                 provider=k8s_provider,
-                depends_on=base_depends + [kgateway_crds],
+                depends_on=[*base_depends, kgateway_crds],
             ),
         )
     else:
@@ -199,6 +199,7 @@ def deploy(
                 cfg.openbao_root_token,
                 cfg.opensearch_username,
                 cfg.opensearch_password,
+                is_dev_stack=pulumi.get_stack() in ("dev", "rancher-desktop", "local", "test"),
             ),
         ),
         opts=pulumi.ResourceOptions(

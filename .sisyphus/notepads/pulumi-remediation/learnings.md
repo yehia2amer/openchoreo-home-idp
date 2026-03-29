@@ -10,3 +10,8 @@
 - Reusable check functions exist in helpers/k8s_ops.py
 - For non-dev Pulumi stacks, insecure credential defaults should fail fast with `ValueError`, not warn-and-continue.
 - `cfg.get()` stays appropriate here because these values need to remain plain strings for dynamic providers.
+
+## 2026-03-29
+- Kept OpenBao auth/policy/role bootstrap unconditional while gating only fake dev seed secrets behind `is_dev_stack`.
+- Derived `is_dev_stack` from `pulumi.get_stack()` at the chart call site so values builders stay stack-aware without changing config.
+- Ruff flagged an unrelated `depends_on` concatenation in `prerequisites.py`; rewriting it as list unpacking kept checks clean.
