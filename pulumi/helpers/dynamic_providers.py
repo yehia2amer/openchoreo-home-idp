@@ -8,7 +8,6 @@ that use the kubernetes Python client directly, providing:
 - Credentials not exposed in process lists
 """
 
-# ruff: noqa: SIM105
 # pyright: reportIncompatibleMethodOverride=false
 
 from __future__ import annotations
@@ -16,6 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 import pulumi
+from kubernetes import client as k8s_client
 from pulumi.dynamic import CreateResult, DiffResult, ResourceProvider, UpdateResult
 
 from helpers import k8s_ops
@@ -265,8 +265,10 @@ class _LinkPlanesProvider(ResourceProvider):
                     "default",
                     patch,
                 )
-            except Exception:
-                pass  # resource may already be deleted
+            except k8s_client.ApiException:
+                pulumi.log.warn(
+                    f"Ignoring K8s API error while unlinking plane {plural} (resource may already be deleted)"
+                )
 
 
 class LinkPlanes(pulumi.dynamic.Resource):

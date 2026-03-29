@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import time
 
+import pulumi
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
@@ -384,7 +385,8 @@ def check_service_http(
                     "body_snippet": e.read(200).decode("utf-8", errors="replace"),
                     "passed": e.code in expected_statuses,
                 }
-            except Exception as e:
+            except (urllib.error.URLError, OSError) as e:
+                pulumi.log.warn(f"HTTP request attempt failed: {e}")
                 last_err = e
                 time.sleep(1)
 
@@ -613,12 +615,14 @@ def check_openbao_secrets(
                 for field in entry.get("fields", []):
                     if field not in data or not data[field]:
                         errors.append(f"secret/{path}: field '{field}' missing or empty")
-            except Exception:
+            except hvac.exceptions.VaultError:
+                pulumi.log.warn(f"OpenBao secret '{path}' does not exist or is inaccessible")
                 errors.append(f"secret/{path}: does not exist")
         if errors:
             return {"passed": False, "errors": errors}
         return {"passed": True, "validated_paths": [e["path"] for e in expected_paths]}
     except Exception as e:
+        pulumi.log.warn(f"OpenBao secret check failed: {e}")
         return {"passed": False, "errors": [str(e)]}
     finally:
         pf.terminate()
@@ -702,7 +706,8 @@ def validate_openbao_secrets(
                 for field in entry.get("fields", []):
                     if field not in data or not data[field]:
                         errors.append(f"secret/{path}: field '{field}' missing or empty")
-            except Exception:
+            except hvac.exceptions.VaultError:
+                pulumi.log.warn(f"OpenBao secret '{path}' does not exist or is inaccessible")
                 errors.append(f"secret/{path}: does not exist")
         if errors:
             raise RuntimeError("OpenBao validation failed:\n  " + "\n  ".join(errors))
