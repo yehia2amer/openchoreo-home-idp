@@ -15,3 +15,6 @@
 - Kept OpenBao auth/policy/role bootstrap unconditional while gating only fake dev seed secrets behind `is_dev_stack`.
 - Derived `is_dev_stack` from `pulumi.get_stack()` at the chart call site so values builders stay stack-aware without changing config.
 - Ruff flagged an unrelated `depends_on` concatenation in `prerequisites.py`; rewriting it as list unpacking kept checks clean.
+Added CustomTimeouts to all Helm v4.Chart resources in prerequisites.py and workflow_plane.py; kept them inside pulumi.ResourceOptions and left existing cilium chart unchanged.
+- Replaced the remaining `time.time()` timeout calculations in `helpers/k8s_ops.py` with `time.monotonic()` to avoid wall-clock drift during waits.
+2026-03-29: Fixed the four dynamic provider update() methods in pulumi/helpers/dynamic_providers.py to return UpdateResult(outs=...) instead of raw dicts; UpdateResult was already imported so no import changes were needed.

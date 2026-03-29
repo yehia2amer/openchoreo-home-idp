@@ -643,9 +643,9 @@ def wait_for_custom_resource_condition(
     """
     _load_config(kubeconfig_path, context)
     api = k8s_client.CustomObjectsApi()
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
 
-    while time.time() < deadline:
+    while time.monotonic() < deadline:
         try:
             if namespace:
                 obj = api.get_namespaced_custom_object(group, version, namespace, plural, name)
