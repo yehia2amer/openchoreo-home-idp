@@ -9,7 +9,7 @@ Policies
 1. require-secrets-on-prod   — block insecure default credentials on non-dev stacks
 2. block-dev-seeds-on-prod   — block dev seed secret commands on non-dev stacks
 3. enforce-resource-labels   — warn when K8s Namespaces lack openchoreo.dev labels
-4. enforce-helm-timeouts     — require custom timeouts on Helm Chart resources
+4. enforce-helm-timeouts     — require custom timeouts on Helm Chart and Helm Release resources
 """
 
 from __future__ import annotations
@@ -43,8 +43,7 @@ _INSECURE_DEFAULTS: dict[str, str] = {
 
 #: Dev-only seed command patterns (OpenBao ``bao kv put`` seed operations).
 _DEV_SEED_PATTERNS: list[str] = [
-    "bao kv put secret/choreo-system-password",
-    "bao kv put secret/opensearch-password",
+    "bao kv put secret/",
 ]
 
 
@@ -73,7 +72,7 @@ def _is_dev_stack_from_resources(resources: list[Any]) -> bool:
         stack_name = _extract_stack_name(resource.urn)
         if stack_name:
             return stack_name in _DEV_STACKS
-    return True  # If we cannot determine the stack, assume dev (safe default).
+    return False  # If we cannot determine the stack, fail closed — enforce policies.
 
 
 def _serialize_props(props: Mapping[str, Any]) -> str:
@@ -220,7 +219,7 @@ def _enforce_helm_timeouts_validator(
     args: ResourceValidationArgs,
     report_violation: ReportViolation,
 ) -> None:
-    """Ensure all Helm Chart resources specify custom timeouts.
+    """Ensure all Helm Chart and Helm Release resources specify custom timeouts.
 
     Custom timeouts prevent indefinite hangs during ``pulumi up`` when a Helm
     release takes longer than expected.  The policy checks that at least one of
@@ -231,15 +230,15 @@ def _enforce_helm_timeouts_validator(
     which exposes ``create_seconds``, ``update_seconds``, and
     ``delete_seconds``.
     """
-    if args.resource_type != "kubernetes:helm.sh/v4:Chart":
+    if args.resource_type not in ("kubernetes:helm.sh/v4:Chart", "kubernetes:helm.sh/v3:Release"):
         return
 
     timeouts = args.opts.custom_timeouts
     if timeouts is None:
         report_violation(
-            f"Helm Chart '{args.name}' must specify custom_timeouts "
+            f"Helm resource '{args.name}' must specify custom_timeouts "
             f"(create, update, or delete) to prevent indefinite hangs. "
-            f"Use pulumi.ResourceOptions(custom_timeouts=...) when defining the Chart."
+            f"Use pulumi.ResourceOptions(custom_timeouts=...) when defining the Helm resource."
         )
         return
 
@@ -247,15 +246,17 @@ def _enforce_helm_timeouts_validator(
 
     if not has_custom_timeout:
         report_violation(
-            f"Helm Chart '{args.name}' must specify custom_timeouts "
+            f"Helm resource '{args.name}' must specify custom_timeouts "
             f"(create, update, or delete) to prevent indefinite hangs. "
-            f"Use pulumi.ResourceOptions(custom_timeouts=...) when defining the Chart."
+            f"Use pulumi.ResourceOptions(custom_timeouts=...) when defining the Helm resource."
         )
 
 
 enforce_helm_timeouts = ResourceValidationPolicy(
     name="enforce-helm-timeouts",
-    description=("All Helm Chart resources must specify custom_timeouts to prevent indefinite deployment hangs."),
+    description=(
+        "All Helm Chart and Helm Release resources must specify custom_timeouts to prevent indefinite deployment hangs."
+    ),
     enforcement_level=EnforcementLevel.MANDATORY,
     validate=_enforce_helm_timeouts_validator,
 )
