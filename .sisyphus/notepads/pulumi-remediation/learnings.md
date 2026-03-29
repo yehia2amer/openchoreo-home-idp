@@ -41,3 +41,15 @@ Added CustomTimeouts to all Helm v4.Chart resources in prerequisites.py and work
 - `ProcessLookupError` is a Python built-in — no import needed
 - `subprocess.TimeoutExpired` is available from the local `import subprocess` already present in each function body
 - 3 blocks total: dynamic_providers.py (OpenBaoSecretsProvider.create), k8s_ops.py (check_openbao_secrets, validate_openbao_secrets)
+
+## 2026-03-29: TYPE_CHECKING cleanup
+- Wrapped `RegisterPlane` imports in `TYPE_CHECKING` blocks in data_plane.py, workflow_plane.py, and observability_plane.py since the type is only used in annotations.
+- `pulumi/__main__.py` needed `cast(...)` on `register_cmd` values to satisfy Pyright/ty because `RegisterPlane` is a `pulumi.dynamic.Resource`, not just a generic `Resource`.
+- Ruff passed on the touched Pulumi files; repo-wide `ty check` still reports unrelated missing third-party modules under `docs/reference-project-docs/openchoreo/rca-agent/`.
+
+## 2026-03-29: Pytest E2E scaffold (Task 11)
+- Added a dedicated `test` dependency group in `pulumi/pyproject.toml` with only `pytest>=8.0` and `pytest-timeout>=2.0`.
+- Added `[tool.pytest.ini_options]` with `testpaths=["tests"]` and registered `e2e`/`slow` markers to avoid unknown-marker warnings.
+- Created `pulumi/tests/conftest.py` with session fixtures for `KUBECONFIG`, `PULUMI_STACK`, and derived `KUBE_CONTEXT` defaults.
+- Created `pulumi/tests/test_e2e_smoke.py` as thin wrappers over existing `helpers.k8s_ops.check_*` functions (deployment, httproute, service HTTP, CRD, secret).
+- Kept wrappers environment-driven (`E2E_*` overrides) while defaulting to current platform namespaces/constants so `--co` works without live-cluster execution.
