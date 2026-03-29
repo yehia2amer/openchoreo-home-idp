@@ -8,6 +8,9 @@ that use the kubernetes Python client directly, providing:
 - Credentials not exposed in process lists
 """
 
+# ruff: noqa: SIM105
+# pyright: reportIncompatibleMethodOverride=false
+
 from __future__ import annotations
 
 from typing import Any
@@ -52,9 +55,9 @@ class _CopyCAProvider(ResourceProvider):
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
         return _input_diff(olds, news, ["secret_name", "source_namespace", "configmap_name", "target_namespace"])
 
-    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> dict[str, Any]:
+    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> UpdateResult:
         result = self.create(news)
-        return result.outs
+        return UpdateResult(outs=result.outs)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         k8s_ops.delete_configmap(
@@ -244,9 +247,9 @@ class _LinkPlanesProvider(ResourceProvider):
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
         return _input_diff(olds, news, ["plurals", "group", "version"])
 
-    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> dict[str, Any]:
+    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> UpdateResult:
         result = self.create(news)
-        return result.outs
+        return UpdateResult(outs=result.outs)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         # Remove the observabilityPlaneRef from patched resources
@@ -314,9 +317,9 @@ class _LabelNamespaceProvider(ResourceProvider):
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
         return _input_diff(olds, news, ["namespace", "labels"])
 
-    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> dict[str, Any]:
+    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> UpdateResult:
         result = self.create(news)
-        return result.outs
+        return UpdateResult(outs=result.outs)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         k8s_ops.remove_namespace_labels(
@@ -499,9 +502,9 @@ class _OpenBaoSecretsProvider(ResourceProvider):
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
         return _input_diff(olds, news, ["secrets", "mount_point"])
 
-    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> dict[str, Any]:
+    def update(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> UpdateResult:
         result = self.create(news)
-        return result.outs
+        return UpdateResult(outs=result.outs)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         pass  # secrets are cleaned up when the cluster is destroyed
