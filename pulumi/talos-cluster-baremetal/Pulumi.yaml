@@ -1,0 +1,6 @@
+name: openchoreo-talos-cluster-baremetal
+runtime:
+  name: python
+  options:
+    toolchain: uv
+description: Talos bare-metal cluster bootstrap for OpenChoreo
