@@ -1,0 +1,6 @@
+name: openchoreo-talos-cluster
+runtime:
+  name: python
+  options:
+    toolchain: uv
+description: Talos local cluster bootstrap for OpenChoreo

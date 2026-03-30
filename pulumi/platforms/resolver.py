@@ -6,7 +6,8 @@ import pulumi
 
 from platforms.k3d import K3D
 from platforms.rancher_desktop import rancher_desktop
-from platforms.talos import TALOS
+from platforms.talos import talos
+from platforms.talos_baremetal import talos_baremetal
 from platforms.types import PlatformProfile
 
 
@@ -34,6 +35,7 @@ def resolve_platform(cfg: pulumi.Config) -> PlatformProfile:
                 cni_mode="cilium",
                 enable_kube_proxy_replacement=False,
                 k8s_service_host="",
+                k8s_service_port=6443,
                 requires_coredns_rewrite=True,
                 requires_machine_id_fix=True,
                 requires_bpf_mount_fix=False,
@@ -59,6 +61,7 @@ def resolve_platform(cfg: pulumi.Config) -> PlatformProfile:
         cni_mode="default",
         enable_kube_proxy_replacement=False,
         k8s_service_host="",
+        k8s_service_port=6443,
         requires_coredns_rewrite=False,
         requires_machine_id_fix=False,
         requires_bpf_mount_fix=False,
@@ -82,6 +85,8 @@ def _from_name(name: str, cfg: pulumi.Config) -> PlatformProfile:
         k8s_host = cfg.get("cilium_k8s_api_host") or ""
         return rancher_desktop(k8s_service_host=k8s_host)
     if name == "talos":
-        return TALOS
+        return talos()
+    if name in ("talos-baremetal", "talos_baremetal"):
+        return talos_baremetal()
 
-    raise ValueError(f"Unknown platform '{name}'. Supported values: k3d, rancher-desktop, talos")
+    raise ValueError(f"Unknown platform '{name}'. Supported values: k3d, rancher-desktop, talos, talos-baremetal")

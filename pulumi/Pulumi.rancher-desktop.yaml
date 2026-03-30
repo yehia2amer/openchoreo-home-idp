@@ -1,10 +1,10 @@
-encryptionsalt: v1:mV/T1RxujEc=:v1:OWIkwSM7un2fG/Ci:kDrPPFvZuAJpr4Kl25r59CU0gwwOaQ==
+encryptionsalt: v1:Wi2mnV49jtk=:v1:kw5VXf3dHfkuMt3X:pj09BbJIMs9yrdw/gsHzTcSplBon0g==
 config:
   openchoreo:platform: rancher-desktop
   openchoreo:kubeconfig_context: rancher-desktop
   openchoreo:cilium_k8s_api_host: 192.168.5.15
-  openchoreo:enable_flux: "true"
+  openchoreo:enable_flux: "false"
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
   openchoreo:gitops_repo_branch: main
   openchoreo:github_pat:
-    secure: v1:EUNsQajJd13xjI5T:KRqiTfCyRTjYUrg2tetxS/is+VpnREuKoCWzyyX4uPNAb3CnfF98dNpme8KfHhhLYAamXDvhWrc=
+    secure: v1:oUy6rkjwTe2lPWZQ:ym475E09NVFvGilh3fmg5zzFyScBX5Kv7oDGURrSRjRkC0BoIsErnF40t8JqmuCcOhVJaXiCIT4=

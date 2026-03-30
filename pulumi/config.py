@@ -210,7 +210,7 @@ def load_config() -> OpenChoreoConfig:
     # Credentials — warn on non-dev stacks when using insecure defaults.
     # Use cfg.get() for plain strings needed by dynamic providers.
     stack_name = pulumi.get_stack()
-    is_dev_stack = stack_name in ("dev", "rancher-desktop", "local", "test")
+    is_dev_stack = stack_name in ("dev", "rancher-desktop", "local", "test", "talos", "talos-baremetal")
 
     openbao_root_token = cfg.get("openbao_root_token")
     if not openbao_root_token:

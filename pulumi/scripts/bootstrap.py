@@ -24,6 +24,8 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 PLATFORMS = {
     "k3d": "bootstrap_k3d.py",
     "rancher-desktop": "bootstrap_rancher_desktop.py",
+    "talos": "bootstrap_talos.py",
+    "talos-baremetal": "bootstrap_talos_baremetal.py",
 }
 
 
@@ -43,7 +45,7 @@ def main():
     extra_args = sys.argv[2:]
 
     print(f"==> Bootstrapping OpenChoreo on {platform}...")
-    cmd = ["uv", "run", str(script)] + extra_args
+    cmd = ["uv", "run", str(script), *extra_args]
     result = subprocess.run(cmd)
     sys.exit(result.returncode)
 

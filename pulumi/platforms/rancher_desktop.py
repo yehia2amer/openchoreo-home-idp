@@ -21,6 +21,7 @@ def rancher_desktop(k8s_service_host: str = "") -> PlatformProfile:
         cni_mode="cilium",
         enable_kube_proxy_replacement=True,
         k8s_service_host=k8s_service_host,
+        k8s_service_port=6443,
         # Node fixes
         requires_coredns_rewrite=False,
         requires_machine_id_fix=False,

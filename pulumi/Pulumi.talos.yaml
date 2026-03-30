@@ -1,0 +1,7 @@
+encryptionsalt: v1:FX96Qw5y+1o=:v1:DydBdPJd5dZCK9H5:Ke9Z5MZHTHb3VMATOehRM5D2TTbmMQ==
+config:
+  openchoreo:platform: talos
+  openchoreo:kubeconfig_context: admin@talos-default
+  openchoreo:enable_flux: "false"
+  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
+  openchoreo:gitops_repo_branch: main

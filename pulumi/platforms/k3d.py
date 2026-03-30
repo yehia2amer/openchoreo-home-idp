@@ -11,6 +11,7 @@ K3D = PlatformProfile(
     cni_mode="flannel",
     enable_kube_proxy_replacement=False,
     k8s_service_host="",
+    k8s_service_port=6443,
     # Node fixes
     requires_coredns_rewrite=True,
     requires_machine_id_fix=True,

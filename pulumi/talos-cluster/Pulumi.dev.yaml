@@ -1,0 +1,15 @@
+config:
+  openchoreo-talos-cluster:cluster_name: openchoreo
+  openchoreo-talos-cluster:talos_version: v1.12.5
+  openchoreo-talos-cluster:kubernetes_version: 1.33.0
+  openchoreo-talos-cluster:libvirt_uri: qemu+unix:///system?socket=/opt/homebrew/var/run/libvirt/libvirt-sock
+  openchoreo-talos-cluster:control_plane_ip: 10.5.0.2
+  openchoreo-talos-cluster:network_cidr: 10.5.0.0/24
+  openchoreo-talos-cluster:network_gateway: 10.5.0.1
+  openchoreo-talos-cluster:network_mode: nat
+  openchoreo-talos-cluster:vm_memory_mb: "12288"
+  openchoreo-talos-cluster:vm_vcpu: "5"
+  openchoreo-talos-cluster:vm_disk_bytes: "85899345920"
+  openchoreo-talos-cluster:architecture: arm64
+  libvirt:uri: qemu+unix:///system?socket=/opt/homebrew/var/run/libvirt/libvirt-sock
+encryptionsalt: v1:JTB05D/E5/I=:v1:UIw7hV5MS4W1PbF1:I5LJWC62pB413TSPTqK4hwOscybMcQ==
