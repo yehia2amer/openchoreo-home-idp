@@ -127,9 +127,13 @@ class Cilium(pulumi.ComponentResource):
             # ports so Lima/Rancher Desktop's SSH port-forwarder can detect them
             # and forward traffic from macOS.  Without it, Cilium uses BPF-only
             # listeners that are invisible to Lima's guest-agent.
+            # enableAlpn is required for gRPC/HTTP2 negotiation via GRPCRoutes.
+            # enableAppProtocol allows Gateway API routes to set appProtocol.
             "gatewayAPI": {
                 "enabled": kpr_enabled,
                 "hostNetwork": {"enabled": p.cilium_host_network_gateway},
+                "enableAlpn": True,
+                "enableAppProtocol": True,
             },
             # IPAM — use Kubernetes pod CIDR allocation (k3s default: 10.42.0.0/16)
             "ipam": {
@@ -141,10 +145,39 @@ class Cilium(pulumi.ComponentResource):
             #   so autoMount must be disabled (Docker mount propagation limitation).
             # - Rancher Desktop / bare-metal: let Cilium auto-mount BPF and cgroup
             #   since the host/VM doesn't pre-configure shared propagation.
-            "bpf": {"autoMount": {"enabled": p.cilium_auto_mount_bpf}},
+            # - Talos: pre-mounts both cgroupv2 and bpffs, so autoMount must be off.
+            "bpf": {
+                "autoMount": {"enabled": p.cilium_auto_mount_bpf},
+                "hostLegacyRouting": p.cilium_bpf_host_legacy_routing,
+            },
             "cgroup": {
                 "autoMount": {"enabled": p.cilium_auto_mount_bpf},
                 "hostRoot": "/sys/fs/cgroup",
+            },
+            # Explicit security capabilities — required for immutable OSes like Talos
+            # that block kernel module loading (SYS_MODULE).  Listing capabilities
+            # explicitly is also best practice for least-privilege on all platforms.
+            "securityContext": {
+                "capabilities": {
+                    "ciliumAgent": [
+                        "CHOWN",
+                        "KILL",
+                        "NET_ADMIN",
+                        "NET_RAW",
+                        "IPC_LOCK",
+                        "SYS_ADMIN",
+                        "SYS_RESOURCE",
+                        "DAC_OVERRIDE",
+                        "FOWNER",
+                        "SETGID",
+                        "SETUID",
+                    ],
+                    "cleanCiliumState": [
+                        "NET_ADMIN",
+                        "SYS_ADMIN",
+                        "SYS_RESOURCE",
+                    ],
+                },
             },
             # Socket-based load balancing — required alongside kubeProxyReplacement
             # so the cgroup/connect eBPF hook properly translates ClusterIPs.
@@ -158,6 +191,8 @@ class Cilium(pulumi.ComponentResource):
             "l7Proxy": True,
             # Operator
             "operator": {"replicas": 1},
+            "l2announcements": {"enabled": p.cilium_l2_announcements_enabled},
+            "externalIPs": {"enabled": p.cilium_l2_announcements_enabled},
             # Prefer cached images in local dev
             "image": {"pullPolicy": "IfNotPresent"},
             # Label envoy pods so OpenChoreo NetworkPolicies allow gateway ingress
@@ -167,7 +202,7 @@ class Cilium(pulumi.ComponentResource):
         # When replacing kube-proxy, Cilium must know the API server's direct IP
         if kpr_enabled and p.k8s_service_host:
             values["k8sServiceHost"] = p.k8s_service_host
-            values["k8sServicePort"] = 6443
+            values["k8sServicePort"] = p.k8s_service_port
 
         # Platform-specific CNI binary path override
         if p.cilium_cni_bin_path:
@@ -189,6 +224,51 @@ class Cilium(pulumi.ComponentResource):
 
         self.result = cilium_chart
         self.register_outputs({})
+
+        if p.cilium_l2_announcements_enabled:
+            blocks = []
+            for entry in p.cilium_l2_ip_pool_cidrs:
+                if "-" in entry:
+                    start, stop = entry.split("-", 1)
+                    blocks.append({"start": start.strip(), "stop": stop.strip()})
+                elif "/" in entry:
+                    blocks.append({"cidr": entry.strip()})
+
+            k8s.apiextensions.CustomResource(
+                "homelab-ip-pool",
+                api_version="cilium.io/v2alpha1",
+                kind="CiliumLoadBalancerIPPool",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="homelab-ip-pool",
+                    namespace=NS_CILIUM,
+                ),
+                spec={
+                    "blocks": blocks,
+                },
+                opts=self._child_opts(
+                    provider=k8s_provider,
+                    depends_on=[cilium_chart],
+                ),
+            )
+
+            k8s.apiextensions.CustomResource(
+                "homelab-l2-policy",
+                api_version="cilium.io/v2alpha1",
+                kind="CiliumL2AnnouncementPolicy",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="homelab-l2-policy",
+                    namespace=NS_CILIUM,
+                ),
+                spec={
+                    "interfaces": [f"^{iface}$" for iface in p.cilium_l2_interfaces],
+                    "loadBalancerIPs": True,
+                    "externalIPs": True,
+                },
+                opts=self._child_opts(
+                    provider=k8s_provider,
+                    depends_on=[cilium_chart],
+                ),
+            )
 
     def _child_opts(
         self,
