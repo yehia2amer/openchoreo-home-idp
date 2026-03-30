@@ -30,6 +30,9 @@ class PlatformProfile:
     k8s_service_host: str
     """Direct API-server IP for Cilium kube-proxy replacement. Empty if unneeded."""
 
+    k8s_service_port: int
+    """API-server port for Cilium kube-proxy replacement (default 6443, Talos KubePrism: 7445)."""
+
     # ── Node / host fixes ──
     requires_coredns_rewrite: bool
     """Apply k3d-style CoreDNS ConfigMap rewrite."""
@@ -64,3 +67,9 @@ class PlatformProfile:
     # ── Cluster ──
     cluster_name_config_key: str
     """Stack config key that carries the cluster name, or empty."""
+
+    # ── Bare-metal Cilium L2 ──────────────────────────────────────
+    cilium_bpf_host_legacy_routing: bool = False
+    cilium_l2_announcements_enabled: bool = False
+    cilium_l2_ip_pool_cidrs: tuple[str, ...] = ()
+    cilium_l2_interfaces: tuple[str, ...] = ()
