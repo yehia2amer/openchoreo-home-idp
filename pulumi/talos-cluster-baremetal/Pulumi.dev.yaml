@@ -1,0 +1,18 @@
+config:
+  openchoreo-talos-cluster-baremetal:cluster_name: openchoreo
+  openchoreo-talos-cluster-baremetal:talos_version: v1.12.5
+  openchoreo-talos-cluster-baremetal:kubernetes_version: 1.33.0
+  openchoreo-talos-cluster-baremetal:control_plane_node: "192.168.0.100"
+  openchoreo-talos-cluster-baremetal:control_plane_endpoint: "192.168.0.100"
+  openchoreo-talos-cluster-baremetal:control_plane_install_disk: /dev/disk/by-id/wwn-0x5002538e7026fcb7
+  openchoreo-talos-cluster-baremetal:schematic_id: "PLACEHOLDER_SCHEMATIC_ID"
+  openchoreo-talos-cluster-baremetal:network_interface: "enp0s1"
+  openchoreo-talos-cluster-baremetal:network_address: "192.168.0.100/24"
+  openchoreo-talos-cluster-baremetal:network_gateway: "192.168.0.1"
+  openchoreo-talos-cluster-baremetal:longhorn_disk: "/dev/disk/by-id/ata-SanDisk_SDSSDHII960G_151740411937"
+  openchoreo-talos-cluster-baremetal:install_disk_wwid: "naa.5002538e7026fcb7"
+  openchoreo-talos-cluster-baremetal:cert_sans: '["192.168.0.100", "talos.amernas.work"]'
+  openchoreo-talos-cluster-baremetal:enable_cloudflared: "true"
+  openchoreo-talos-cluster-baremetal:cloudflared_token: "PLACEHOLDER_TOKEN"
+  openchoreo-talos-cluster-baremetal:enable_nvidia: "true"
+encryptionsalt: v1:kXPsy9KW2QY=:v1:E7akSISJlCC41ndE:YbIFcAXVeTb88iCsG4Y8H0ZrqHV/5w==
