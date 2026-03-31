@@ -5,33 +5,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest  # pyright: ignore[reportMissingImports]
 
-import patches  # pyright: ignore[reportMissingImports]
+from patches import PatchConfig  # pyright: ignore[reportMissingImports]
 
 
-@pytest.fixture(autouse=True)
-def reset_patches_config():
-    patches.schematic_id = "test-schematic-abc123"
-    patches.talos_version = "v1.12.5"
-    patches.network_interface = "enp0s1"
-    patches.network_address = "192.168.0.100/24"
-    patches.network_gateway = "192.168.0.1"
-    patches.longhorn_disk = "/dev/disk/by-id/ata-test-disk"
-    patches.install_disk_wwid = "naa.5002538e7026fcb7"
-    patches.control_plane_node = "192.168.0.100"
-    patches.cert_sans_extra = ["192.168.0.100", "talos.amernas.work"]
-    patches.enable_cloudflared = True
-    patches.cloudflared_token = "test-token-xyz"
-    patches.enable_nvidia = True
-    yield
-    patches.schematic_id = ""
-    patches.talos_version = ""
-    patches.network_interface = "enp0s1"
-    patches.network_address = ""
-    patches.network_gateway = ""
-    patches.longhorn_disk = ""
-    patches.install_disk_wwid = ""
-    patches.control_plane_node = ""
-    patches.cert_sans_extra = []
-    patches.enable_cloudflared = False
-    patches.cloudflared_token = ""
-    patches.enable_nvidia = False
+@pytest.fixture()
+def patch_cfg() -> PatchConfig:
+    """Default PatchConfig used by all patch tests."""
+    return PatchConfig(
+        cluster_name="test-cluster",
+        cluster_endpoint="https://192.168.0.100:6443",
+        schematic_id="test-schematic-abc123",
+        talos_version="v1.12.5",
+        wipe_install_disk=True,
+        network_interface="enp0s1",
+        network_addresses=["192.168.0.100/24"],
+        network_gateway="192.168.0.1",
+        dns_servers=["8.8.8.8", "8.8.4.4"],
+        cert_sans=["192.168.0.100", "talos.amernas.work"],
+        longhorn_disk="/dev/disk/by-id/ata-test-disk",
+        install_disk_wwid="naa.5002538e7026fcb7",
+        control_plane_node="192.168.0.100",
+        enable_cloudflared=True,
+        cloudflared_token="test-token-xyz",
+        enable_nvidia=True,
+        enable_zfs=False,
+    )
