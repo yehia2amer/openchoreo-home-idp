@@ -497,6 +497,40 @@ snapshot_controller = k8s.yaml.v2.ConfigGroup(
     ),
 )
 
+# ---------------------------------------------------------------------------
+# Step 12: Longhorn storage (Helm release)
+# ---------------------------------------------------------------------------
+LONGHORN_VALUES: dict[str, Any] = {
+    "preUpgradeChecker": {
+        "jobEnabled": False,
+    },
+    "defaultSettings": {
+        "defaultReplicaCount": 1,
+        "defaultDataPath": "/var/lib/longhorn",
+    },
+    "persistence": {
+        "defaultFsType": "ext4",
+        "reclaimPolicy": "Retain",
+        "defaultClassReplicaCount": 1,
+    },
+}
+
+longhorn = k8s.helm.v3.Release(
+    "longhorn",
+    name="longhorn",
+    chart="longhorn",
+    version=longhorn_version,
+    namespace="longhorn-system",
+    repository_opts=k8s.helm.v3.RepositoryOptsArgs(
+        repo="https://charts.longhorn.io",
+    ),
+    values=LONGHORN_VALUES,
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[longhorn_ns, snapshot_controller],
+    ),
+)
+
 # ===================================================================
 # Exports
 # ===================================================================
