@@ -107,16 +107,30 @@ class WorkflowPlane(pulumi.ComponentResource):
         # Templates with k3d hostnames are patched inline before apply so the
         # resource never contains host.k3d.internal references.
         k3d_templates = {
-            "publish-image-k3d.yaml",
-            "generate-workload-k3d.yaml",
+            "publish-image-k3d.yaml",  # k3d: registry endpoint
+            "generate-workload-k3d.yaml",  # k3d: gateway + thunder
         }
+        standard_sed_templates = {
+            "generate-workload.yaml",  # standard: gateway + thunder
+        }
+        thunder_url = f"https://thunder.{cfg.domain_base}/oauth2/token"
+        api_url = f"https://api.{cfg.domain_base}"
         apply_cmds = []
         for url in cfg.workflow_templates_urls:
             if any(url.endswith(t) for t in k3d_templates):
+                # k3d templates: replace registry + gateway endpoints
                 apply_cmds.append(
                     f"curl -sL {url}"
                     f" | sed 's|host.k3d.internal:10082|{registry_endpoint}|g'"
                     f" | sed 's|host.k3d.internal:8080|{gateway_endpoint}|g'"
+                    f" | kubectl apply --context {cfg.kubeconfig_context} -f -"
+                )
+            elif any(url.endswith(t) for t in standard_sed_templates):
+                # Standard templates: replace k3d placeholders with real URLs
+                apply_cmds.append(
+                    f"curl -sL {url}"
+                    f" | sed 's|https://host.k3d.internal:8080/oauth2/token|{thunder_url}|g'"
+                    f" | sed 's|http://host.k3d.internal:8080|{api_url}|g'"
                     f" | kubectl apply --context {cfg.kubeconfig_context} -f -"
                 )
             else:

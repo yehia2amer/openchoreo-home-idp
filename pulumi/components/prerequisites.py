@@ -12,6 +12,7 @@ from config import (
     KGATEWAY_CHART_REPO,
     NS_CERT_MANAGER,
     NS_CONTROL_PLANE,
+    NS_DATA_PLANE,
     NS_EXTERNAL_SECRETS,
     NS_OPENBAO,
     OPENBAO_CHART_REPO,
@@ -43,12 +44,14 @@ class PrerequisitesResult:
         cluster_secret_store_ready: WaitCustomResourceCondition,
         openbao_validated: ValidateOpenBaoSecrets,
         control_plane_ns: k8s.core.v1.Namespace,
+        data_plane_ns: k8s.core.v1.Namespace,
     ):
         self.openbao_ready = openbao_ready
         self.cluster_secret_store = cluster_secret_store
         self.cluster_secret_store_ready = cluster_secret_store_ready
         self.openbao_validated = openbao_validated
         self.control_plane_ns = control_plane_ns
+        self.data_plane_ns = data_plane_ns
 
 
 class Prerequisites(pulumi.ComponentResource):
@@ -127,6 +130,15 @@ class Prerequisites(pulumi.ComponentResource):
         control_plane_ns = k8s.core.v1.Namespace(
             NS_CONTROL_PLANE,
             metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_CONTROL_PLANE),
+            opts=self._child_opts(
+                provider=k8s_provider,
+                depends_on=[cert_manager],
+            ),
+        )
+
+        data_plane_ns = k8s.core.v1.Namespace(
+            NS_DATA_PLANE,
+            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_DATA_PLANE),
             opts=self._child_opts(
                 provider=k8s_provider,
                 depends_on=[cert_manager],
@@ -337,6 +349,7 @@ class Prerequisites(pulumi.ComponentResource):
             cluster_secret_store_ready=css_ready,
             openbao_validated=openbao_validated,
             control_plane_ns=control_plane_ns,
+            data_plane_ns=data_plane_ns,
         )
         self.register_outputs({})
 

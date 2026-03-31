@@ -269,12 +269,16 @@ def load_config() -> OpenChoreoConfig:
     coredns_rewrite_url = f"{raw_base}/install/k3d/common/coredns-custom.yaml"
     thunder_values_url = f"{raw_base}/install/k3d/common/values-thunder.yaml"
     wt_base = f"{raw_base}/samples/getting-started"
-    workflow_templates_urls = [
-        f"{wt_base}/workflow-templates/checkout-source.yaml",
-        f"{wt_base}/workflow-templates.yaml",
-        f"{wt_base}/workflow-templates/publish-image-k3d.yaml",
-        f"{wt_base}/workflow-templates/generate-workload-k3d.yaml",
-    ]
+    if platform.workflow_template_urls:
+        workflow_templates_urls = [f"{wt_base}/{path}" for path in platform.workflow_template_urls]
+    else:
+        # Default: k3d-specific URLs (backward compatible)
+        workflow_templates_urls = [
+            f"{wt_base}/workflow-templates/checkout-source.yaml",
+            f"{wt_base}/workflow-templates.yaml",
+            f"{wt_base}/workflow-templates/publish-image-k3d.yaml",
+            f"{wt_base}/workflow-templates/generate-workload-k3d.yaml",
+        ]
 
     return OpenChoreoConfig(
         platform=platform,

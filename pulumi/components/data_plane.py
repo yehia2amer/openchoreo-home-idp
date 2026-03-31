@@ -76,13 +76,7 @@ class DataPlane(pulumi.ComponentResource):
     ):
         super().__init__("openchoreo:components:DataPlane", name, {}, opts)
 
-        ns = k8s.core.v1.Namespace(
-            NS_DATA_PLANE,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_DATA_PLANE),
-            opts=self._child_opts(provider=k8s_provider, depends_on=depends),
-        )
-
-        ca = copy_ca("data-plane", NS_DATA_PLANE, cfg, opts=self._child_opts(depends_on=[ns]))
+        ca = copy_ca("data-plane", NS_DATA_PLANE, cfg, opts=self._child_opts(depends_on=depends))
 
         # Use helm.v3.Release (not v4.Chart) because the chart contains
         # cert-manager Certificate resources; v4.Chart does client-side rendering

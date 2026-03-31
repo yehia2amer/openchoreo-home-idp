@@ -1,5 +1,7 @@
 """OpenChoreo v1.0 — Pulumi Python entry point."""
 
+# pyright: reportMissingImports=false, reportAttributeAccessIssue=false
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,6 +17,7 @@ from components import (
     link_planes,
     observability_plane,
     prerequisites,
+    tls_setup,
     workflow_plane,
 )
 from config import (
@@ -66,12 +69,23 @@ def main() -> None:
     )
     prereqs = prereqs_component.result
 
+    # ─── Step 1.5: TLS Setup (optional — bare-metal self-signed CA) ───
+    tls = None
+    if cfg.tls_enabled:
+        tls_component = tls_setup.TlsSetup(
+            "tls-setup",
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+            depends=[prereqs.control_plane_ns, prereqs.data_plane_ns],
+        )
+        tls = tls_component.result
+
     # ─── Step 2: Control Plane ───
     cp_component = control_plane.ControlPlane(
         "control-plane",
         cfg=cfg,
         k8s_provider=k8s_provider,
-        depends=[prereqs.cluster_secret_store_ready, prereqs.control_plane_ns],
+        depends=[prereqs.cluster_secret_store_ready, prereqs.control_plane_ns] + ([tls.cp_cert] if tls else []),
     )
     cp = cp_component.result
 
@@ -80,7 +94,7 @@ def main() -> None:
         "data-plane",
         cfg=cfg,
         k8s_provider=k8s_provider,
-        depends=[cp.helm_chart],
+        depends=[cp.helm_chart, prereqs.data_plane_ns] + ([tls.dp_cert] if tls else []),
     )
     dp = dp_component.result
 
