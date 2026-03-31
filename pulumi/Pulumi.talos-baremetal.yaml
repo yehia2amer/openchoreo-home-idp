@@ -1,6 +1,7 @@
 config:
   openchoreo:platform: talos-baremetal
-  openchoreo:kubeconfig_context: admin@talos-baremetal-default
+  openchoreo:kubeconfig_context: admin@openchoreo
+  openchoreo:kubeconfig_path: talos-cluster-baremetal/outputs/kubeconfig
   openchoreo:enable_flux: "false"
   openchoreo:tls_enabled: "true"
   openchoreo:domain_base: "openchoreo.local"
