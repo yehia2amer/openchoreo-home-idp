@@ -19,4 +19,5 @@ config:
   openchoreo-talos-cluster-baremetal:enable_zfs: "true"
   openchoreo-talos-cluster-baremetal:cilium_version: "1.17.6"
   openchoreo-talos-cluster-baremetal:gateway_api_version: "v1.3.0"
+  openchoreo-talos-cluster-baremetal:longhorn_version: "1.9.1"
 encryptionsalt: v1:kXPsy9KW2QY=:v1:E7akSISJlCC41ndE:YbIFcAXVeTb88iCsG4Y8H0ZrqHV/5w==

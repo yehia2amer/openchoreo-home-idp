@@ -52,6 +52,7 @@ enable_zfs = cfg.get_bool("enable_zfs") or False
 
 cilium_version = cfg.get("cilium_version") or "1.17.6"
 gateway_api_version = cfg.get("gateway_api_version") or "v1.3.0"
+longhorn_version = cfg.get("longhorn_version") or "1.9.1"
 
 # ---------------------------------------------------------------------------
 # Derived values
@@ -439,6 +440,25 @@ cilium_secrets_ns_labels = k8s.core.v1.NamespacePatch(
         name="cilium-secrets",
         labels={
             "pod-security.kubernetes.io/enforce": "privileged",
+        },
+    ),
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[cilium],
+    ),
+)
+
+# ---------------------------------------------------------------------------
+# Step 10: Longhorn storage
+# ---------------------------------------------------------------------------
+longhorn_ns = k8s.core.v1.Namespace(
+    "longhorn-system",
+    metadata=k8s.meta.v1.ObjectMetaArgs(
+        name="longhorn-system",
+        labels={
+            "pod-security.kubernetes.io/enforce": "privileged",
+            "pod-security.kubernetes.io/audit": "privileged",
+            "pod-security.kubernetes.io/warn": "privileged",
         },
     ),
     opts=pulumi.ResourceOptions(
