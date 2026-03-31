@@ -68,6 +68,10 @@ class PlatformProfile:
     cluster_name_config_key: str
     """Stack config key that carries the cluster name, or empty."""
 
+    # ── Workflow template overrides ───────────────────────────────
+    workflow_template_urls: tuple[str, ...] | None = None
+    """Platform-specific workflow template filenames; None falls back to k3d defaults."""
+
     # ── Bare-metal Cilium L2 ──────────────────────────────────────
     cilium_bpf_host_legacy_routing: bool = False
     cilium_l2_announcements_enabled: bool = False

@@ -44,6 +44,14 @@ SECRET_OBSERVER = "observer-secret"
 SA_ESO_OPENBAO = "external-secrets-openbao"
 CLUSTER_SECRET_STORE_NAME = "default"
 
+# TLS CA chain resource names (matches official guide Step 2)
+ISSUER_SELFSIGNED_BOOTSTRAP = "selfsigned-bootstrap"
+CERT_OPENCHOREO_CA = "openchoreo-ca"
+SECRET_OPENCHOREO_CA = "openchoreo-ca-secret"
+ISSUER_OPENCHOREO_CA = "openchoreo-ca"
+CERT_CP_GATEWAY_TLS = "cp-gateway-tls"
+CERT_DP_GATEWAY_TLS = "dp-gateway-tls"
+
 # Thunder in-cluster service URL (used by observability plane for direct service calls)
 THUNDER_INTERNAL_BASE = "http://thunder-service.thunder.svc.cluster.local:8090"
 

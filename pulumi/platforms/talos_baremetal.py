@@ -23,6 +23,12 @@ def talos_baremetal(
         cilium_cni_bin_path="",
         workflow_template_mode="default",
         local_registry=False,
+        workflow_template_urls=(
+            "checkout-source.yaml",
+            "workflow-templates.yaml",
+            "publish-image.yaml",
+            "generate-workload.yaml",
+        ),
         bootstrap_script="bootstrap_talos_baremetal.py",
         cluster_name_config_key="",
         cilium_bpf_host_legacy_routing=True,

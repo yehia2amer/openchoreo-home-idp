@@ -3,5 +3,7 @@ config:
   openchoreo:platform: talos-baremetal
   openchoreo:kubeconfig_context: admin@talos-baremetal-default
   openchoreo:enable_flux: "false"
+  openchoreo:tls_enabled: "true"
+  openchoreo:domain_base: "openchoreo.local"
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
   openchoreo:gitops_repo_branch: main

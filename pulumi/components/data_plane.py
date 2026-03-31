@@ -114,10 +114,12 @@ class DataPlane(pulumi.ComponentResource):
                         "namespace": NS_DATA_PLANE,
                         "http": {
                             "host": cfg.domain_base,
+                            "listenerName": "http",
                             "port": cfg.dp_http_port,
                         },
                         "https": {
                             "host": cfg.domain_base,
+                            "listenerName": "https",
                             "port": cfg.dp_https_port,
                         },
                     },
