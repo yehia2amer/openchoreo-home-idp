@@ -467,6 +467,36 @@ longhorn_ns = k8s.core.v1.Namespace(
     ),
 )
 
+# ---------------------------------------------------------------------------
+# Step 11: External snapshotter (CRDs + controller)
+# ---------------------------------------------------------------------------
+SNAPSHOT_CRD_VERSION = "v8.3.0"
+
+snapshot_crds = k8s.yaml.v2.ConfigGroup(
+    "external-snapshotter-crds",
+    files=[
+        f"https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{SNAPSHOT_CRD_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+        f"https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{SNAPSHOT_CRD_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+        f"https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{SNAPSHOT_CRD_VERSION}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
+    ],
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[longhorn_ns],
+    ),
+)
+
+snapshot_controller = k8s.yaml.v2.ConfigGroup(
+    "snapshot-controller",
+    files=[
+        f"https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{SNAPSHOT_CRD_VERSION}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml",
+        f"https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{SNAPSHOT_CRD_VERSION}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
+    ],
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[snapshot_crds],
+    ),
+)
+
 # ===================================================================
 # Exports
 # ===================================================================
