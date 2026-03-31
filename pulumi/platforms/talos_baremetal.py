@@ -10,7 +10,7 @@ def talos_baremetal(
 ) -> PlatformProfile:
     return PlatformProfile(
         name="talos-baremetal",
-        gateway_mode="cilium",
+        gateway_mode="kgateway",
         cni_mode="cilium",
         enable_kube_proxy_replacement=True,
         k8s_service_host=k8s_service_host,

@@ -351,6 +351,7 @@ k8s_provider = k8s.Provider(
 
 # ---------------------------------------------------------------------------
 # Step 7: Gateway API CRDs
+# Gateway API CRDs: retained for existing clusters, Phase 2 manages definitive versions
 # ---------------------------------------------------------------------------
 GATEWAY_API_CRDS = {
     "gatewayclasses": f"https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/{gateway_api_version}/config/crd/standard/gateway.networking.k8s.io_gatewayclasses.yaml",
@@ -366,7 +367,7 @@ for name, url in GATEWAY_API_CRDS.items():
     crd = k8s.yaml.ConfigFile(
         f"gateway-api-crd-{name}",
         file=url,
-        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[kubeconfig]),
+        opts=pulumi.ResourceOptions(provider=k8s_provider, depends_on=[kubeconfig], retain_on_delete=True),
     )
     gateway_api_crd_resources.append(crd)
 
@@ -402,11 +403,7 @@ CILIUM_VALUES: dict[str, Any] = {
     "k8sServiceHost": "localhost",
     "k8sServicePort": "7445",
     "l2announcements": {"enabled": True},
-    "gatewayAPI": {
-        "enabled": True,
-        "enableAlpn": True,
-        "enableAppProtocol": True,
-    },
+    "gatewayAPI": {"enabled": False},
     "operator": {"replicas": 1},
     "hubble": {
         "enabled": True,
@@ -427,7 +424,6 @@ cilium = k8s.helm.v3.Release(
     values=CILIUM_VALUES,
     opts=pulumi.ResourceOptions(
         provider=k8s_provider,
-        depends_on=gateway_api_crd_resources,
     ),
 )
 
