@@ -147,6 +147,7 @@ def main() -> None:
     pulumi.export("edition", "cilium" if cfg.platform.gateway_mode == "cilium" else "generic-cni")
 
     # ─── Outputs: Feature Flags ───
+    # cilium_enabled refers to Cilium as Gateway API controller, not CNI.
     pulumi.export("cilium_enabled", cfg.platform.gateway_mode == "cilium")
     pulumi.export("flux_enabled", cfg.enable_flux)
     pulumi.export("observability_enabled", cfg.enable_observability)
