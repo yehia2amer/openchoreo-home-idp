@@ -531,6 +531,29 @@ longhorn = k8s.helm.v3.Release(
     ),
 )
 
+# ---------------------------------------------------------------------------
+# Step 13: Longhorn VolumeSnapshotClass
+# ---------------------------------------------------------------------------
+LONGHORN_SNAPSHOT_CLASS_YAML = """\
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: longhorn-snapshot-class
+driver: driver.longhorn.io
+deletionPolicy: Retain
+parameters:
+  type: snap
+"""
+
+longhorn_snapshot_class = k8s.yaml.v2.ConfigGroup(
+    "longhorn-snapshot-class",
+    yaml=LONGHORN_SNAPSHOT_CLASS_YAML,
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[longhorn, snapshot_crds],
+    ),
+)
+
 # ===================================================================
 # Exports
 # ===================================================================
