@@ -1,3 +1,5 @@
 **/__pycache__/
 **/.terraform/
 **/.env
+pulumi/talos-cluster-baremetal/outputs/
+.sisyphus/**
