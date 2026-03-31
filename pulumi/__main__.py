@@ -38,7 +38,9 @@ def main() -> None:
 
     # ─── Step 0: Cilium CNI + Gateway API (optional) ───
     cilium_install = None
-    if cfg.platform.cni_mode == "cilium" or cfg.platform.gateway_mode == "cilium":
+    if (
+        cfg.platform.cni_mode == "cilium" or cfg.platform.gateway_mode == "cilium"
+    ) and not cfg.platform.cilium_pre_installed:
         from components import cilium
 
         # Gateway API CRDs must exist before Cilium starts so it can
