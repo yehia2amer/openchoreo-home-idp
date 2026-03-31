@@ -73,3 +73,7 @@ class PlatformProfile:
     cilium_l2_announcements_enabled: bool = False
     cilium_l2_ip_pool_cidrs: tuple[str, ...] = ()
     cilium_l2_interfaces: tuple[str, ...] = ()
+
+    # ── Phase 1 pre-install flags ─────────────────────────────────
+    # Whether Cilium was pre-installed by Phase 1 (e.g. talos-cluster-baremetal)
+    cilium_pre_installed: bool = False
