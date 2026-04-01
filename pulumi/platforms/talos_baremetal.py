@@ -24,10 +24,10 @@ def talos_baremetal(
         workflow_template_mode="default",
         local_registry=False,
         workflow_template_urls=(
-            "checkout-source.yaml",
+            "workflow-templates/checkout-source.yaml",
             "workflow-templates.yaml",
-            "publish-image.yaml",
-            "generate-workload.yaml",
+            "workflow-templates/publish-image.yaml",
+            "workflow-templates/generate-workload.yaml",
         ),
         bootstrap_script="bootstrap_talos_baremetal.py",
         cluster_name_config_key="",
