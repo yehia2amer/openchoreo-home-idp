@@ -354,7 +354,7 @@ class IntegrationTests(pulumi.ComponentResource):
             cr_version="v1alpha1",
             cr_plural="clusterdataplanes",
             resource_name="default",
-            condition_type="Ready",
+            condition_type="Created",
         )
 
         _test(
@@ -364,7 +364,7 @@ class IntegrationTests(pulumi.ComponentResource):
             cr_version="v1alpha1",
             cr_plural="clusterworkflowplanes",
             resource_name="default",
-            condition_type="Ready",
+            condition_type="Created",
         )
 
         if cfg.enable_observability:
@@ -375,7 +375,7 @@ class IntegrationTests(pulumi.ComponentResource):
                 cr_version="v1alpha1",
                 cr_plural="clusterobservabilityplanes",
                 resource_name="default",
-                condition_type="Ready",
+                condition_type="Created",
             )
 
         # ─── Gateway E2E ──────────────────────────────────────────
