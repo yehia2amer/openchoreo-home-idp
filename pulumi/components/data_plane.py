@@ -91,6 +91,7 @@ class DataPlane(pulumi.ComponentResource):
                     dp_http_port=cfg.dp_http_port,
                     dp_https_port=cfg.dp_https_port,
                     tls_enabled=cfg.tls_enabled,
+                    domain_base=cfg.domain_base,
                 ),
                 timeout=TIMEOUT_DEFAULT,
             ),
