@@ -13,7 +13,7 @@ def get_values(wp_registry_port: int) -> dict[str, Any]:
             "enabled": True,
         },
         "service": {
-            "type": "LoadBalancer",
+            "type": "ClusterIP",
             "port": wp_registry_port,
         },
     }

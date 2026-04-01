@@ -11,7 +11,7 @@ def get_values(wp_argo_port: int) -> dict[str, Any]:
         "argo-workflows": {
             "server": {
                 "enabled": True,
-                "serviceType": "LoadBalancer",
+                "serviceType": "ClusterIP",
                 "servicePort": wp_argo_port,
                 "authModes": ["server"],
             },
