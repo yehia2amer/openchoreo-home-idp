@@ -2,9 +2,12 @@ config:
   openchoreo:platform: talos-baremetal
   openchoreo:kubeconfig_context: admin@openchoreo
   openchoreo:kubeconfig_path: talos-cluster-baremetal/outputs/kubeconfig
-  openchoreo:enable_flux: "false"
+  openchoreo:enable_flux: "true"
   openchoreo:tls_enabled: "true"
   openchoreo:domain_base: "openchoreo.local"
-  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
+  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
+  openchoreo:enable_observability: "true"
+  openchoreo:github_pat:
+    secure: v1:QerXHFHFjBVf+qHY:K2Z8T7Ke2DKGkjrQPy3ID7UrvxQfPjmWIqpxcytiy3CWWW59foz2uk4PZjwgvE1FC54zIzbqt5k=
 encryptionsalt: v1:aUpt1JxkDUk=:v1:GQ45diR9XGdv/K2z:5G61+IXRPMP7nnESFCT1lmr3tZXwJg==

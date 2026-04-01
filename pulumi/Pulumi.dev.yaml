@@ -4,7 +4,7 @@ config:
   openchoreo:enable_flux: "true"
   openchoreo:github_pat:
     secure: v1:nUwH8vbs7FVfyyEJ:t+5aq73cbcBqrva+DwMN2XvhrPFXbvv4MV6vKMz4/SMSrk8UvAtd+cGqA/0naqwMRgWo6IIaSws=
-  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-home-idp
+  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
   openchoreo:enable_observability: "true"
   openchoreo:kubeconfig_context: k3d-openchoreo

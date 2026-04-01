@@ -49,7 +49,32 @@ class FluxGitOps(pulumi.ComponentResource):
             opts=self._child_opts(depends_on=[install_flux]),
         )
 
-        # ─── 2. GitRepository ───
+        # ─── 2a. Git credentials Secret (private repo auth) ───
+        git_repo_depends: list[pulumi.Resource] = [wait_flux]
+        if cfg.github_pat:
+            git_secret = k8s.core.v1.Secret(
+                "flux-git-credentials",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="flux-git-credentials",
+                    namespace=NS_FLUX_SYSTEM,
+                ),
+                string_data={
+                    "username": "git",
+                    "password": cfg.github_pat,
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
+            )
+            git_repo_depends.append(git_secret)
+
+        # ─── 2b. GitRepository ───
+        git_repo_spec: dict = {
+            "interval": "1m",
+            "url": cfg.gitops_repo_url,
+            "ref": {"branch": cfg.gitops_repo_branch},
+        }
+        if cfg.github_pat:
+            git_repo_spec["secretRef"] = {"name": "flux-git-credentials"}
+
         git_repo = k8s.apiextensions.CustomResource(
             "git-repository",
             api_version="source.toolkit.fluxcd.io/v1",
@@ -58,12 +83,8 @@ class FluxGitOps(pulumi.ComponentResource):
                 name="sample-gitops",
                 namespace=NS_FLUX_SYSTEM,
             ),
-            spec={
-                "interval": "1m",
-                "url": cfg.gitops_repo_url,
-                "ref": {"branch": cfg.gitops_repo_branch},
-            },
-            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
+            spec=git_repo_spec,
+            opts=self._child_opts(provider=k8s_provider, depends_on=git_repo_depends),
         )
 
         # ─── 3. Kustomizations ───
@@ -71,7 +92,7 @@ class FluxGitOps(pulumi.ComponentResource):
             "kustomization-namespaces",
             api_version="kustomize.toolkit.fluxcd.io/v1",
             kind="Kustomization",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name="namespaces", namespace=NS_FLUX_SYSTEM),
+            metadata=k8s.meta.v1.ObjectMetaArgs(name="oc-namespaces", namespace=NS_FLUX_SYSTEM),
             spec={
                 "interval": "5m",
                 "path": "./namespaces",
@@ -85,7 +106,7 @@ class FluxGitOps(pulumi.ComponentResource):
             "kustomization-platform-shared",
             api_version="kustomize.toolkit.fluxcd.io/v1",
             kind="Kustomization",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name="platform-shared", namespace=NS_FLUX_SYSTEM),
+            metadata=k8s.meta.v1.ObjectMetaArgs(name="oc-platform-shared", namespace=NS_FLUX_SYSTEM),
             spec={
                 "interval": "5m",
                 "path": "./platform-shared",
@@ -99,14 +120,14 @@ class FluxGitOps(pulumi.ComponentResource):
             "kustomization-platform",
             api_version="kustomize.toolkit.fluxcd.io/v1",
             kind="Kustomization",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name="oc-demo-platform", namespace=NS_FLUX_SYSTEM),
+            metadata=k8s.meta.v1.ObjectMetaArgs(name="oc-platform", namespace=NS_FLUX_SYSTEM),
             spec={
                 "interval": "5m",
                 "path": "./namespaces/default/platform",
                 "prune": True,
                 "targetNamespace": "default",
                 "sourceRef": {"kind": "GitRepository", "name": "sample-gitops"},
-                "dependsOn": [{"name": "namespaces"}, {"name": "platform-shared"}],
+                "dependsOn": [{"name": "oc-namespaces"}, {"name": "oc-platform-shared"}],
             },
             opts=self._child_opts(provider=k8s_provider, depends_on=[kust_namespaces, kust_platform_shared]),
         )
@@ -122,7 +143,7 @@ class FluxGitOps(pulumi.ComponentResource):
                 "prune": True,
                 "targetNamespace": "default",
                 "sourceRef": {"kind": "GitRepository", "name": "sample-gitops"},
-                "dependsOn": [{"name": "oc-demo-platform"}],
+                "dependsOn": [{"name": "oc-platform"}],
             },
             opts=self._child_opts(provider=k8s_provider, depends_on=[kust_platform]),
         )
