@@ -45,7 +45,14 @@ class WorkflowPlane(pulumi.ComponentResource):
         # ─── 1. Namespace ───
         ns = k8s.core.v1.Namespace(
             NS_WORKFLOW_PLANE,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_WORKFLOW_PLANE),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=NS_WORKFLOW_PLANE,
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
             opts=self._child_opts(provider=k8s_provider, depends_on=depends),
         )
 

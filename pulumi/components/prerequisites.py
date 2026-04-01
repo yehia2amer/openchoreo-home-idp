@@ -87,7 +87,14 @@ class Prerequisites(pulumi.ComponentResource):
         # ─── 2. cert-manager ───
         cert_manager_ns = k8s.core.v1.Namespace(
             NS_CERT_MANAGER,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_CERT_MANAGER),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=NS_CERT_MANAGER,
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
             opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
         )
 
@@ -108,7 +115,14 @@ class Prerequisites(pulumi.ComponentResource):
         # ─── 3. External Secrets Operator ───
         external_secrets_ns = k8s.core.v1.Namespace(
             NS_EXTERNAL_SECRETS,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_EXTERNAL_SECRETS),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=NS_EXTERNAL_SECRETS,
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
             opts=self._child_opts(provider=k8s_provider, depends_on=[cert_manager]),
         )
 
@@ -129,7 +143,14 @@ class Prerequisites(pulumi.ComponentResource):
         # ─── 4. Control Plane Namespace ───
         control_plane_ns = k8s.core.v1.Namespace(
             NS_CONTROL_PLANE,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_CONTROL_PLANE),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=NS_CONTROL_PLANE,
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
             opts=self._child_opts(
                 provider=k8s_provider,
                 depends_on=[cert_manager],
@@ -138,7 +159,14 @@ class Prerequisites(pulumi.ComponentResource):
 
         data_plane_ns = k8s.core.v1.Namespace(
             NS_DATA_PLANE,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_DATA_PLANE),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=NS_DATA_PLANE,
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
             opts=self._child_opts(
                 provider=k8s_provider,
                 depends_on=[cert_manager],
@@ -203,7 +231,14 @@ class Prerequisites(pulumi.ComponentResource):
         # ─── 6. OpenBao ───
         openbao_ns = k8s.core.v1.Namespace(
             NS_OPENBAO,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_OPENBAO),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=NS_OPENBAO,
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
             opts=self._child_opts(provider=k8s_provider, depends_on=[external_secrets]),
         )
 
