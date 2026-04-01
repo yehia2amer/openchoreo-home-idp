@@ -36,4 +36,5 @@ def talos_baremetal(
         cilium_l2_ip_pool_cidrs=l2_ip_pool_cidrs,
         cilium_l2_interfaces=l2_interfaces,
         cilium_pre_installed=True,
+        gateway_api_crds_pre_installed=True,
     )

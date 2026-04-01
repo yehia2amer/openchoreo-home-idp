@@ -71,7 +71,7 @@ class Prerequisites(pulumi.ComponentResource):
         # ─── 1. Gateway API CRDs ───
         # When Cilium is the gateway controller, CRDs are installed in __main__.py
         # (before Cilium) so we only install them here for the kgateway path.
-        if p.gateway_mode == "cilium":
+        if p.gateway_api_crds_pre_installed or p.gateway_mode == "cilium":
             # CRDs already installed; just wire up the dependency chain
             wait_gw = sleep("gateway-api", SLEEP_AFTER_GATEWAY_API, opts=self._child_opts(depends_on=base_depends))
         else:

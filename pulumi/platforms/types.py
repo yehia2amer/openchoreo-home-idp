@@ -81,3 +81,4 @@ class PlatformProfile:
     # ── Phase 1 pre-install flags ─────────────────────────────────
     # Whether Cilium was pre-installed by Phase 1 (e.g. talos-cluster-baremetal)
     cilium_pre_installed: bool = False
+    gateway_api_crds_pre_installed: bool = False
