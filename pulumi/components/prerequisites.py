@@ -217,7 +217,8 @@ class Prerequisites(pulumi.ComponentResource):
                     cfg.openbao_root_token,
                     cfg.opensearch_username,
                     cfg.opensearch_password,
-                    is_dev_stack=pulumi.get_stack() in ("dev", "rancher-desktop", "local", "test"),
+                    is_dev_stack=pulumi.get_stack()
+                    in ("dev", "rancher-desktop", "local", "test", "talos", "talos-baremetal"),
                 ),
             ),
             opts=pulumi.ResourceOptions.merge(
@@ -267,16 +268,27 @@ class Prerequisites(pulumi.ComponentResource):
             )
 
         # ─── 7b. Validate OpenBao secrets ───
+        _is_dev_stack = pulumi.get_stack() in (
+            "dev",
+            "rancher-desktop",
+            "local",
+            "test",
+            "talos",
+            "talos-baremetal",
+        )
+        _validate_git_secrets = bool(cfg.github_pat) or _is_dev_stack
+        _expected_paths: list[dict[str, object]] = []
+        if _validate_git_secrets:
+            _expected_paths.append({"path": "git-token", "fields": ["git-token"]})
+            _expected_paths.append({"path": "gitops-token", "fields": ["git-token"]})
+
         openbao_validated = ValidateOpenBaoSecrets(
             "validate-openbao-secrets",
             kubeconfig_path=cfg.kubeconfig_path,
             context=cfg.kubeconfig_context,
             namespace=NS_OPENBAO,
             root_token=cfg.openbao_root_token,
-            expected_paths=[
-                {"path": "git-token", "fields": ["git-token"]},
-                {"path": "gitops-token", "fields": ["git-token"]},
-            ],
+            expected_paths=_expected_paths,
             opts=self._child_opts(depends_on=pat_depends),
         )
 
