@@ -312,10 +312,10 @@ class ControlPlane(pulumi.ComponentResource):
                 "patch-workflow-crds",
                 create=(
                     f"OBJS=$(kubectl get workflow.openchoreo.dev --all-namespaces -o yaml"
-                    f" --context {cfg.kubeconfig_context} 2>/dev/null);"
+                    f" --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} 2>/dev/null);"
                     f" if echo \"$OBJS\" | grep -q 'host.k3d.internal'; then"
                     f" echo \"$OBJS\" | sed 's|host.k3d.internal:10082|{registry_endpoint}|g'"
-                    f" | kubectl apply --context {cfg.kubeconfig_context} -f -;"
+                    f" | kubectl apply --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} -f -;"
                     f" else echo 'No k3d-specific workflow CRDs to patch'; fi"
                 ),
                 opts=self._child_opts(depends_on=[cp_chart]),

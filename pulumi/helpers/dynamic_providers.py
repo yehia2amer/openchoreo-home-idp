@@ -464,6 +464,7 @@ class WaitDeployments(pulumi.dynamic.Resource):
 
 class _OpenBaoSecretsProvider(ResourceProvider):
     def create(self, inputs: dict[str, Any]) -> CreateResult:
+        import os
         import subprocess
         import time as _time
 
@@ -471,10 +472,15 @@ class _OpenBaoSecretsProvider(ResourceProvider):
 
         # Port-forward OpenBao so hvac can reach it from the host
         port = int(inputs["local_port"])
+        kube_path = os.path.expanduser(inputs["kubeconfig_path"])
         pf = subprocess.Popen(
             [
                 "kubectl",
                 "port-forward",
+                "--kubeconfig",
+                kube_path,
+                "--context",
+                inputs["context"],
                 f"pod/{inputs['pod_name']}",
                 f"{port}:8200",
                 "-n",

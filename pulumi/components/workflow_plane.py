@@ -123,7 +123,7 @@ class WorkflowPlane(pulumi.ComponentResource):
                     f"curl -sL {url}"
                     f" | sed 's|host.k3d.internal:10082|{registry_endpoint}|g'"
                     f" | sed 's|host.k3d.internal:8080|{gateway_endpoint}|g'"
-                    f" | kubectl apply --context {cfg.kubeconfig_context} -f -"
+                    f" | kubectl apply --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} -f -"
                 )
             elif any(url.endswith(t) for t in standard_sed_templates):
                 # Standard templates: replace k3d placeholders with real URLs
@@ -131,10 +131,12 @@ class WorkflowPlane(pulumi.ComponentResource):
                     f"curl -sL {url}"
                     f" | sed 's|https://host.k3d.internal:8080/oauth2/token|{thunder_url}|g'"
                     f" | sed 's|http://host.k3d.internal:8080|{api_url}|g'"
-                    f" | kubectl apply --context {cfg.kubeconfig_context} -f -"
+                    f" | kubectl apply --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} -f -"
                 )
             else:
-                apply_cmds.append(f"kubectl apply --context {cfg.kubeconfig_context} -f {url}")
+                apply_cmds.append(
+                    f"kubectl apply --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} -f {url}"
+                )
         templates = command.local.Command(
             "workflow-templates",
             create=" && ".join(apply_cmds),

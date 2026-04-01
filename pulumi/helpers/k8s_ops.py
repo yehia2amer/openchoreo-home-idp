@@ -7,6 +7,7 @@ They are intended to be called from within Pulumi dynamic provider create/update
 from __future__ import annotations
 
 import base64
+import os
 import time
 
 import pulumi
@@ -598,8 +599,20 @@ def check_openbao_secrets(
     import hvac
 
     port = int(local_port)
+    kube_path = os.path.expanduser(kubeconfig_path)
     pf = subprocess.Popen(
-        ["kubectl", "port-forward", f"pod/{pod_name}", f"{port}:8200", "-n", namespace],
+        [
+            "kubectl",
+            "port-forward",
+            "--kubeconfig",
+            kube_path,
+            "--context",
+            context,
+            f"pod/{pod_name}",
+            f"{port}:8200",
+            "-n",
+            namespace,
+        ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -696,8 +709,20 @@ def validate_openbao_secrets(
     import hvac
 
     port = int(local_port)
+    kube_path = os.path.expanduser(kubeconfig_path)
     pf = subprocess.Popen(
-        ["kubectl", "port-forward", f"pod/{pod_name}", f"{port}:8200", "-n", namespace],
+        [
+            "kubectl",
+            "port-forward",
+            "--kubeconfig",
+            kube_path,
+            "--context",
+            context,
+            f"pod/{pod_name}",
+            f"{port}:8200",
+            "-n",
+            namespace,
+        ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
