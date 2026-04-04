@@ -415,7 +415,7 @@ class IntegrationTests(pulumi.ComponentResource):
                     test_name=f"e2e-obs-externalsecret-{es_name}",
                     test_type=TEST_CR_CONDITION,
                     cr_group="external-secrets.io",
-                    cr_version="v1beta1",
+                    cr_version="v1",
                     cr_plural="externalsecrets",
                     resource_name=es_name,
                     namespace="openchoreo-observability-plane",
