@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from dataclasses import dataclass
 
 import pulumi
@@ -55,8 +57,9 @@ CERT_DP_GATEWAY_TLS = "dp-gateway-tls"
 # Thunder in-cluster service URL (used by observability plane for direct service calls)
 THUNDER_INTERNAL_BASE = "http://thunder-service.thunder.svc.cluster.local:8090"
 
-# Flux install manifest URL
-FLUX_INSTALL_URL = "https://github.com/fluxcd/flux2/releases/latest/download/install.yaml"
+# Flux install manifest — local copy to avoid gRPC timeout on 377KB remote YAML
+# Original: https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
+FLUX_INSTALL_URL = str(Path(__file__).parent / "flux-install.yaml")
 
 # OpenChoreo CRD API group/version
 OPENCHOREO_API_VERSION = "openchoreo.dev/v1alpha1"
