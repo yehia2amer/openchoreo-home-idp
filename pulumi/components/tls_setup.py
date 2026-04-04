@@ -10,12 +10,14 @@ import pulumi_kubernetes as k8s
 from config import (
     CERT_CP_GATEWAY_TLS,
     CERT_DP_GATEWAY_TLS,
+    CERT_OP_GATEWAY_TLS,
     CERT_OPENCHOREO_CA,
     ISSUER_OPENCHOREO_CA,
     ISSUER_SELFSIGNED_BOOTSTRAP,
     NS_CERT_MANAGER,
     NS_CONTROL_PLANE,
     NS_DATA_PLANE,
+    NS_OBSERVABILITY_PLANE,
     SECRET_OPENCHOREO_CA,
     OpenChoreoConfig,
 )
@@ -29,10 +31,12 @@ class TlsSetupResult:
         ca_issuer: k8s.apiextensions.CustomResource,
         cp_cert: k8s.apiextensions.CustomResource,
         dp_cert: k8s.apiextensions.CustomResource,
+        op_cert: k8s.apiextensions.CustomResource,
     ):
         self.ca_issuer = ca_issuer
         self.cp_cert = cp_cert
         self.dp_cert = dp_cert
+        self.op_cert = op_cert
 
 
 class TlsSetup(pulumi.ComponentResource):
@@ -147,10 +151,37 @@ class TlsSetup(pulumi.ComponentResource):
             opts=self._child_opts(provider=k8s_provider, depends_on=[openchoreo_ca_issuer]),
         )
 
+        # ─── 6. Observability Plane gateway TLS Certificate (wildcard) ───
+        op_gateway_tls = k8s.apiextensions.CustomResource(
+            CERT_OP_GATEWAY_TLS,
+            api_version="cert-manager.io/v1",
+            kind="Certificate",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=CERT_OP_GATEWAY_TLS,
+                namespace=NS_OBSERVABILITY_PLANE,
+            ),
+            spec={
+                "secretName": CERT_OP_GATEWAY_TLS,
+                "issuerRef": {
+                    "name": ISSUER_OPENCHOREO_CA,
+                    "kind": "ClusterIssuer",
+                },
+                "dnsNames": [
+                    f"*.{cfg.domain_base}",
+                    cfg.domain_base,
+                ],
+                "privateKey": {
+                    "rotationPolicy": "Always",
+                },
+            },
+            opts=self._child_opts(provider=k8s_provider, depends_on=[openchoreo_ca_issuer]),
+        )
+
         self.result = TlsSetupResult(
             ca_issuer=openchoreo_ca_issuer,
             cp_cert=cp_gateway_tls,
             dp_cert=dp_gateway_tls,
+            op_cert=op_gateway_tls,
         )
         self.register_outputs({})
 

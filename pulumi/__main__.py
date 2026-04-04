@@ -110,11 +110,14 @@ def main() -> None:
     # ─── Step 5: Observability Plane (optional) ───
     obs = None
     if cfg.enable_observability:
+        obs_depends: list[pulumi.Resource] = [cp.helm_chart]
+        if tls:
+            obs_depends.append(tls.op_cert)
         obs_component = observability_plane.ObservabilityPlane(
             "observability-plane",
             cfg=cfg,
             k8s_provider=k8s_provider,
-            depends=[cp.helm_chart],
+            depends=obs_depends,
         )
         obs = obs_component.result
 

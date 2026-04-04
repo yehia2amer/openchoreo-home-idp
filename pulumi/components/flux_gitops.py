@@ -1,11 +1,13 @@
 """Flux GitOps component: install Flux, GitRepository, Kustomizations."""
 
+# pyright: reportMissingImports=false
+
 from __future__ import annotations
 
 import pulumi
 import pulumi_kubernetes as k8s
 
-from config import FLUX_INSTALL_URL, NS_FLUX_SYSTEM, TIMEOUT_WAIT, OpenChoreoConfig
+from config import FLUX_INSTALL_URL, NS_FLUX_SYSTEM, TIMEOUT_FLUX_WAIT, OpenChoreoConfig
 from helpers.dynamic_providers import WaitCustomResourceCondition, WaitDeployments
 
 
@@ -45,7 +47,7 @@ class FluxGitOps(pulumi.ComponentResource):
             context=cfg.kubeconfig_context,
             deployment_names=["source-controller", "kustomize-controller", "helm-controller"],
             namespace=NS_FLUX_SYSTEM,
-            timeout=TIMEOUT_WAIT,
+            timeout=TIMEOUT_FLUX_WAIT,
             opts=self._child_opts(depends_on=[install_flux]),
         )
 
@@ -159,7 +161,7 @@ class FluxGitOps(pulumi.ComponentResource):
             resource_name="oc-demo-projects",
             namespace=NS_FLUX_SYSTEM,
             condition_type="Ready",
-            timeout=TIMEOUT_WAIT,
+            timeout=TIMEOUT_FLUX_WAIT,
             opts=self._child_opts(depends_on=[kust_projects]),
         )
 

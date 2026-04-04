@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from config import SECRET_OBSERVER, SECRET_OPENSEARCH_ADMIN, THUNDER_INTERNAL_BASE
+from config import CERT_OP_GATEWAY_TLS, SECRET_OBSERVER, SECRET_OPENSEARCH_ADMIN, THUNDER_INTERNAL_BASE
 
 
 def get_values(
@@ -40,6 +40,14 @@ def get_values(
             "httpsPort": op_https_port,
             "tls": {
                 "enabled": tls_enabled,
+                **(
+                    {
+                        "hostname": f"*.{domain_base}",
+                        "certificateRefs": [{"name": CERT_OP_GATEWAY_TLS}],
+                    }
+                    if tls_enabled
+                    else {}
+                ),
             },
         },
     }

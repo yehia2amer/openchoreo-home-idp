@@ -1,5 +1,7 @@
 """Typed configuration loader for OpenChoreo Pulumi stack."""
 
+# pyright: reportMissingImports=false
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -53,6 +55,7 @@ SECRET_OPENCHOREO_CA = "openchoreo-ca-secret"
 ISSUER_OPENCHOREO_CA = "openchoreo-ca"
 CERT_CP_GATEWAY_TLS = "cp-gateway-tls"
 CERT_DP_GATEWAY_TLS = "dp-gateway-tls"
+CERT_OP_GATEWAY_TLS = "op-gateway-tls"
 
 # Thunder in-cluster service URL (used by observability plane for direct service calls)
 THUNDER_INTERNAL_BASE = "http://thunder-service.thunder.svc.cluster.local:8090"
@@ -70,6 +73,7 @@ TIMEOUT_OPENSEARCH = 1800
 TIMEOUT_OBS_PLANE = 2400
 TIMEOUT_WAIT = 600
 TIMEOUT_TLS_WAIT = 240
+TIMEOUT_FLUX_WAIT = 1200  # 20 min — bare-metal image pulls are slow
 
 # Sleep durations (seconds)
 SLEEP_AFTER_GATEWAY_API = 10
