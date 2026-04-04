@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "openchoreo_home_idp",
+  "project_id": "4fec8f10-92b6-4704-b1de-79d0fd24adc4"
+}
