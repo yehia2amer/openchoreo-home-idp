@@ -72,6 +72,27 @@ class ControlPlane(pulumi.ComponentResource):
 
         thunder_values = _fetch_yaml(cfg.thunder_values_url)
         thunder_values.setdefault("thunderServer", {})["publicUrl"] = cfg.thunder_url
+
+        # Override Thunder hostnames/URLs for the target platform.
+        # The upstream values file hardcodes openchoreo.localhost.
+        thunder_host = f"thunder.{cfg.domain_base}"
+        thunder_values.setdefault("httproute", {})["hostnames"] = [thunder_host]
+        thunder_config = thunder_values.setdefault("configuration", {})
+        thunder_config.setdefault("server", {})["publicUrl"] = cfg.thunder_url
+        # Keep httpOnly=true: TLS is terminated at the Gateway, not Thunder itself
+        thunder_config.setdefault("server", {})["httpOnly"] = True
+        gate = thunder_config.setdefault("gateClient", {})
+        gate["hostname"] = thunder_host
+        gate["port"] = cfg.cp_port
+        gate["scheme"] = cfg.scheme
+        thunder_config.setdefault("cors", {})["allowedOrigins"] = [
+            cfg.backstage_url,
+            cfg.thunder_url,
+        ]
+        thunder_config.setdefault("passkey", {})["allowedOrigins"] = [
+            cfg.backstage_url,
+        ]
+
         thunder_bootstrap_scripts = thunder_values.get("bootstrap", {}).get("scripts", {})
         thunder_bootstrap_files = sorted(thunder_bootstrap_scripts)
         thunder_bootstrap_cm_name = "thunder-bootstrap-managed"

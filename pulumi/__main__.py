@@ -21,9 +21,13 @@ from components import (
     workflow_plane,
 )
 from config import (
+    CERT_CP_GATEWAY_TLS,
+    CERT_DP_GATEWAY_TLS,
+    CERT_OP_GATEWAY_TLS,
     NS_CONTROL_PLANE,
     NS_DATA_PLANE,
     NS_OBSERVABILITY_PLANE,
+    NS_THUNDER,
     NS_WORKFLOW_PLANE,
     load_config,
 )
@@ -238,6 +242,180 @@ def main() -> None:
             },
             opts=pulumi.ResourceOptions(provider=k8s_provider),
         )
+
+        # Gateway TLS: add bare-domain HTTPS listener.
+        # Helm chart only creates *.openchoreo.local; bare openchoreo.local
+        # needs its own listener for SNI matching.
+        _tls_patches: list[tuple[str, str, str]] = [
+            (NS_CONTROL_PLANE, cfg.domain_base, CERT_CP_GATEWAY_TLS),
+            (NS_DATA_PLANE, cfg.domain_base, CERT_DP_GATEWAY_TLS),
+            (NS_OBSERVABILITY_PLANE, cfg.domain_base, CERT_OP_GATEWAY_TLS),
+        ]
+        if cfg.tls_enabled:
+            import pulumi_command as command
+
+            kubeconfig = cfg.kubeconfig_path
+            ctx = cfg.kubeconfig_context
+            for ns, domain, cert_name in _tls_patches:
+                patch_json = (
+                    '[{"op":"add","path":"/spec/listeners/-",'
+                    f'"value":{{"name":"https-bare","port":{cfg.cp_port if ns == NS_CONTROL_PLANE else (cfg.dp_https_port if ns == NS_DATA_PLANE else cfg.op_port)},'
+                    f'"protocol":"HTTPS","hostname":"{domain}",'
+                    '"allowedRoutes":{"namespaces":{"from":"All"}},'
+                    f'"tls":{{"mode":"Terminate","certificateRefs":[{{"name":"{cert_name}"}}]}}}}}}]'
+                )
+                command.local.Command(
+                    f"gateway-tls-bare-{ns}",
+                    create=(
+                        f"KUBECONFIG={kubeconfig} kubectl --context {ctx}"
+                        f" -n {ns} get gateway gateway-default"
+                        f" -o jsonpath='{{.spec.listeners[*].name}}'"
+                        f" | grep -q https-bare"
+                        f" || KUBECONFIG={kubeconfig} kubectl --context {ctx}"
+                        f" -n {ns} patch gateway gateway-default"
+                        f" --type=json -p '{patch_json}'"
+                    ),
+                    opts=pulumi.ResourceOptions(depends_on=[cp.helm_chart]),
+                )
+
+        # ── HTTPRoutes for admin/infra services ──
+        _infra_routes: list[dict] = [
+            {  # Hubble UI
+                "name": "hubble-ui",
+                "hostname": f"hubble.{cfg.domain_base}",
+                "gateway_ns": NS_CONTROL_PLANE,
+                "backend_name": "hubble-ui",
+                "backend_ns": "kube-system",
+                "backend_port": 80,
+            },
+            {  # Longhorn UI
+                "name": "longhorn-ui",
+                "hostname": f"longhorn.{cfg.domain_base}",
+                "gateway_ns": NS_CONTROL_PLANE,
+                "backend_name": "longhorn-frontend",
+                "backend_ns": "longhorn-system",
+                "backend_port": 80,
+            },
+            {  # Argo Server
+                "name": "argo-server",
+                "hostname": f"argo.{cfg.domain_base}",
+                "gateway_ns": NS_CONTROL_PLANE,
+                "backend_name": "argo-server",
+                "backend_ns": NS_WORKFLOW_PLANE,
+                "backend_port": 10081,
+            },
+            {  # OpenBao
+                "name": "openbao-ui",
+                "hostname": f"openbao.{cfg.domain_base}",
+                "gateway_ns": NS_CONTROL_PLANE,
+                "backend_name": "openbao",
+                "backend_ns": "openbao",
+                "backend_port": 8200,
+            },
+            {  # Prometheus
+                "name": "prometheus",
+                "hostname": f"prometheus.{cfg.domain_base}",
+                "gateway_ns": NS_OBSERVABILITY_PLANE,
+                "backend_name": "openchoreo-observability-prometheus",
+                "backend_ns": NS_OBSERVABILITY_PLANE,
+                "backend_port": 9091,
+            },
+            {  # OpenSearch
+                "name": "opensearch",
+                "hostname": f"opensearch.{cfg.domain_base}",
+                "gateway_ns": NS_OBSERVABILITY_PLANE,
+                "backend_name": "opensearch",
+                "backend_ns": NS_OBSERVABILITY_PLANE,
+                "backend_port": 9200,
+            },
+            {  # Alertmanager
+                "name": "alertmanager",
+                "hostname": f"alertmanager.{cfg.domain_base}",
+                "gateway_ns": NS_OBSERVABILITY_PLANE,
+                "backend_name": "openchoreo-observability-alertmanager",
+                "backend_ns": NS_OBSERVABILITY_PLANE,
+                "backend_port": 9093,
+            },
+        ]
+
+        # Collect namespaces that need ReferenceGrants (backend != gateway ns)
+        _ref_grants_needed: dict[str, set[str]] = {}  # target_ns -> {source_ns, ...}
+        for rt in _infra_routes:
+            if rt["backend_ns"] != rt["gateway_ns"]:
+                _ref_grants_needed.setdefault(rt["backend_ns"], set()).add(rt["gateway_ns"])
+
+        for rt in _infra_routes:
+            # Attach to both HTTP and HTTPS listeners
+            parent_refs = [
+                {
+                    "name": "gateway-default",
+                    "namespace": rt["gateway_ns"],
+                    "sectionName": "http",
+                },
+            ]
+            if cfg.tls_enabled:
+                parent_refs.append({
+                    "name": "gateway-default",
+                    "namespace": rt["gateway_ns"],
+                    "sectionName": "https",
+                })
+            k8s.apiextensions.CustomResource(
+                f"httproute-{rt['name']}",
+                api_version="gateway.networking.k8s.io/v1",
+                kind="HTTPRoute",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name=rt["name"],
+                    namespace=rt["gateway_ns"],
+                ),
+                spec={
+                    "parentRefs": parent_refs,
+                    "hostnames": [rt["hostname"]],
+                    "rules": [
+                        {
+                            "backendRefs": [
+                                {
+                                    "name": rt["backend_name"],
+                                    "namespace": rt["backend_ns"],
+                                    "port": rt["backend_port"],
+                                },
+                            ],
+                        },
+                    ],
+                },
+                opts=pulumi.ResourceOptions(provider=k8s_provider),
+            )
+
+        # ReferenceGrants for cross-namespace backends
+        for target_ns, source_namespaces in _ref_grants_needed.items():
+            for src_ns in source_namespaces:
+                # Find all backend services in target_ns referenced from src_ns
+                svc_names = [
+                    rt["backend_name"] for rt in _infra_routes
+                    if rt["backend_ns"] == target_ns and rt["gateway_ns"] == src_ns
+                ]
+                k8s.apiextensions.CustomResource(
+                    f"refgrant-{src_ns}-to-{target_ns}",
+                    api_version="gateway.networking.k8s.io/v1beta1",
+                    kind="ReferenceGrant",
+                    metadata=k8s.meta.v1.ObjectMetaArgs(
+                        name=f"allow-{src_ns.split('-')[-1]}-routes",
+                        namespace=target_ns,
+                    ),
+                    spec={
+                        "from": [
+                            {
+                                "group": "gateway.networking.k8s.io",
+                                "kind": "HTTPRoute",
+                                "namespace": src_ns,
+                            },
+                        ],
+                        "to": [
+                            {"group": "", "kind": "Service", "name": name}
+                            for name in svc_names
+                        ],
+                    },
+                    opts=pulumi.ResourceOptions(provider=k8s_provider),
+                )
 
     # ─── Step 8: Integration Tests ───
     test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]

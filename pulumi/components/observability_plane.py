@@ -141,6 +141,7 @@ class ObservabilityPlane(pulumi.ComponentResource):
                     tls_enabled=cfg.tls_enabled,
                     op_http_port=cfg.op_http_port,
                     op_https_port=cfg.op_https_port,
+                    observer_url=cfg.observer_url,
                 ),
                 timeout=TIMEOUT_OBS_PLANE,
             ),
