@@ -101,6 +101,38 @@ class ControlPlane(pulumi.ComponentResource):
                 .replace("http://openchoreo.localhost:8080", cfg.backstage_url)
                 .replace("http://thunder.openchoreo.localhost:8080", cfg.thunder_url)
             )
+        # Assign a default theme to Backstage and Console apps.
+        # Thunder Gate UI returns DSR-1005 if APPLICATION.THEME_ID is NULL.
+        thunder_bootstrap_scripts["60-assign-themes.sh"] = """#!/bin/bash
+set -e
+
+DB="/opt/thunder/repository/database/configdb.db"
+
+log_info "Assigning default theme to applications..."
+
+# Wait for themes to be seeded (created on first boot)
+for i in $(seq 1 30); do
+  THEME_COUNT=$(sqlite3 "$DB" "SELECT COUNT(*) FROM THEME" 2>/dev/null || echo "0")
+  [ "$THEME_COUNT" -gt 0 ] && break
+  sleep 2
+done
+
+DEFAULT_THEME_ID=$(sqlite3 "$DB" \
+  "SELECT ID FROM THEME WHERE DISPLAY_NAME='Pale Indigo' ORDER BY CREATED_AT DESC LIMIT 1")
+
+if [ -z "$DEFAULT_THEME_ID" ]; then
+  DEFAULT_THEME_ID=$(sqlite3 "$DB" \
+    "SELECT ID FROM THEME ORDER BY CREATED_AT DESC LIMIT 1")
+fi
+
+if [ -n "$DEFAULT_THEME_ID" ]; then
+  sqlite3 "$DB" \
+    "UPDATE APPLICATION SET THEME_ID='$DEFAULT_THEME_ID' WHERE THEME_ID IS NULL;"
+  log_info "Assigned theme $DEFAULT_THEME_ID to all applications without a theme"
+else
+  log_info "WARNING: No themes found in database, skipping theme assignment"
+fi
+"""
         thunder_bootstrap_files = sorted(thunder_bootstrap_scripts)
         thunder_bootstrap_cm_name = "thunder-bootstrap-managed"
         thunder_values["bootstrap"] = {
