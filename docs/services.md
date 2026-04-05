@@ -10,7 +10,7 @@ Add to `/etc/hosts` (macOS `.local` TLD needs this):
 sudo tee -a /etc/hosts << 'HOSTS'
 192.168.0.10  api.openchoreo.local argo.openchoreo.local hubble.openchoreo.local longhorn.openchoreo.local openbao.openchoreo.local openchoreo.local thunder.openchoreo.local
 192.168.0.11  http-frontend-development-default-4cc7110c.openchoreo.local registry.openchoreo.local
-192.168.0.12  alertmanager.openchoreo.local observer.openchoreo.local opensearch.openchoreo.local prometheus.openchoreo.local
+192.168.0.12  alertmanager.openchoreo.local observer.openchoreo.local openobserve.openchoreo.local opensearch.openchoreo.local prometheus.openchoreo.local
 HOSTS
 ```
 
@@ -30,6 +30,7 @@ HOSTS
 | **alertmanager** | http://alertmanager.openchoreo.local:11080 | https://alertmanager.openchoreo.local:11085 | ✅ 200 | `openchoreo-observability-plane/openchoreo-observability-alertmanager:9093` |
 | **observer** | http://observer.openchoreo.local:11080 | https://observer.openchoreo.local:11085 | ⚠️  404 | `openchoreo-observability-plane/observer:8080` |
 | **opensearch** | http://opensearch.openchoreo.local:11080 | https://opensearch.openchoreo.local:11085 | 🔒 401 | `openchoreo-observability-plane/opensearch:9200` |
+| **openobserve** | http://openobserve.openchoreo.local:11080 | https://openobserve.openchoreo.local:11085 | ✅ 308→/web/ | `openchoreo-observability-plane/openobserve:5080` |
 | **prometheus** | http://prometheus.openchoreo.local:11080 | https://prometheus.openchoreo.local:11085 | ✅ 302 | `openchoreo-observability-plane/openchoreo-observability-prometheus:9091` |
 
 ## Gateway Map
@@ -57,6 +58,10 @@ open http://hubble.openchoreo.local:8080
 
 # Argo workflows
 open http://argo.openchoreo.local:8080
+
+# OpenObserve (logs + traces UI)
+open https://openobserve.openchoreo.local:11085
+# Creds: admin@openchoreo.local / OpenObserve@Choreo2026!
 
 # Prometheus metrics
 open http://prometheus.openchoreo.local:11080
