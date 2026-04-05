@@ -165,27 +165,59 @@ class FluxGitOps(pulumi.ComponentResource):
             opts=self._child_opts(depends_on=[kust_projects]),
         )
 
-        # ─── 5. Flux Notifications (sync/build failure alerts) ───
-        # Generic webhook provider — receives JSON payloads from Flux.
-        # Replace the address with a real webhook URL (Slack, Discord, etc.)
-        # when ready.  The generic provider logs events that can be scraped
-        # by any observability stack.
-        notif_provider = k8s.apiextensions.CustomResource(
-            "flux-notification-provider",
-            api_version="notification.toolkit.fluxcd.io/v1beta3",
-            kind="Provider",
-            metadata=k8s.meta.v1.ObjectMetaArgs(
-                name="openchoreo-alerts",
-                namespace=NS_FLUX_SYSTEM,
-            ),
-            spec={
-                "type": "generic",
-                # Log to Flux notification-controller stdout (always available).
-                # Swap to a real URL when a webhook sink is configured.
-                "address": "http://notification-controller.flux-system.svc.cluster.local/",
-            },
-            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
-        )
+        # ─── 5. Flux Notifications ───
+        # Supports two modes:
+        #   a) Telegram (if bot token + chat ID configured)
+        #   b) Generic webhook (fallback — logs to notification-controller stdout)
+
+        notif_depends: list[pulumi.Resource] = [wait_flux]
+
+        if cfg.flux_telegram_bot_token and cfg.flux_telegram_chat_id:
+            # Telegram bot token Secret
+            telegram_secret = k8s.core.v1.Secret(
+                "flux-telegram-token",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="flux-telegram-token",
+                    namespace=NS_FLUX_SYSTEM,
+                ),
+                string_data={
+                    "token": cfg.flux_telegram_bot_token,
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
+            )
+            notif_provider = k8s.apiextensions.CustomResource(
+                "flux-notification-provider",
+                api_version="notification.toolkit.fluxcd.io/v1beta3",
+                kind="Provider",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="openchoreo-alerts",
+                    namespace=NS_FLUX_SYSTEM,
+                ),
+                spec={
+                    "type": "telegram",
+                    "address": "https://api.telegram.org",
+                    "channel": cfg.flux_telegram_chat_id,
+                    "secretRef": {"name": "flux-telegram-token"},
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux, telegram_secret]),
+            )
+        else:
+            # Generic webhook fallback — logs to notification-controller stdout.
+            # Replace with a real webhook URL when ready.
+            notif_provider = k8s.apiextensions.CustomResource(
+                "flux-notification-provider",
+                api_version="notification.toolkit.fluxcd.io/v1beta3",
+                kind="Provider",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="openchoreo-alerts",
+                    namespace=NS_FLUX_SYSTEM,
+                ),
+                spec={
+                    "type": "generic",
+                    "address": "http://notification-controller.flux-system.svc.cluster.local/",
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
+            )
 
         # Alert on any Kustomization or GitRepository failure/warning.
         k8s.apiextensions.CustomResource(
@@ -218,8 +250,14 @@ class FluxGitOps(pulumi.ComponentResource):
         # ─── 6. Health checks on ReleaseBinding conditions ───
         # Add healthChecks to the projects Kustomization so Flux reports
         # unhealthy when OpenChoreo ReleaseBindings have unresolved deps.
-        # We patch the existing kust_projects rather than a separate resource
-        # to keep the dependency chain clean.
+        # Flux healthChecks require explicit resource names (no wildcards).
+        _demo_release_bindings = [
+            "document-svc-development",
+            "collab-svc-development",
+            "frontend-development",
+            "nats-development",
+            "postgres-development",
+        ]
         k8s.apiextensions.CustomResource(
             "kustomization-projects-healthchecks",
             api_version="kustomize.toolkit.fluxcd.io/v1",
@@ -239,9 +277,10 @@ class FluxGitOps(pulumi.ComponentResource):
                     {
                         "apiVersion": "openchoreo.dev/v1alpha1",
                         "kind": "ReleaseBinding",
-                        "name": "*",
+                        "name": rb_name,
                         "namespace": "default",
-                    },
+                    }
+                    for rb_name in _demo_release_bindings
                 ],
             },
             opts=self._child_opts(

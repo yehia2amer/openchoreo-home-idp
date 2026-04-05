@@ -368,18 +368,42 @@ With the `DemoAppBootstrap` component enabled (`enable_demo_app_bootstrap: true`
 
 ### Flux Notification Configuration
 
-The default setup uses a generic webhook provider that logs to the notification-controller stdout. To send alerts to Slack, Discord, or Teams:
+The default setup uses a generic webhook provider that logs to the notification-controller stdout.
 
-1. Create a webhook URL in your chat platform
-2. Update the Provider in `flux_gitops.py`:
-   ```python
-   spec={
-       "type": "slack",  # or "discord", "msteams"
-       "address": "https://hooks.slack.com/services/...",
-       "secretRef": {"name": "slack-webhook-url"},
-   }
+#### Telegram Setup
+
+To send alerts to Telegram:
+
+1. Create a Telegram bot via [@BotFather](https://t.me/BotFather) and get the bot token
+2. Get your chat/group/channel ID (use [@userinfobot](https://t.me/userinfobot) or the API)
+3. Add the bot to your chat/group
+4. Configure in `Pulumi.talos-baremetal.yaml`:
+   ```yaml
+   openchoreo:flux_telegram_bot_token:
+     secure: <encrypted-token>   # use `pulumi config set --secret`
+   openchoreo:flux_telegram_chat_id: "-1001234567890"
    ```
-3. Create the corresponding Secret in `flux-system` namespace
+   Or via CLI:
+   ```bash
+   cd pulumi
+   pulumi config set --secret flux_telegram_bot_token "123456:ABC-DEF..."
+   pulumi config set flux_telegram_chat_id "-1001234567890"
+   ```
+5. Run `pulumi up` — the Provider will be created with `type: telegram`
+
+You'll receive Telegram messages for any Kustomization or GitRepository sync errors.
+
+#### Slack / Discord / Teams
+
+To use other providers, update the Provider in `flux_gitops.py`:
+```python
+spec={
+    "type": "slack",  # or "discord", "msteams"
+    "address": "https://hooks.slack.com/services/...",
+    "secretRef": {"name": "slack-webhook-url"},
+}
+```
+Create the corresponding Secret in `flux-system` namespace.
 
 ### Monitoring ReleaseBinding Health
 

@@ -138,6 +138,10 @@ class OpenChoreoConfig:
     enable_observability: bool
     enable_demo_app_bootstrap: bool
 
+    # Flux Telegram notifications (optional)
+    flux_telegram_bot_token: str
+    flux_telegram_chat_id: str
+
     # k3d-specific (used by observability machine-id fix)
     k3d_cluster_name: str
 
@@ -261,6 +265,10 @@ def load_config() -> OpenChoreoConfig:
     enable_observability = cfg.get_bool("enable_observability") or False
     enable_demo_app_bootstrap = cfg.get_bool("enable_demo_app_bootstrap") or False
 
+    # Flux Telegram notifications (optional)
+    flux_telegram_bot_token = cfg.get("flux_telegram_bot_token") or ""
+    flux_telegram_chat_id = cfg.get("flux_telegram_chat_id") or ""
+
     # k3d-specific (still needed for docker exec in observability machine-id fix)
     k3d_cluster_name = cfg.get("k3d_cluster_name") or "openchoreo"
 
@@ -340,6 +348,8 @@ def load_config() -> OpenChoreoConfig:
         enable_flux=enable_flux,
         enable_observability=enable_observability,
         enable_demo_app_bootstrap=enable_demo_app_bootstrap,
+        flux_telegram_bot_token=flux_telegram_bot_token,
+        flux_telegram_chat_id=flux_telegram_chat_id,
         k3d_cluster_name=k3d_cluster_name,
         raw_base=raw_base,
         scheme=scheme,
