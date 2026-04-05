@@ -364,3 +364,106 @@ COLLAB_SERVICE_URL=http://collab-svc.dp-default-doclet-development-50ce4d9b.svc.
 | ReleaseBinding environment overrides | [Environment Overrides](https://openchoreo.dev/docs/developer-guide/deploying-applications/environment-overrides/) |
 | Workload descriptor format | [Workload Descriptor](https://openchoreo.dev/docs/developer-guide/workflows/ci/workload-descriptor/) |
 | GitOps repo structure (mono-repo) | [GitOps Overview](https://openchoreo.dev/docs/platform-engineer-guide/gitops/overview/) |
+
+---
+
+## 7. Operational Learnings from Execution
+
+These findings were discovered during the actual fix execution and are not obvious from reading the docs alone.
+
+### 7.1 Build Timing on Single-Node Baremetal
+
+- **Go service builds take ~6-9 minutes** on a single Talos control-plane node (CPU-bound compilation in Podman buildah)
+- **React frontend builds take ~3-4 minutes** (npm ci + vite build + nginx image)
+- Two builds can run in parallel on a single node, but they compete for CPU — expect 1.5x the single-build time
+- The full 8-step pipeline (clone → build → push → extract-descriptor → clone-gitops → create-feature-branch → generate-gitops-resources → git-commit-push-pr) takes ~8-12 minutes per component
+
+### 7.2 ComponentRelease Name Collision
+
+The `occ componentrelease generate` command derives the release name from the component name + git revision hash (e.g., `frontend-f3a5cd49`). If a release file with that exact name already exists in the gitops repo, the command **fails hard** (exit code 1):
+
+```
+Error: a component release with name "frontend-f3a5cd49" already exists at
+/mnt/vol/gitops/namespaces/default/projects/doclet/components/frontend/releases/frontend-f3a5cd49.yaml
+```
+
+**Implications:**
+- Re-running a build for the same source commit will always fail at `generate-gitops-resources`
+- To rebuild the same commit, you must first delete the existing release file from the gitops repo
+- Different commits produce different hashes, so this is only a problem for re-runs
+- The previous `frontend-build-002` failure was likely caused by this same collision (the frontend release was manually pre-committed to the gitops repo before the workflow ran)
+
+### 7.3 Workload Descriptor Not Found Warning
+
+During the `extract-descriptor` step, if the `workload.yaml` file doesn't exist at the expected `appPath` in the source repo, the workflow emits:
+
+```
+Warning: Workload descriptor not found at: /mnt/vol/source/project-doclet-app/webapp-react-frontend/workload.yaml
+Will generate basic workload without descriptor
+```
+
+This means:
+- The Workload CR will be created with **only the container image** — no endpoints, no dependencies, no env vars
+- Per the [Workload Descriptor docs](https://openchoreo.dev/docs/developer-guide/workflows/ci/workload-descriptor/), without a descriptor you get a minimal Workload
+- In our case, the frontend's `workload.yaml` **was already committed to the gitops repo** (manually placed there with the correct endpoints and dependencies), so the Workload CR in the cluster was correct even though the extract-descriptor step didn't find one in the source repo
+- **Recommendation**: Always ensure `workload.yaml` exists in the source repo at `appPath/workloadDescriptorPath` to avoid relying on pre-committed gitops state
+
+### 7.4 Flux Reconciliation Timing
+
+After merging PRs:
+- GitRepository poll interval is `1m` — Flux detects the new commit within 1 minute
+- You can force immediate sync with: `kubectl annotate gitrepository -n flux-system sample-gitops reconcile.fluxcd.io/requestedAt="$(date +%s)" --overwrite`
+- The Kustomization chain (namespaces → platform-shared → platform → projects) adds ~10-30 seconds of sequential dependency resolution
+- Transient state: `oc-demo-projects` may briefly show `dependency 'flux-system/oc-platform' is not ready` during the reconciliation cascade — this is normal
+- **Total time from PR merge to pods running**: ~90 seconds (with forced reconciliation)
+
+### 7.5 OpenChoreo Dependency Resolution Is Automatic and Fast
+
+Once the `document-svc-development` and `collab-svc-development` ReleaseBindings were synced to the cluster:
+- The `frontend-development` ReleaseBinding controller immediately detected the new connections
+- Connections transitioned from `2 connections pending, 0 resolved` → `All 2 connections resolved` within seconds
+- The RenderedRelease was re-rendered with the dependency env vars injected
+- A new ReplicaSet was created (rolling update) with the correct env vars
+- The old CrashLooping pod was replaced by a healthy one
+- **No manual intervention needed** — the OpenChoreo controller handles dependency resolution reactively
+
+### 7.6 The `docker-gitops-release` Workflow Pipeline Steps
+
+The full pipeline observed during execution:
+
+| Step | Duration | Description |
+|------|----------|-------------|
+| `clone-source` | ~15-25s | Shallow clone of source repo |
+| `build-image` | 3-9 min | Podman buildah in rootless mode |
+| `push-image` | ~15-30s | Push to in-cluster registry |
+| `extract-descriptor` | ~10s | Extract `workload.yaml` from source |
+| `clone-gitops` | ~10-15s | Clone gitops repo |
+| `create-feature-branch` | ~5-10s | Create `release/<component>-<timestamp>` branch |
+| `generate-gitops-resources` | ~15-20s | `occ workload create` + `occ componentrelease generate` + `occ releasebinding generate` |
+| `git-commit-push-pr` | ~20-30s | Commit, push branch, create PR via `gh` CLI |
+
+The `occ` CLI image used is `ghcr.io/openchoreo/openchoreo-cli:latest-dev` with `imagePullPolicy: Always`.
+
+### 7.7 GitHub Token Scope
+
+The GitHub PAT stored in OpenBao needs these permissions:
+- **Contents**: read/write (for cloning and pushing to the gitops repo)
+- **Pull requests**: write (for creating PRs via `gh pr create`)
+- The same token is used for both `git-token` (source repo clone) and `gitops-token` (gitops repo push + PR creation)
+- If the source repo is public, `git-token` can be empty — the clone step checks: `"if [ -f /mnt/secrets/source-git/git-token ]"`
+
+### 7.8 Argo Workflow Pod Garbage Collection
+
+Completed Argo Workflow pods are GC'd quickly (within hours), making it impossible to retrieve logs from failed steps after the fact. When debugging `generate-gitops-resources` failures:
+- Watch pods in `workflows-default` namespace in real-time during the build
+- Use `kubectl logs -n workflows-default <pod-name> -c main` immediately after failure
+- Consider setting `ttlAfterCompletion` in the Workflow resource to retain pods longer for debugging
+
+### 7.9 Single-Node Talos Resource Constraints
+
+Running the full OpenChoreo stack + all builds on a single Talos control-plane node means:
+- **No pod scheduling flexibility** — all workloads compete for the same CPU/memory
+- **Build pods use significant resources** — Podman buildah is CPU-intensive during compilation
+- **Multiple concurrent builds slow each other** — observed ~1.5x slowdown with 2 parallel Go builds
+- **The cluster is production-like but resource-constrained** — may see OOMKills or scheduling delays during heavy builds
+- **Recommendation for multi-component builds**: Trigger builds sequentially rather than in parallel to avoid resource contention on single-node clusters
