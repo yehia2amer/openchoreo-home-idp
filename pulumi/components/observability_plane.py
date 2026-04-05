@@ -242,7 +242,51 @@ class ObservabilityPlane(pulumi.ComponentResource):
                 ),
             )
 
-        # ── 6d. OpenSearch modules (always installed; Phase 4 will disable) ──
+            # ── 6d. OpenObserve UI HTTPRoute ──
+            # The Helm chart only creates a route for /api/default/container-logs/_json.
+            # This adds a full UI route at openobserve.<domain>.
+            oo_hostname = f"openobserve.{cfg.domain_base}"
+            k8s.apiextensions.CustomResource(
+                "openobserve-ui-httproute",
+                api_version="gateway.networking.k8s.io/v1",
+                kind="HTTPRoute",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name="openobserve-ui",
+                    namespace=NS_OBSERVABILITY_PLANE,
+                ),
+                spec={
+                    "hostnames": [oo_hostname],
+                    "parentRefs": [
+                        {
+                            "group": "gateway.networking.k8s.io",
+                            "kind": "Gateway",
+                            "name": "gateway-default",
+                            "namespace": NS_OBSERVABILITY_PLANE,
+                            "sectionName": "http",
+                        },
+                        {
+                            "group": "gateway.networking.k8s.io",
+                            "kind": "Gateway",
+                            "name": "gateway-default",
+                            "namespace": NS_OBSERVABILITY_PLANE,
+                            "sectionName": "https",
+                        },
+                    ],
+                    "rules": [
+                        {
+                            "backendRefs": [
+                                {"name": "openobserve", "port": 5080}
+                            ],
+                            "matches": [
+                                {"path": {"type": "PathPrefix", "value": "/"}}
+                            ],
+                        }
+                    ],
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[logs_oo]),
+            )
+
+        # ── 6e. OpenSearch modules (always installed; Phase 4 will disable) ──
         k8s.helm.v3.Release(
             "observability-logs-opensearch",
             k8s.helm.v3.ReleaseArgs(
