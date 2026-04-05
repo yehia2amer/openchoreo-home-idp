@@ -45,6 +45,7 @@ SECRET_BACKSTAGE = "backstage-secrets"
 SECRET_OPENSEARCH_ADMIN = "opensearch-admin-credentials"
 SECRET_OBSERVER_OPENSEARCH = "observer-opensearch-credentials"
 SECRET_OBSERVER = "observer-secret"
+SECRET_OPENOBSERVE_ADMIN = "openobserve-admin-credentials"
 SA_ESO_OPENBAO = "external-secrets-openbao"
 CLUSTER_SECRET_STORE_NAME = "default"
 
@@ -124,6 +125,8 @@ class OpenChoreoConfig:
     logs_opensearch_version: str
     traces_opensearch_version: str
     metrics_prometheus_version: str
+    logs_openobserve_version: str
+    tracing_openobserve_version: str
 
     # Credentials
     openbao_root_token: str
@@ -137,6 +140,11 @@ class OpenChoreoConfig:
     enable_flux: bool
     enable_observability: bool
     enable_demo_app_bootstrap: bool
+
+    # OpenObserve (replaces OpenSearch for logs + traces)
+    enable_openobserve: bool
+    openobserve_admin_email: str
+    openobserve_admin_password: str
 
     # Flux Telegram notifications (optional)
     flux_telegram_bot_token: str
@@ -193,6 +201,14 @@ class OpenChoreoConfig:
         return f"{OPENCHOREO_CHART_REPO}/observability-tracing-opensearch"
 
     @property
+    def logs_openobserve_chart(self) -> str:
+        return f"{OPENCHOREO_CHART_REPO}/observability-logs-openobserve"
+
+    @property
+    def tracing_openobserve_chart(self) -> str:
+        return f"{OPENCHOREO_CHART_REPO}/observability-tracing-openobserve"
+
+    @property
     def metrics_chart(self) -> str:
         return f"{OPENCHOREO_CHART_REPO}/observability-metrics-prometheus"
 
@@ -236,6 +252,8 @@ def load_config() -> OpenChoreoConfig:
     logs_opensearch_version = cfg.get("logs_opensearch_version") or "0.3.11"
     traces_opensearch_version = cfg.get("traces_opensearch_version") or "0.3.10"
     metrics_prometheus_version = cfg.get("metrics_prometheus_version") or "0.2.5"
+    logs_openobserve_version = cfg.get("logs_openobserve_version") or "0.4.2"
+    tracing_openobserve_version = cfg.get("tracing_openobserve_version") or "0.2.1"
 
     # Credentials — warn on non-dev stacks when using insecure defaults.
     # Use cfg.get() for plain strings needed by dynamic providers.
@@ -264,6 +282,11 @@ def load_config() -> OpenChoreoConfig:
     enable_flux = cfg.get_bool("enable_flux") or False
     enable_observability = cfg.get_bool("enable_observability") or False
     enable_demo_app_bootstrap = cfg.get_bool("enable_demo_app_bootstrap") or False
+
+    # OpenObserve (replaces OpenSearch for logs + traces)
+    enable_openobserve = cfg.get_bool("enable_openobserve") or False
+    openobserve_admin_email = cfg.get("openobserve_admin_email") or "admin@openchoreo.local"
+    openobserve_admin_password = cfg.get("openobserve_admin_password") or ""
 
     # Flux Telegram notifications (optional)
     flux_telegram_bot_token = cfg.get("flux_telegram_bot_token") or ""
@@ -339,6 +362,8 @@ def load_config() -> OpenChoreoConfig:
         logs_opensearch_version=logs_opensearch_version,
         traces_opensearch_version=traces_opensearch_version,
         metrics_prometheus_version=metrics_prometheus_version,
+        logs_openobserve_version=logs_openobserve_version,
+        tracing_openobserve_version=tracing_openobserve_version,
         openbao_root_token=openbao_root_token,
         opensearch_username=opensearch_username,
         opensearch_password=opensearch_password,
@@ -348,6 +373,9 @@ def load_config() -> OpenChoreoConfig:
         enable_flux=enable_flux,
         enable_observability=enable_observability,
         enable_demo_app_bootstrap=enable_demo_app_bootstrap,
+        enable_openobserve=enable_openobserve,
+        openobserve_admin_email=openobserve_admin_email,
+        openobserve_admin_password=openobserve_admin_password,
         flux_telegram_bot_token=flux_telegram_bot_token,
         flux_telegram_chat_id=flux_telegram_chat_id,
         k3d_cluster_name=k3d_cluster_name,

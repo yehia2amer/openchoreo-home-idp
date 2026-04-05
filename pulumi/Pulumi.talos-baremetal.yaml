@@ -19,4 +19,8 @@ config:
   openchoreo:flux_telegram_bot_token:
     secure: v1:BUSlyh7Uxlvlzr7y:tuifJn7RdrVioov98OdlP6gwGaVidUtnrpZLKs+HNpC/5/BfCSWM0VRek0+aoCYGy+j4FC/7x/QrSmy+ypU=
   openchoreo:flux_telegram_chat_id: "1203090452"
+  openchoreo:enable_openobserve: "true"
+  openchoreo:openobserve_admin_email: admin@openchoreo.local
+  openchoreo:openobserve_admin_password:
+    secure: v1:2l0VC3V6L6a8eh0S:aD2jnd0DDsCU+a15/KWA7jVJa6LMMqsi8obKkN6Za9wsKbMTvDjJ
 encryptionsalt: v1:aUpt1JxkDUk=:v1:GQ45diR9XGdv/K2z:5G61+IXRPMP7nnESFCT1lmr3tZXwJg==

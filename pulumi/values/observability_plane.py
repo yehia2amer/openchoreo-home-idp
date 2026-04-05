@@ -16,6 +16,7 @@ def get_values(
     op_https_port: int,
     observer_url: str = "",
     control_plane_api_url: str = "",
+    enable_openobserve: bool = False,
 ) -> dict[str, Any]:
     """Return Helm values for the OpenChoreo Observability Plane chart."""
     op_scheme = "https" if tls_enabled else "http"
@@ -50,6 +51,17 @@ def get_values(
                 {"name": "PROMETHEUS_TIMEOUT", "value": "30s"},
                 {"name": "AUTHZ_TIMEOUT", "value": "30s"},
             ],
+            # When OpenObserve is enabled, route logs/traces through adapters
+            **({
+                "logsAdapter": {
+                    "enabled": True,
+                    "url": "http://logs-adapter:9098",
+                },
+                "tracingAdapter": {
+                    "enabled": True,
+                    "url": "http://tracing-adapter:9100",
+                },
+            } if enable_openobserve else {}),
         },
         "security": {
             "oidc": {

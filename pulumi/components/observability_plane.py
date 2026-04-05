@@ -13,6 +13,7 @@ from config import (
     NS_OBSERVABILITY_PLANE,
     SECRET_OBSERVER,
     SECRET_OBSERVER_OPENSEARCH,
+    SECRET_OPENOBSERVE_ADMIN,
     SECRET_OPENSEARCH_ADMIN,
     TIMEOUT_DEFAULT,
     TIMEOUT_OBS_PLANE,
@@ -151,6 +152,7 @@ class ObservabilityPlane(pulumi.ComponentResource):
                     op_http_port=cfg.op_http_port,
                     op_https_port=cfg.op_https_port,
                     observer_url=cfg.observer_url,
+                    enable_openobserve=cfg.enable_openobserve,
                 ),
                 timeout=TIMEOUT_OBS_PLANE,
             ),
@@ -163,6 +165,84 @@ class ObservabilityPlane(pulumi.ComponentResource):
         )
 
         # ─── 6. Observability modules ───
+        if cfg.enable_openobserve:
+            # ── 6a. OpenObserve credentials ──
+            openobserve_creds = k8s.apiextensions.CustomResource(
+                "openobserve-admin-creds",
+                api_version="external-secrets.io/v1",
+                kind="ExternalSecret",
+                metadata=k8s.meta.v1.ObjectMetaArgs(
+                    name=SECRET_OPENOBSERVE_ADMIN,
+                    namespace=NS_OBSERVABILITY_PLANE,
+                ),
+                spec={
+                    "refreshInterval": "1h",
+                    "secretStoreRef": {"kind": "ClusterSecretStore", "name": CLUSTER_SECRET_STORE_NAME},
+                    "target": {"name": SECRET_OPENOBSERVE_ADMIN},
+                    "data": [
+                        {
+                            "secretKey": "ZO_ROOT_USER_EMAIL",
+                            "remoteRef": {"key": "openobserve-admin-credentials", "property": "ZO_ROOT_USER_EMAIL"},
+                        },
+                        {
+                            "secretKey": "ZO_ROOT_USER_PASSWORD",
+                            "remoteRef": {
+                                "key": "openobserve-admin-credentials",
+                                "property": "ZO_ROOT_USER_PASSWORD",
+                            },
+                        },
+                    ],
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[ns]),
+            )
+
+            # ── 6b. Logging module (OpenObserve + logs-adapter) ──
+            # Fluent Bit disabled: the OpenSearch logging module already runs one.
+            # We'll disable OpenSearch's fluent-bit in Phase 4 when removing OpenSearch.
+            logs_oo = k8s.helm.v3.Release(
+                "observability-logs-openobserve",
+                k8s.helm.v3.ReleaseArgs(
+                    chart=cfg.logs_openobserve_chart,
+                    version=cfg.logs_openobserve_version,
+                    namespace=NS_OBSERVABILITY_PLANE,
+                    values={
+                        "fluent-bit": {"enabled": False},
+                        "openobserve-standalone": {
+                            "persistence": {"size": "10Gi"},
+                            "resources": {
+                                "requests": {"memory": "500Mi"},
+                                "limits": {"cpu": "500m", "memory": "1000Mi"},
+                            },
+                        },
+                    },
+                    timeout=TIMEOUT_DEFAULT,
+                ),
+                opts=pulumi.ResourceOptions.merge(
+                    self._child_opts(provider=k8s_provider, depends_on=[obs_chart, openobserve_creds]),
+                    pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_DEFAULT}s")),
+                ),
+            )
+
+            # ── 6c. Tracing module (tracing-adapter, reuses OpenObserve from logging) ──
+            k8s.helm.v3.Release(
+                "observability-tracing-openobserve",
+                k8s.helm.v3.ReleaseArgs(
+                    chart=cfg.tracing_openobserve_chart,
+                    version=cfg.tracing_openobserve_version,
+                    namespace=NS_OBSERVABILITY_PLANE,
+                    values={
+                        "openobserve-standalone": {"enabled": False},
+                        "opentelemetry-collector": {"enabled": False},
+                    },
+                    timeout=TIMEOUT_DEFAULT,
+                ),
+                opts=pulumi.ResourceOptions.merge(
+                    self._child_opts(provider=k8s_provider, depends_on=[logs_oo]),
+                    pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_DEFAULT}s")),
+                ),
+            )
+
+        # ── 6d. OpenSearch modules (always installed; Phase 4 will disable) ──
         k8s.helm.v3.Release(
             "observability-logs-opensearch",
             k8s.helm.v3.ReleaseArgs(
