@@ -1,0 +1,22 @@
+{
+  "name": "openchoreo-ui-e2e",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:global": "npx playwright test global/",
+    "test:catalog": "npx playwright test catalog/",
+    "test:platform": "npx playwright test platform/",
+    "test:project": "npx playwright test project/",
+    "test:component": "npx playwright test component/",
+    "test:create": "npx playwright test create/",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^25.5.2",
+    "typescript": "^5.5.0"
+  }
+}

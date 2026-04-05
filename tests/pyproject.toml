@@ -57,6 +57,13 @@ markers = [
     "workflow_plane: Workflow plane tests",
     "observability: Observability plane tests",
     "gitops: GitOps tests",
+    "e2e: End-to-end tests against real environment",
+    "resource_chain: OpenChoreo resource chain validation",
+    "dependencies: Cross-component dependency resolution",
+    "workflow: CI/CD pipeline health",
+    "gitops_consistency: GitOps repo to cluster sync",
+    "app_health: Application pod-level health",
+    "user_journey: End-to-end user scenarios",
 ]
 asyncio_mode = "auto"
 timeout = 120

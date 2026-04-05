@@ -7,6 +7,14 @@ from utils.k8s_helpers import (
     get_custom_resource,
     check_resource_condition,
 )
+from utils.openchoreo_helpers import (
+    get_openchoreo_resource,
+    list_openchoreo_resources,
+    get_resource_condition,
+    find_data_plane_namespace,
+    find_deployment_by_prefix,
+    extract_env_vars,
+)
 from utils.port_forward import PortForward
 
 __all__ = [
@@ -16,5 +24,11 @@ __all__ = [
     "wait_for_deployment",
     "get_custom_resource",
     "check_resource_condition",
+    "get_openchoreo_resource",
+    "list_openchoreo_resources",
+    "get_resource_condition",
+    "find_data_plane_namespace",
+    "find_deployment_by_prefix",
+    "extract_env_vars",
     "PortForward",
 ]
