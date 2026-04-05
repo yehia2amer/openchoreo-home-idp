@@ -1,11 +1,11 @@
-# Odigos + OpenObserve Tracing: Current Status & Next Steps
+# Odigos + OpenObserve Tracing: Diagnosis, Resolution & Pulumi Codification
 
 **Date**: 2026-04-05
-**Author**: Agent session notes
+**Status**: ✅ RESOLVED — Traces visible in Backstage UI
 
 ---
 
-## 1. What We're Trying to Achieve
+## 1. Goal
 
 End-to-end distributed tracing visible in Backstage UI:
 - **Odigos** auto-instruments workloads in `dp-*` namespaces (language-agnostic, zero-config)
@@ -15,51 +15,62 @@ End-to-end distributed tracing visible in Backstage UI:
 
 ---
 
-## 2. What Works ✅
+## 2. The Problem
 
-| Component | Status |
-|-----------|--------|
-| **Odigos installed** (v1.23.0) | Running in `odigos-system` with privileged PSA labels |
-| **Language detection** | Go (document-svc, collab-svc, nats), Python (trace-test-app), nginx (frontend), postgres |
-| **Python auto-instrumentation** | Odigos injects OTel SDK via env vars + init container. Confirmed working. |
-| **Go eBPF instrumentation** | Partially works — `document-svc` produced 43 real trace spans. `collab-svc` failed (stripped binary, no DWARF). |
-| **Odigos Destination** | `openobserve-via-collector` CR sends to `opentelemetry-collector.openchoreo-observability-plane:4317` |
-| **OpenObserve traces stream** | Exists with 43 spans (from first batch before K8sAttributesResolver was added) |
-| **Observer + tracing-adapter** | Running, but queries fail with schema mismatch |
-| **K8sAttributesResolver action** | Created and reconciled — adds `openchoreo.dev/*` pod labels to trace spans on the odiglet node collector |
+### 2a. Tracing-adapter schema mismatch
 
-## 3. The Problem ❌
-
-### 3a. Tracing-adapter schema mismatch (original issue)
-
-The **tracing-adapter-openobserve** queries OpenObserve for field `service_openchoreo_dev_namespace` but traces only contain `service_k8s_namespace_name`. This is because Odigos adds standard k8s resource attributes, not OpenChoreo-specific ones.
+The **tracing-adapter-openobserve** queries OpenObserve for field `service_openchoreo_dev_namespace` but traces only contained `service_k8s_namespace_name`. This is because Odigos adds standard k8s resource attributes (like `k8s.namespace.name`), not OpenChoreo-specific ones (like `openchoreo.dev/namespace`).
 
 **Error from tracing-adapter logs:**
 ```
 Search field not found: Schema error: No field named service_openchoreo_dev_namespace.
-Valid fields are: default._timestamp, default.end_time, default.operation_name, 
-default.reference_parent_span_id, default.span_id, default.span_kind, default.start_time, default.trace_id.
+Valid fields are: default._timestamp, default.end_time, default.operation_name, ...
 ```
 
-### 3b. New traces stopped arriving after K8sAttributesResolver was added
+The tracing-adapter needs OpenChoreo labels (`openchoreo.dev/namespace`, `openchoreo.dev/project`, `openchoreo.dev/environment`, `openchoreo.dev/component`) as resource attributes on trace spans. These labels exist on the pods but were not being extracted into OTel resource attributes.
 
-After creating the `K8sAttributesResolver` action (to extract `openchoreo.dev/*` pod labels):
-- Odigos autoscaler reconciled the action and created a `k8sattributes/odigos-k8sattributes` processor
-- The processor was added to the **odiglet node collector** (`odigos-data-collection` ConfigMap) traces pipeline
-- Both the odiglet data-collection container and odigos-gateway were automatically restarted by Odigos
-- **After this point, zero new traces arrived in OpenObserve** despite:
-  - The trace-test-app being healthy and serving HTTP 200s
-  - The OTLP endpoint being reachable from the app pod
-  - No errors in odiglet or gateway logs
-  - Gateway receiving 0 spans (confirmed via Prometheus metrics)
+### 2b. Apparent "traces stopped" after adding K8sAttributesResolver
 
-The 43 traces from the initial batch (before the action was added) remain in OpenObserve.
+After creating the K8sAttributesResolver action to extract OpenChoreo pod labels, it appeared that traces stopped flowing entirely. Investigation revealed this was a **misdiagnosis** — see Section 4.
 
 ---
 
-## 4. What We Tried
+## 3. Root Cause Analysis
 
-### Fix attempt 1: K8sAttributesResolver action
+### Why traces appeared to stop (red herring)
+
+The original test app (`trace-test-app`) used Python's **stdlib `http.server.BaseHTTPRequestHandler`**. This module has **NO OpenTelemetry auto-instrumentation library**. OTel Python only auto-instruments frameworks like Flask, Django, FastAPI, requests, urllib3, etc.
+
+The 43 traces that existed before were from:
+- `document-svc` (35 spans — Go eBPF)
+- `trace-test-app` (6 spans — from earlier session with different app version)
+- `collab-svc` (2 spans — Go eBPF)
+
+After the K8sAttributesResolver was added, the odiglet restarted. We were sending traffic to the stdlib test app expecting new Python spans, but **none were generated** because stdlib `http.server` isn't instrumented.
+
+### Proof the pipeline was never broken
+
+A manual trace sent via `curl -X POST /v1/traces` to the odiglet went through the entire pipeline successfully:
+- odiglet received it (1 span in receiver metrics)
+- loadbalancing exporter sent it to gateway (1 span)
+- Arrived in OpenObserve as `manual-test` service
+
+The k8sattributes processor was working correctly all along.
+
+### Real fix: Use an instrumented framework
+
+Replacing the test app with **Flask** immediately produced traces:
+- Flask requests → auto-instrumented by `opentelemetry-instrumentation-flask`
+- `requests` library calls → auto-instrumented by `opentelemetry-instrumentation-requests` and `opentelemetry-instrumentation-urllib3`
+- Rich span metadata including HTTP method, URL, status code, exceptions
+
+---
+
+## 4. What We Did (Chronological)
+
+### Step 1: Created Odigos K8sAttributes Action (ad-hoc kubectl)
+Applied a `K8sAttributesResolver` CR to extract OpenChoreo pod labels into trace resource attributes:
+
 ```yaml
 apiVersion: actions.odigos.io/v1alpha1
 kind: K8sAttributesResolver
@@ -76,233 +87,224 @@ spec:
     - labelKey: "openchoreo.dev/project"
       attributeKey: "openchoreo.dev/project"
       from: pod
-    # ... plus component, environment, UIDs
+    - labelKey: "openchoreo.dev/environment"
+      attributeKey: "openchoreo.dev/environment"
+      from: pod
+    - labelKey: "openchoreo.dev/component"
+      attributeKey: "openchoreo.dev/component"
+      from: pod
+    - labelKey: "openchoreo.dev/component-uid"
+      attributeKey: "openchoreo.dev/component-uid"
+      from: pod
+    - labelKey: "openchoreo.dev/environment-uid"
+      attributeKey: "openchoreo.dev/environment-uid"
+      from: pod
+    - labelKey: "openchoreo.dev/project-uid"
+      attributeKey: "openchoreo.dev/project-uid"
+      from: pod
 ```
 
-**Result**: The action was accepted and reconciled. The odiglet `odigos-data-collection` ConfigMap now includes:
-```yaml
-k8sattributes/odigos-k8sattributes:
-  auth_type: serviceAccount
-  extract:
-    labels:
-      - from: pod
-        key: openchoreo.dev/namespace
-        tag_name: openchoreo.dev/namespace
-      # ... all 7 labels
-  filter:
-    node_from_env_var: NODE_NAME
-  passthrough: false
-  pod_association:
-    # (uses default - likely client IP)
+**Result**: Odigos auto-migrated this to the newer `Action` CRD (`odigos.io/v1alpha1/Action`) with `k8sAttributes` spec. The autoscaler reconciled it into a `k8sattributes/odigos-k8sattributes` processor on the odiglet's data-collection pipeline.
+
+> **Note**: Per Odigos docs, the correct CRD going forward is `odigos.io/v1alpha1 Action` with `spec.k8sAttributes`, not the deprecated `actions.odigos.io/v1alpha1 K8sAttributesResolver`.
+
+### Step 2: Investigation of "stopped traces"
+- Verified RBAC: odiglet ServiceAccount has full pod list/watch across all namespaces ✅
+- Verified pipeline config: k8sattributes processor correctly configured with `passthrough: false`, `pod_association` by resource_attribute (`k8s.pod.name` + `k8s.namespace.name`) ✅
+- Verified connectivity: OTLP endpoint reachable from dp namespace ✅
+- Verified odiglet metrics: **zero received spans** — the receiver was healthy but nothing was sending
+- Sent manual trace via curl: **went through end-to-end** — proved pipeline was NOT broken
+- Discovered root cause: stdlib `http.server` has no OTel instrumentation
+
+### Step 3: Replaced test app with Flask
+Created a Flask-based trace-test-app that uses auto-instrumentable frameworks:
+- Flask for HTTP server (auto-instrumented)
+- `requests` library for downstream calls (auto-instrumented)
+
+### Step 4: Verified OpenChoreo labels in OpenObserve
+After generating traffic through the Flask app and the Go `document-svc`:
+
+```
+✅ service_openchoreo_dev_component: document-svc
+✅ service_openchoreo_dev_environment: development
+✅ service_openchoreo_dev_namespace: default
+✅ service_openchoreo_dev_project: doclet
 ```
 
-The processor is in the traces pipeline:
-```yaml
-traces:
-  exporters: [loadbalancing/traces]
-  processors: [batch, memory_limiter, resource/node-name, resourcedetection, k8sattributes/odigos-k8sattributes, odigostrafficmetrics]
-  receivers: [otlp/in, odigosebpf]
-```
+Both Python (Flask via SDK) and Go (eBPF) traces now carry the OpenChoreo labels.
 
-**But after this change, NO new traces flow through the pipeline.**
+### Step 5: Restarted tracing-adapter
+The adapter was caching the schema error. After restart, it successfully connected and queried traces using the `service_openchoreo_dev_namespace` field.
 
-### Fix attempt 2: Full restart of odiglet + gateway + trace-test pod
-- Deleted odiglet pod (new one created by DaemonSet)
-- Rolled out restart of odigos-gateway
-- Killed and recreated trace-test-app pod
-- Generated 10+ HTTP requests
-- Waited 60-90 seconds for batch flush
-- **Still 0 new traces in OpenObserve**
-
-### Fix attempt 3: Verified connectivity
-- `odigos-data-collection-local-traffic.odigos-system:4318` reachable from dp namespace (HTTP 200 to OTLP endpoint)
-- `odigos-gateway` headless service has endpoints
-- No errors in any component logs
-- kgateway not blocking (no "not responding" warnings)
+### Step 6: Confirmed in Backstage UI
+User confirmed traces are now visible in the Backstage UI.
 
 ---
 
-## 5. Root Cause Hypotheses
+## 5. Final Trace Counts in OpenObserve
 
-### Hypothesis A: k8sattributes pod_association issue
-The `k8sattributes` processor on the odiglet uses `passthrough: false` which means it tries to correlate spans to pods using the **client IP**. For spans received via the `otlp/in` receiver (from Python apps sending over HTTP), the client IP is the **app pod IP** — this should work since the processor filters by node (`spec.nodeName=talos-c43-5pl`).
-
-But if the pod_association can't match the pod (e.g., the pod just started and isn't in the k8s API cache yet), the processor might **drop the span** or **block the pipeline**.
-
-**Test**: Remove the K8sAttributesResolver action and see if traces flow again.
-
-### Hypothesis B: k8sattributes RBAC issue
-The odiglet ServiceAccount might not have permissions to list/watch pods with the new label extraction config. The processor silently fails.
-
-**Test**: Check ClusterRole/ClusterRoleBinding for odiglet.
-
-### Hypothesis C: Loadbalancing exporter stale after config reload
-The `loadbalancing/traces` exporter resolves `odigos-gateway.odigos-system` via k8s DNS. After the gateway pods were replaced (rollout restart), the loadbalancer might have cached stale endpoints.
-
-**Test**: Check if odiglet data-collection has any loadbalancing-related error logs.
-
-### Hypothesis D: Pipeline config error
-The addition of the `k8sattributes/odigos-k8sattributes` processor might have introduced a config error that causes the OTel collector in the odiglet to silently fail processing spans (no error logs, just drops them).
-
-**Test**: Enable debug logging on odiglet data-collection container.
+| Service | Spans | Source |
+|---------|-------|--------|
+| document-svc-development-a2c28cff | 40 | Go eBPF |
+| trace-test-app | 17 | Python Flask (SDK via Odigos loader) |
+| collab-svc-development-aa9896d4 | 2 | Go eBPF |
+| manual-test | 1 | Manual curl probe |
+| **Total** | **60** | |
 
 ---
 
-## 6. Recommended Next Steps (Priority Order)
+## 6. What Needs Pulumi Codification
 
-### Step 1: Verify if removing the action fixes trace flow
-```bash
-kubectl delete k8sattributesresolver openchoreo-labels -n odigos-system
-kubectl delete action migrated-legacy-openchoreo-labels -n odigos-system
-# Wait for odiglet data-collection to restart
-# Generate traffic and check OpenObserve for new traces
-```
-If traces flow again → the k8sattributes processor is the culprit.
+### 6a. ✅ Already in Pulumi
+- Odigos namespace + Helm release + Destination CR (`pulumi/components/odigos.py`)
+- OpenObserve ExternalSecret + logging/tracing adapters (`pulumi/components/observability_plane.py`)
+- OpenBao seeding for openobserve credentials (`pulumi/components/prerequisites.py`)
 
-### Step 2: Alternative approach — use Odigos RenameAttribute action
-Instead of k8sattributes (which adds a heavy processor), use a lightweight `RenameAttribute` action to copy existing attributes:
-- The odiglet already has `k8s.namespace.name` → can we derive `openchoreo.dev/namespace` from it?
-- No, because `k8s.namespace.name` = `dp-default-doclet-development-50ce4d9b` while `openchoreo.dev/namespace` = `default`
+### 6b. 🔴 Ad-hoc — MUST be codified in Pulumi
 
-### Step 3: Alternative approach — add labels via OTel Collector (bypass Odigos processor)
-Configure the **existing OpenChoreo OTel Collector** (`opentelemetry-collector` in `openchoreo-observability-plane`) to extract pod labels. It already has a `k8sattributes` processor with `key_regex: (.*)`. The issue is that traces from Odigos gateway arrive with the gateway's pod IP, not the app pod IP.
+| Item | What was done ad-hoc | Pulumi action needed |
+|------|---------------------|---------------------|
+| **Odigos K8sAttributes Action** | `kubectl apply` of K8sAttributesResolver CR | Add `Action` CR to `pulumi/components/odigos.py` — use the `odigos.io/v1alpha1 Action` kind (not the deprecated `K8sAttributesResolver`) |
+| **Odigos Source (namespace-level)** | Created via Odigos auto-detection / CLI | Add `Source` CR to `pulumi/components/odigos.py` targeting `dp-*` namespaces (or make it dynamic via DemoAppBootstrap) |
 
-Fix: Add `pod_association` based on resource attributes:
+### 6c. 🟡 Test-only — can be cleaned up
+
+| Item | Notes |
+|------|-------|
+| **trace-test-app Deployment + Service** | Flask test app in `dp-default-doclet-development-50ce4d9b`. Used for validation. Can be deleted once we confirm real app traces work. |
+
+### 6d. 🟢 One-time ops — no Pulumi needed
+
+| Item | Notes |
+|------|-------|
+| **tracing-adapter restart** | One-time fix. The adapter only errored because the schema fields didn't exist yet. On a clean deploy, the Action CR will be in place before the adapter starts querying, so the fields will exist from the first trace. |
+
+---
+
+## 7. Correct Odigos Action CRD (for Pulumi)
+
+Per the [Odigos K8sAttributes docs](https://docs.odigos.io/oss/pipeline/actions/attributes/k8sattributes), the canonical format is:
+
 ```yaml
-k8sattributes:
-  pod_association:
-    - sources:
-      - from: resource_attribute
-        name: k8s.pod.name
-    - sources:
-      - from: resource_attribute
-        name: k8s.namespace.name
+apiVersion: odigos.io/v1alpha1
+kind: Action
+metadata:
+  name: openchoreo-labels
+  namespace: odigos-system
+spec:
+  actionName: "Extract OpenChoreo pod labels"
+  signals:
+    - TRACES
+  k8sAttributes:
+    labelsAttributes:
+      - labelKey: "openchoreo.dev/namespace"
+        attributeKey: "openchoreo.dev/namespace"
+        from: pod
+      - labelKey: "openchoreo.dev/project"
+        attributeKey: "openchoreo.dev/project"
+        from: pod
+      - labelKey: "openchoreo.dev/environment"
+        attributeKey: "openchoreo.dev/environment"
+        from: pod
+      - labelKey: "openchoreo.dev/component"
+        attributeKey: "openchoreo.dev/component"
+        from: pod
+      - labelKey: "openchoreo.dev/component-uid"
+        attributeKey: "openchoreo.dev/component-uid"
+        from: pod
+      - labelKey: "openchoreo.dev/environment-uid"
+        attributeKey: "openchoreo.dev/environment-uid"
+        from: pod
+      - labelKey: "openchoreo.dev/project-uid"
+        attributeKey: "openchoreo.dev/project-uid"
+        from: pod
 ```
 
-### Step 4: Alternative approach — send Odigos traces directly to OpenObserve
-Skip our OTel Collector entirely. Change the Odigos Destination to send directly to OpenObserve's OTLP endpoint:
-```
-OTLP_GRPC_ENDPOINT: openobserve:5080
-```
-This removes one hop but loses the k8sattributes enrichment from our collector.
-
-### Step 5: Debug with verbose logging
-If the above doesn't clarify:
-```bash
-# Enable debug logging on odiglet data-collection
-kubectl edit cm odigos-data-collection -n odigos-system
-# Change telemetry.logs.level from "info" to "debug"
-# Then restart odiglet
-```
-
-### Step 6: Fix kgateway restart race condition
-**Important operational fix**: After any service changes (new Helm releases, new services), restart kgateway:
-```bash
-kubectl rollout restart deployment/kgateway -n openchoreo-control-plane
-kubectl rollout restart deployment/gateway-default -n openchoreo-control-plane
-kubectl rollout restart deployment/gateway-default -n openchoreo-data-plane
-kubectl rollout restart deployment/gateway-default -n openchoreo-observability-plane
-```
+Key differences from our ad-hoc version:
+- Uses `apiVersion: odigos.io/v1alpha1` + `kind: Action` (not deprecated `actions.odigos.io/v1alpha1/K8sAttributesResolver`)
+- Spec uses `k8sAttributes.labelsAttributes` (nested under `k8sAttributes`)
+- The deprecated `K8sAttributesResolver` is auto-migrated by Odigos but should not be used for new deployments
 
 ---
 
-## 7. Current Cluster State
+## 8. Full Trace Pipeline (Verified Working)
 
-### Odigos Resources
 ```
-Namespace: odigos-system
-Pods: odiglet (DaemonSet), odigos-gateway (2 replicas), odigos-autoscaler, odigos-instrumentor (2), odigos-scheduler, odigos-ui
-CRs: 
-  - Destination: openobserve-via-collector (OTLP gRPC to our OTel Collector:4317)
-  - Source: doclet-development (namespace-level, dp-default-doclet-development-50ce4d9b)
-  - K8sAttributesResolver: openchoreo-labels (extracts 7 openchoreo.dev/* pod labels)
-  - Action: migrated-legacy-openchoreo-labels (auto-created from above)
-```
-
-### Trace Pipeline Path
-```
-Python app (OTLP HTTP) ──→ odiglet:4318 (otlp/in receiver)
-Go app (eBPF) ──→ odiglet (odigosebpf receiver)
-    │
-    ▼
-odiglet data-collection pipeline:
-  receivers: [otlp/in, odigosebpf]
-  processors: [batch, memory_limiter, resource/node-name, resourcedetection, 
+App pods (dp-* namespaces)
+  │
+  ├─ Python/Node.js/Java/etc (SDK via Odigos loader + LD_PRELOAD)
+  │   → OTLP HTTP → odigos-data-collection-local-traffic:4318
+  │
+  ├─ Go (eBPF probes via odiglet)
+  │   → odigosebpf receiver (shared memory FD)
+  │
+  ▼
+odiglet data-collection (node-level collector, DaemonSet)
+  processors: [batch, memory_limiter, resource/node-name, resourcedetection,
                k8sattributes/odigos-k8sattributes, odigostrafficmetrics]
-  exporters: [loadbalancing/traces]
-    │
-    ▼
-odigos-gateway (loadbalancing via headless service)
-  traces/in → traces/default → traces/generic-openobserve-via-collector
-  exporter: otlp/generic-openobserve-via-collector
-    │
-    ▼
-OTel Collector (openchoreo-observability-plane:4317)
+  ├─ k8sattributes extracts openchoreo.dev/* pod labels → resource attributes
+  exporters: [loadbalancing/traces → odigos-gateway headless]
+  │
+  ▼
+odigos-gateway (cluster-level collector, 2 replicas)
+  pipelines: traces/in → traces/default → traces/generic-openobserve-via-collector
+  exporter: otlp → opentelemetry-collector.openchoreo-observability-plane:4317
+  │
+  ▼
+OTel Collector (OpenChoreo observability plane)
   processors: [k8sattributes, tail_sampling]
   exporters: [opensearch, otlphttp/openobserve]
-    │
-    ▼
+  │
+  ▼
 OpenObserve (openobserve:5080) → traces stream "default"
-    │
-    ▼
-tracing-adapter-openobserve (port 9100) ──→ Observer (port 8080) ──→ Backstage UI
-```
-
-### Test App
-```
-Name: trace-test-app
-Namespace: dp-default-doclet-development-50ce4d9b
-Language: Python 3.12 (detected by Odigos)
-Labels: openchoreo.dev/namespace=default, openchoreo.dev/project=doclet, 
-        openchoreo.dev/environment=development, openchoreo.dev/component=trace-test
-Purpose: Generates HTTP trace spans for testing the pipeline
-Status: Running, serving HTTP 200, Odigos instrumented (OTEL_* env vars injected)
-Note: NOT an OpenChoreo managed component — won't appear in Backstage catalog
-```
-
-### OpenObserve Traces
-```
-Stream: default (type: traces)
-Records: 43 (all from initial batch before K8sAttributesResolver)
-Fields include: trace_id, span_id, operation_name, service_name, 
-  service_k8s_namespace_name, service_k8s_deployment_name, etc.
-Missing: openchoreo_dev_namespace, openchoreo_dev_project (the fields tracing-adapter needs)
+  ├─ Flattens resource attributes with service_ prefix
+  │   e.g., openchoreo.dev/namespace → service_openchoreo_dev_namespace
+  │
+  ▼
+tracing-adapter-openobserve (port 9100)
+  ├─ Queries: WHERE service_openchoreo_dev_namespace = 'default'
+  │
+  ▼
+Observer API (port 8080) → Backstage UI
 ```
 
 ---
 
-## 8. Key Learnings
+## 9. Key Learnings
 
-1. **Odigos K8sAttributesResolver is deprecated** — auto-migrated to `odigosv1.Action` format
-2. **Odigos Python auto-instrumentation works** — injects via env vars, no init container needed for simple apps
-3. **Go eBPF needs DWARF symbols** — stripped binaries fail with "decoding dwarf section info at offset 0x0: too short"
-4. **`python3 -c` short-lived commands crash OTel exporter** — `RuntimeError: cannot schedule new futures after interpreter shutdown`
-5. **kgateway xDS blocks all endpoints if ANY service is unresolvable** — restart kgateway after adding new services
-6. **The odigos-data-collection ConfigMap is auto-managed** — Odigos autoscaler reconciles it when Actions/Processors change
-7. **Odigos uses a 3-hop trace pipeline**: odiglet (node) → gateway (cluster) → destination — not a direct export
-8. **OpenObserve flattens resource attributes** with `service_` prefix: `k8s.namespace.name` → `service_k8s_namespace_name`
-
----
-
-## 9. Files Modified This Session (Odigos-related)
-
-| File | Change |
-|------|--------|
-| `pulumi/components/odigos.py` | **NEW** — Odigos Helm + Destination CR + namespace with privileged PSA |
-| `pulumi/config.py` | Added `odigos_version` config |
-| `pulumi/__main__.py` | Replaced OTel Operator step 6.5 with Odigos |
-| `pulumi/Pulumi.talos-baremetal.yaml` | Added `odigos_version: "1.23.0"` |
-
-Commits: `fad17f9` (pushed to main)
+1. **Odigos K8sAttributesResolver is deprecated** — auto-migrated to `odigos.io/v1alpha1 Action` format. Use `Action` kind in Pulumi.
+2. **Python stdlib `http.server` is NOT auto-instrumented** — only frameworks (Flask, Django, FastAPI, etc.) have OTel instrumentation. Use Flask for test apps.
+3. **Odigos Python instrumentation uses LD_PRELOAD loader** — the `/var/odigos/` directory is mounted via the Odigos device plugin (`instrumentation.odigos.io/generic`). PYTHONPATH is set to include auto-instrumentation sitecustomize.
+4. **Go eBPF needs DWARF symbols** — stripped binaries fail with "decoding dwarf section info at offset 0x0: too short".
+5. **OpenObserve flattens resource attributes** with `service_` prefix: `openchoreo.dev/namespace` → `service_openchoreo_dev_namespace`.
+6. **OpenObserve schema is dynamic** — fields don't exist until the first document containing them is ingested. The tracing-adapter will error until traces with the required fields arrive.
+7. **Odigos uses a 3-hop trace pipeline**: odiglet (node) → gateway (cluster) → destination.
+8. **The odigos-data-collection ConfigMap is auto-managed** — Odigos autoscaler reconciles it when Actions change.
+9. **Manual span probes are invaluable** for debugging — `curl -X POST /v1/traces` with a hand-crafted OTLP JSON payload proves the pipeline works independently of app instrumentation.
+10. **kgateway xDS blocks all endpoints if ANY service is unresolvable** — restart kgateway after adding new services.
 
 ---
 
-## 10. Open Beads
+## 10. Files Modified
 
-| ID | Title | Priority |
-|----|-------|----------|
-| `fdy` | Pulumi: Fluent Bit dual-ship config (OpenSearch + OpenObserve outputs) | P2 |
-| `hq6` | Pulumi: OTel Collector dual-export config (OpenSearch + OpenObserve) | P2 |
-| `je5` | Phase 4: Remove OpenSearch + cleanup | P2 |
-| (new needed) | Fix trace pipeline: K8sAttributesResolver blocking spans | P1 |
-| (new needed) | Tracing-adapter schema mismatch: needs openchoreo.dev/* fields | P1 |
+| File | Change | Status |
+|------|--------|--------|
+| `pulumi/components/odigos.py` | Odigos Helm + Destination CR + namespace | ✅ In Pulumi |
+| `pulumi/config.py` | `odigos_version` config | ✅ In Pulumi |
+| `pulumi/__main__.py` | Step 6.5: Odigos | ✅ In Pulumi |
+| `pulumi/Pulumi.talos-baremetal.yaml` | `odigos_version: "1.23.0"` | ✅ In Pulumi |
+| **K8sAttributes Action CR** | Extracts openchoreo.dev/* pod labels | 🔴 Ad-hoc, needs Pulumi |
+| **trace-test-app** | Flask test app in dp namespace | 🟡 Test-only, clean up |
+
+---
+
+## 11. Open Items
+
+| Priority | Item |
+|----------|------|
+| **P1** | Codify Odigos K8sAttributes Action in `pulumi/components/odigos.py` |
+| **P2** | Codify Fluent Bit dual-ship config (bead `fdy`) |
+| **P2** | Codify OTel Collector dual-export config (bead `hq6`) |
+| **P2** | Phase 4: Remove OpenSearch + cleanup (bead `je5`) |
+| **P3** | Clean up trace-test-app from dp namespace |
+| **P3** | Rebuild Go demo app without strip flags for full eBPF tracing |

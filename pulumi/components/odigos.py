@@ -88,7 +88,48 @@ class Odigos(pulumi.ComponentResource):
             ),
         )
 
-        # ─── 3. Destination: send traces to existing OTel Collector → OpenObserve ───
+        # ─── 3. K8sAttributes Action: extract OpenChoreo pod labels into traces ───
+        # The tracing-adapter-openobserve queries by openchoreo.dev/* resource
+        # attributes (e.g. service_openchoreo_dev_namespace). Odigos only adds
+        # standard k8s attributes by default. This Action tells the odiglet's
+        # k8sattributes processor to extract pod labels set by OpenChoreo into
+        # resource attributes on every trace span.
+        # Ref: https://docs.odigos.io/oss/pipeline/actions/attributes/k8sattributes
+        _OPENCHOREO_LABELS = [
+            "openchoreo.dev/namespace",
+            "openchoreo.dev/project",
+            "openchoreo.dev/environment",
+            "openchoreo.dev/component",
+            "openchoreo.dev/component-uid",
+            "openchoreo.dev/environment-uid",
+            "openchoreo.dev/project-uid",
+        ]
+        k8s.apiextensions.CustomResource(
+            "odigos-action-openchoreo-labels",
+            api_version="odigos.io/v1alpha1",
+            kind="Action",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="openchoreo-labels",
+                namespace=NS_ODIGOS,
+            ),
+            spec={
+                "actionName": "Extract OpenChoreo pod labels",
+                "signals": ["TRACES"],
+                "k8sAttributes": {
+                    "labelsAttributes": [
+                        {
+                            "labelKey": label,
+                            "attributeKey": label,
+                            "from": "pod",
+                        }
+                        for label in _OPENCHOREO_LABELS
+                    ],
+                },
+            },
+            opts=self._child_opts(provider=k8s_provider, depends_on=[odigos]),
+        )
+
+        # ─── 4. Destination: send traces to existing OTel Collector → OpenObserve ───
         k8s.apiextensions.CustomResource(
             "odigos-destination-openobserve",
             api_version="odigos.io/v1alpha1",
