@@ -60,6 +60,16 @@ def main() -> None:
             depends=[gateway_api_crds],
         ).result
 
+    # ─── Step 0.5: Cilium L2 (standalone — for pre-installed Cilium) ───
+    if cfg.platform.cilium_l2_announcements_enabled and cfg.platform.cilium_pre_installed:
+        from components import cilium_l2
+
+        cilium_l2.CiliumL2(
+            "cilium-l2",
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+        )
+
     # ─── Step 1: Prerequisites ───
     prereqs_component = prerequisites.Prerequisites(
         "prerequisites",
