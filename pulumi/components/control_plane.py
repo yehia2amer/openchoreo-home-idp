@@ -94,6 +94,13 @@ class ControlPlane(pulumi.ComponentResource):
         ]
 
         thunder_bootstrap_scripts = thunder_values.get("bootstrap", {}).get("scripts", {})
+        # Fix redirect URIs in bootstrap scripts to match the target platform domain.
+        for script_name, script_body in thunder_bootstrap_scripts.items():
+            thunder_bootstrap_scripts[script_name] = (
+                script_body
+                .replace("http://openchoreo.localhost:8080", cfg.backstage_url)
+                .replace("http://thunder.openchoreo.localhost:8080", cfg.thunder_url)
+            )
         thunder_bootstrap_files = sorted(thunder_bootstrap_scripts)
         thunder_bootstrap_cm_name = "thunder-bootstrap-managed"
         thunder_values["bootstrap"] = {

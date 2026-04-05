@@ -8,3 +8,4 @@ pulumi/talos-cluster-baremetal/outputs/
 .dolt/
 *.db
 .beads-credential-key
+.env
