@@ -173,15 +173,18 @@ class FluxGitOps(pulumi.ComponentResource):
         notif_depends: list[pulumi.Resource] = [wait_flux]
 
         if cfg.flux_telegram_bot_token and cfg.flux_telegram_chat_id:
-            # Telegram bot token Secret
+            # Telegram bot token + API address Secret.
+            # The Flux Telegram provider reads BOTH 'token' and 'address'
+            # from the referenced Secret (it ignores spec.address).
             telegram_secret = k8s.core.v1.Secret(
                 "flux-telegram-token",
                 metadata=k8s.meta.v1.ObjectMetaArgs(
-                    name="flux-telegram-token",
+                    name="telegram-token",
                     namespace=NS_FLUX_SYSTEM,
                 ),
                 string_data={
                     "token": cfg.flux_telegram_bot_token,
+                    "address": "https://api.telegram.org",
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
             )
@@ -190,14 +193,13 @@ class FluxGitOps(pulumi.ComponentResource):
                 api_version="notification.toolkit.fluxcd.io/v1beta3",
                 kind="Provider",
                 metadata=k8s.meta.v1.ObjectMetaArgs(
-                    name="openchoreo-alerts",
+                    name="telegram",
                     namespace=NS_FLUX_SYSTEM,
                 ),
                 spec={
                     "type": "telegram",
-                    "address": "https://api.telegram.org",
                     "channel": cfg.flux_telegram_chat_id,
-                    "secretRef": {"name": "flux-telegram-token"},
+                    "secretRef": {"name": "telegram-token"},
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux, telegram_secret]),
             )
@@ -209,28 +211,30 @@ class FluxGitOps(pulumi.ComponentResource):
                 api_version="notification.toolkit.fluxcd.io/v1beta3",
                 kind="Provider",
                 metadata=k8s.meta.v1.ObjectMetaArgs(
-                    name="openchoreo-alerts",
+                    name="generic-webhook",
                     namespace=NS_FLUX_SYSTEM,
                 ),
                 spec={
                     "type": "generic",
-                    "address": "http://notification-controller.flux-system.svc.cluster.local/",
+                    "address": "http://notification-controller.flux-system.svc.cluster.local./",
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
             )
 
-        # Alert on any Kustomization or GitRepository failure/warning.
+        # Alert on any Kustomization or GitRepository failure.
+        # Provider name depends on which provider was created above.
+        _provider_name = "telegram" if (cfg.flux_telegram_bot_token and cfg.flux_telegram_chat_id) else "generic-webhook"
         k8s.apiextensions.CustomResource(
             "flux-alert",
             api_version="notification.toolkit.fluxcd.io/v1beta3",
             kind="Alert",
             metadata=k8s.meta.v1.ObjectMetaArgs(
-                name="openchoreo-sync-alerts",
+                name="flux-alerts",
                 namespace=NS_FLUX_SYSTEM,
             ),
             spec={
-                "providerRef": {"name": "openchoreo-alerts"},
-                "eventSeverity": "error",
+                "providerRef": {"name": _provider_name},
+                "eventSeverity": "info",
                 "eventSources": [
                     {
                         "kind": "Kustomization",

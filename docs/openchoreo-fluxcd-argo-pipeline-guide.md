@@ -381,14 +381,19 @@ To send alerts to Telegram:
    ```yaml
    openchoreo:flux_telegram_bot_token:
      secure: <encrypted-token>   # use `pulumi config set --secret`
-   openchoreo:flux_telegram_chat_id: "-1001234567890"
+   openchoreo:flux_telegram_chat_id: "1203090452"
    ```
    Or via CLI:
    ```bash
    cd pulumi
    pulumi config set --secret flux_telegram_bot_token "123456:ABC-DEF..."
-   pulumi config set flux_telegram_chat_id "-1001234567890"
+   pulumi config set flux_telegram_chat_id "1203090452"
    ```
+
+   > **Critical**: The Secret must contain **both** `token` and `address` keys.
+   > The Flux Telegram provider reads the API endpoint from the Secret's
+   > `address` field (it ignores `spec.address` on the Provider resource).
+
 5. Run `pulumi up` — the Provider will be created with `type: telegram`
 
 You'll receive Telegram messages for any Kustomization or GitRepository sync errors.
