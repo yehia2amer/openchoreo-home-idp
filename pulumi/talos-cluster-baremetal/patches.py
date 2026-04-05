@@ -23,6 +23,7 @@ class PatchConfig:
     cloudflared_token: str = ""
     enable_nvidia: bool = False
     enable_zfs: bool = False
+    registry_mirror_endpoint: str = ""
 
 
 def render_install_image_patch(cfg: PatchConfig) -> str:
@@ -65,6 +66,7 @@ def render_network_patch(cfg: PatchConfig) -> str:
                         "mtu": 1500,
                     }
                 ],
+                "nameservers": cfg.dns_servers,
             },
         },
         "cluster": {
@@ -208,11 +210,36 @@ def render_nvidia_patch(cfg: PatchConfig) -> str:
     )
 
 
+def render_registry_mirrors_patch(cfg: PatchConfig) -> str:
+    """Configure containerd registry mirrors so the kubelet can pull from an in-cluster registry.
+
+    On Talos, containerd resolves registry hostnames via node DNS (not cluster DNS),
+    so cluster-internal names like ``registry.<ns>.svc.cluster.local`` are unreachable.
+    A mirror entry rewrites the pull to a NodePort endpoint reachable by the host.
+    """
+    if not cfg.registry_mirror_endpoint:
+        return ""
+    return json.dumps(
+        {
+            "machine": {
+                "registries": {
+                    "mirrors": {
+                        "registry.openchoreo-workflow-plane.svc.cluster.local:10082": {
+                            "endpoints": [cfg.registry_mirror_endpoint],
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+
 def build_control_plane_patches(cfg: PatchConfig) -> list[str]:
     common = [
         render_install_image_patch(cfg),
         render_cluster_settings_patch(cfg),
         render_kernel_drivers_patch(cfg),
+        render_registry_mirrors_patch(cfg),
         render_logging_patch(cfg),
     ]
     control_plane_extras = [
