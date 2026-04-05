@@ -165,6 +165,91 @@ class FluxGitOps(pulumi.ComponentResource):
             opts=self._child_opts(depends_on=[kust_projects]),
         )
 
+        # ─── 5. Flux Notifications (sync/build failure alerts) ───
+        # Generic webhook provider — receives JSON payloads from Flux.
+        # Replace the address with a real webhook URL (Slack, Discord, etc.)
+        # when ready.  The generic provider logs events that can be scraped
+        # by any observability stack.
+        notif_provider = k8s.apiextensions.CustomResource(
+            "flux-notification-provider",
+            api_version="notification.toolkit.fluxcd.io/v1beta3",
+            kind="Provider",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="openchoreo-alerts",
+                namespace=NS_FLUX_SYSTEM,
+            ),
+            spec={
+                "type": "generic",
+                # Log to Flux notification-controller stdout (always available).
+                # Swap to a real URL when a webhook sink is configured.
+                "address": "http://notification-controller.flux-system.svc.cluster.local/",
+            },
+            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_flux]),
+        )
+
+        # Alert on any Kustomization or GitRepository failure/warning.
+        k8s.apiextensions.CustomResource(
+            "flux-alert",
+            api_version="notification.toolkit.fluxcd.io/v1beta3",
+            kind="Alert",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="openchoreo-sync-alerts",
+                namespace=NS_FLUX_SYSTEM,
+            ),
+            spec={
+                "providerRef": {"name": "openchoreo-alerts"},
+                "eventSeverity": "error",
+                "eventSources": [
+                    {
+                        "kind": "Kustomization",
+                        "name": "*",
+                        "namespace": NS_FLUX_SYSTEM,
+                    },
+                    {
+                        "kind": "GitRepository",
+                        "name": "*",
+                        "namespace": NS_FLUX_SYSTEM,
+                    },
+                ],
+            },
+            opts=self._child_opts(provider=k8s_provider, depends_on=[notif_provider]),
+        )
+
+        # ─── 6. Health checks on ReleaseBinding conditions ───
+        # Add healthChecks to the projects Kustomization so Flux reports
+        # unhealthy when OpenChoreo ReleaseBindings have unresolved deps.
+        # We patch the existing kust_projects rather than a separate resource
+        # to keep the dependency chain clean.
+        k8s.apiextensions.CustomResource(
+            "kustomization-projects-healthchecks",
+            api_version="kustomize.toolkit.fluxcd.io/v1",
+            kind="Kustomization",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="oc-demo-projects",
+                namespace=NS_FLUX_SYSTEM,
+            ),
+            spec={
+                "interval": "5m",
+                "path": "./namespaces/default/projects",
+                "prune": True,
+                "targetNamespace": "default",
+                "sourceRef": {"kind": "GitRepository", "name": "sample-gitops"},
+                "dependsOn": [{"name": "oc-platform"}],
+                "healthChecks": [
+                    {
+                        "apiVersion": "openchoreo.dev/v1alpha1",
+                        "kind": "ReleaseBinding",
+                        "name": "*",
+                        "namespace": "default",
+                    },
+                ],
+            },
+            opts=self._child_opts(
+                provider=k8s_provider,
+                depends_on=[kust_ready],
+            ),
+        )
+
         self.result = FluxGitOpsResult(
             kustomization_projects=kust_projects,
             kustomizations_ready=kust_ready,
