@@ -138,6 +138,7 @@ class ObservabilityPlane(pulumi.ComponentResource):
                 values=op_values(
                     domain_base=cfg.domain_base,
                     thunder_url=cfg.thunder_url,
+                    backstage_url=cfg.backstage_url,
                     tls_enabled=cfg.tls_enabled,
                     op_http_port=cfg.op_http_port,
                     op_https_port=cfg.op_https_port,
