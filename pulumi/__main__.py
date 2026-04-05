@@ -177,6 +177,68 @@ def main() -> None:
                     opts=pulumi.ResourceOptions(provider=k8s_provider),
                 )
 
+        # Registry HTTPRoute — expose in-cluster registry via Gateway
+        k8s.apiextensions.CustomResource(
+            "registry-httproute",
+            api_version="gateway.networking.k8s.io/v1",
+            kind="HTTPRoute",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="registry",
+                namespace=NS_DATA_PLANE,
+            ),
+            spec={
+                "parentRefs": [
+                    {
+                        "name": "gateway-default",
+                        "namespace": NS_DATA_PLANE,
+                        "sectionName": "http",
+                    },
+                ],
+                "hostnames": [f"registry.{cfg.domain_base}"],
+                "rules": [
+                    {
+                        "backendRefs": [
+                            {
+                                "name": "registry",
+                                "namespace": NS_WORKFLOW_PLANE,
+                                "port": cfg.wp_registry_port,
+                            },
+                        ],
+                    },
+                ],
+            },
+            opts=pulumi.ResourceOptions(provider=k8s_provider),
+        )
+
+        # ReferenceGrant — allow data plane HTTPRoute to reference
+        # the registry Service in the workflow plane namespace
+        k8s.apiextensions.CustomResource(
+            "registry-reference-grant",
+            api_version="gateway.networking.k8s.io/v1beta1",
+            kind="ReferenceGrant",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="allow-dp-to-registry",
+                namespace=NS_WORKFLOW_PLANE,
+            ),
+            spec={
+                "from": [
+                    {
+                        "group": "gateway.networking.k8s.io",
+                        "kind": "HTTPRoute",
+                        "namespace": NS_DATA_PLANE,
+                    },
+                ],
+                "to": [
+                    {
+                        "group": "",
+                        "kind": "Service",
+                        "name": "registry",
+                    },
+                ],
+            },
+            opts=pulumi.ResourceOptions(provider=k8s_provider),
+        )
+
     # ─── Step 8: Integration Tests ───
     test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]
     if obs is not None:
