@@ -40,7 +40,15 @@ def get_values(
                 "allowedOrigins": [backstage_url],
             },
             "extraEnvs": [
+                # IMPORTANT: extraEnvs REPLACES (not appends) the chart's default
+                # env block, which includes OPENSEARCH_ADDRESS, PROMETHEUS_ADDRESS,
+                # PROMETHEUS_TIMEOUT, and AUTHZ_TIMEOUT. We must include all of them
+                # here alongside any custom env vars.
                 {"name": "OBSERVER_BASE_URL", "value": effective_observer_url},
+                {"name": "OPENSEARCH_ADDRESS", "value": "https://opensearch:9200"},
+                {"name": "PROMETHEUS_ADDRESS", "value": "http://openchoreo-observability-prometheus:9091"},
+                {"name": "PROMETHEUS_TIMEOUT", "value": "30s"},
+                {"name": "AUTHZ_TIMEOUT", "value": "30s"},
             ],
         },
         "security": {

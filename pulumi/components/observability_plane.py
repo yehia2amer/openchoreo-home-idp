@@ -109,6 +109,14 @@ class ObservabilityPlane(pulumi.ComponentResource):
                         "secretKey": "OBSERVER_OAUTH_CLIENT_SECRET",
                         "remoteRef": {"key": "observer-oauth-client-secret", "property": "value"},
                     },
+                    {
+                        "secretKey": "OPENSEARCH_USERNAME",
+                        "remoteRef": {"key": "opensearch-username", "property": "value"},
+                    },
+                    {
+                        "secretKey": "OPENSEARCH_PASSWORD",
+                        "remoteRef": {"key": "opensearch-password", "property": "value"},
+                    },
                 ],
             },
             opts=self._child_opts(provider=k8s_provider, depends_on=[ns]),
