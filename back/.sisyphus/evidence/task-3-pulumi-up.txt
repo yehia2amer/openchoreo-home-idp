@@ -1,0 +1,170 @@
+Previewing update (talos-baremetal):
+
+@ previewing update.....
+    pulumi:pulumi:Stack openchoreo-talos-baremetal  warning: github_pat is not set but Flux/GitOps features are enabled. Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.
+@ previewing update....
+    pulumi:pulumi:Stack openchoreo-talos-baremetal running warning: github_pat is not set but Flux/GitOps features are enabled. Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.
+@ previewing update......................
+ +  kubernetes:helm.sh/v3:Release openchoreo-control-plane create 
+ +  pulumi-python:dynamic:Resource label-cp-namespace create 
+ +  kubernetes:core/v1:Namespace openchoreo-workflow-plane create 
+ +  pulumi-python:dynamic:Resource copy-ca-data-plane create 
+ +  kubernetes:core/v1:Namespace openchoreo-workflow-plane create 
+@ previewing update.......
+ +  kubernetes:helm.sh/v4:Chart docker-registry create 
+ +  kubernetes:helm.sh/v3:Release openchoreo-data-plane create 
+ +  kubernetes:core/v1:ConfigMap docker-registry:openchoreo-workflow-plane/registry-config create 
+ +  kubernetes:core/v1:Service docker-registry:openchoreo-workflow-plane/registry create 
+ +  kubernetes:core/v1:PersistentVolumeClaim docker-registry:openchoreo-workflow-plane/registry create 
+ +  kubernetes:apps/v1:Deployment docker-registry:openchoreo-workflow-plane/registry create 
+ +  kubernetes:core/v1:Secret docker-registry:openchoreo-workflow-plane/registry-secret create 
+ +  pulumi-python:dynamic:Resource register-data-plane create 
+ +  pulumi-python:dynamic:Resource copy-ca-workflow-plane create 
+@ previewing update.....
+ +  kubernetes:helm.sh/v3:Release openchoreo-workflow-plane create 
+ +  command:local:Command workflow-templates create 
+ +  pulumi-python:dynamic:Resource register-workflow-plane create 
+ +  pulumi-python:dynamic:Resource itest-cert-manager-deployments create 
+ +  pulumi-python:dynamic:Resource itest-external-secrets-deployment create 
+ +  pulumi-python:dynamic:Resource itest-thunder-deployment create 
+ +  pulumi-python:dynamic:Resource itest-thunder-httproute-status create 
+ +  pulumi-python:dynamic:Resource itest-thunder-jwks-http create 
+ +  pulumi-python:dynamic:Resource itest-openbao-statefulset create 
+ +  pulumi-python:dynamic:Resource itest-backstage-deployment create 
+ +  pulumi-python:dynamic:Resource itest-backstage-httproute-status create 
+ +  pulumi-python:dynamic:Resource itest-backstage-http create 
+ +  pulumi-python:dynamic:Resource itest-openchoreo-api-http create 
+ +  pulumi-python:dynamic:Resource itest-crd-components create 
+ +  pulumi-python:dynamic:Resource itest-openchoreo-api-deployment create 
+ +  pulumi-python:dynamic:Resource itest-crd-environments create 
+ +  pulumi-python:dynamic:Resource itest-crd-clusterdataplanes create 
+ +  pulumi-python:dynamic:Resource itest-argo-server-deployment create 
+ +  pulumi-python:dynamic:Resource itest-crd-clusterworkflowplanes create 
+ +  pulumi-python:dynamic:Resource itest-crd-gateways create 
+ +  pulumi-python:dynamic:Resource itest-e2e-openbao-secrets create 
+ +  pulumi-python:dynamic:Resource itest-openchoreo-api-httproute-status create 
+ +  pulumi-python:dynamic:Resource itest-e2e-clusterdataplane-exists create 
+ +  pulumi-python:dynamic:Resource itest-e2e-backstage-secret-exists create 
+ +  pulumi-python:dynamic:Resource itest-e2e-cp-gateway-programmed create 
+ +  pulumi-python:dynamic:Resource itest-crd-httproutes create 
+ +  pulumi-python:dynamic:Resource itest-cluster-gateway-deployment create 
+ +  pulumi-python:dynamic:Resource itest-e2e-clustersecretstore-ready create 
+ +  pulumi-python:dynamic:Resource itest-data-plane-agent-deployment create 
+ +  pulumi-python:dynamic:Resource itest-e2e-clusterworkflowplane-exists create 
+ +  pulumi-python:dynamic:Resource itest-workflow-plane-agent-deployment create 
+ +  pulumi-python:dynamic:Resource itest-crd-projects create 
+ +  pulumi-python:dynamic:Resource itest-controller-manager-deployment create 
+ +  pulumi-python:dynamic:Resource itest-e2e-backstage-externalsecret-synced create 
+ -  kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition gateway-api-crds:xmeshes.gateway.networking.x-k8s.io delete 
+ -  kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition gateway-api-crds:tcproutes.gateway.networking.k8s.io delete 
+ -  kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition gateway-api-crds:xlistenersets.gateway.networking.x-k8s.io delete 
+ -  kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition gateway-api-crds:udproutes.gateway.networking.k8s.io delete 
+ -  kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition gateway-api-crds:xbackendtrafficpolicies.gateway.networking.x-k8s.io delete 
+ -  kubernetes:apiextensions.k8s.io/v1:CustomResourceDefinition gateway-api-crds:backendtlspolicies.gateway.networking.k8s.io delete 
+ -  kubernetes:yaml/v2:ConfigGroup gateway-api-crds delete 
+@ previewing update....
+    pulumi:pulumi:Stack openchoreo-talos-baremetal  1 warning
+Diagnostics:
+  pulumi:pulumi:Stack (openchoreo-talos-baremetal):
+    warning: github_pat is not set but Flux/GitOps features are enabled. Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.
+
+Resources:
+    + 47 to create
+    - 7 to delete
+    54 changes. 98 unchanged
+
+Updating (talos-baremetal):
+
+@ updating....
+    pulumi:pulumi:Stack openchoreo-talos-baremetal  warning: github_pat is not set but Flux/GitOps features are enabled. Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.
+@ updating....
+    pulumi:pulumi:Stack openchoreo-talos-baremetal running warning: github_pat is not set but Flux/GitOps features are enabled. Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.
+@ updating....................................
+ +  kubernetes:helm.sh/v3:Release openchoreo-control-plane creating (0s) 
+@ updating.......................
+SIGTERM received; cancelling. If you would like to terminate immediately, send SIGTERM again.
+Note that terminating immediately may lead to orphaned resources and other inconsistencies.
+
+ +  kubernetes:helm.sh/v3:Release openchoreo-control-plane creating (20s) warning: Helm release "openchoreo-control-plane-d23643b0" was created but has a failed status. Use the `helm` command to investigate the error, correct it, then retry. Reason: context canceled
+ +  kubernetes:helm.sh/v3:Release openchoreo-control-plane creating (20s) error: 1 error occurred:
+ +  kubernetes:helm.sh/v3:Release openchoreo-control-plane **creating failed** error: 1 error occurred:
+@ updating....
+    pulumi:pulumi:Stack openchoreo-talos-baremetal running error: update failed
+    pulumi:pulumi:Stack openchoreo-talos-baremetal **failed** 1 error; 1 warning
+Diagnostics:
+  kubernetes:helm.sh/v3:Release (openchoreo-control-plane):
+    warning: Helm release "openchoreo-control-plane-d23643b0" was created but has a failed status. Use the `helm` command to investigate the error, correct it, then retry. Reason: context canceled
+    error: 1 error occurred:
+    	* Helm release "openchoreo-control-plane/openchoreo-control-plane-d23643b0" was created, but failed to initialize completely. Use Helm CLI to investigate: failed to become available within allocated timeout. Error: Helm Release openchoreo-control-plane/openchoreo-control-plane-d23643b0: context canceled
+
+  pulumi:pulumi:Stack (openchoreo-talos-baremetal):
+    warning: github_pat is not set but Flux/GitOps features are enabled. Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.
+    error: update failed
+
+Outputs:
+    api_url                  : "https://api.openchoreo.local:8443"
+    argo_workflows_url       : "http://localhost:10081"
+    backstage_url            : "https://openchoreo.local:8443"
+    cilium_enabled           : false
+    data_plane_gateway_http  : "http://openchoreo.local:19080"
+    data_plane_gateway_https : "https://openchoreo.local:19443"
+    domain_base              : "openchoreo.local"
+    edition                  : "generic-cni"
+    flux_enabled             : false
+    integration_test_count   : 31
+    integration_tests        : [
+        [0]: "itest-cert-manager-deployments"
+        [1]: "itest-external-secrets-deployment"
+        [2]: "itest-openbao-statefulset"
+        [3]: "itest-thunder-deployment"
+        [4]: "itest-thunder-httproute-status"
+        [5]: "itest-thunder-jwks-http"
+        [6]: "itest-openchoreo-api-deployment"
+        [7]: "itest-openchoreo-api-httproute-status"
+        [8]: "itest-openchoreo-api-http"
+        [9]: "itest-backstage-deployment"
+        [10]: "itest-backstage-httproute-status"
+        [11]: "itest-backstage-http"
+        [12]: "itest-controller-manager-deployment"
+        [13]: "itest-cluster-gateway-deployment"
+        [14]: "itest-crd-components"
+        [15]: "itest-crd-projects"
+        [16]: "itest-crd-environments"
+        [17]: "itest-data-plane-agent-deployment"
+        [18]: "itest-crd-clusterdataplanes"
+        [19]: "itest-argo-server-deployment"
+        [20]: "itest-workflow-plane-agent-deployment"
+        [21]: "itest-crd-clusterworkflowplanes"
+        [22]: "itest-crd-gateways"
+        [23]: "itest-crd-httproutes"
+        [24]: "itest-e2e-openbao-secrets"
+        [25]: "itest-e2e-clustersecretstore-ready"
+        [26]: "itest-e2e-backstage-externalsecret-synced"
+        [27]: "itest-e2e-backstage-secret-exists"
+        [28]: "itest-e2e-clusterdataplane-exists"
+        [29]: "itest-e2e-clusterworkflowplane-exists"
+        [30]: "itest-e2e-cp-gateway-programmed"
+    ]
+    kubeconfig_context       : "admin@openchoreo"
+    namespaces               : {
+        control_plane      : "openchoreo-control-plane"
+        data_plane         : "openchoreo-data-plane"
+        observability_plane: "openchoreo-observability-plane"
+        workflow_plane     : "openchoreo-workflow-plane"
+    }
+    observability_enabled    : false
+    observer_url             : "https://observer.openchoreo.local:11085"
+    openbao_root_token       : [secret]
+    openchoreo_version       : "1.0.0"
+    opensearch_dashboards_url: "http://localhost:11081"
+    opensearch_password      : [secret]
+    opensearch_username      : "admin"
+    platform                 : "talos-baremetal"
+    thunder_url              : "https://thunder.openchoreo.local:8443"
+
+Resources:
+    98 unchanged
+    2 errored
+
+Duration: 56s
+

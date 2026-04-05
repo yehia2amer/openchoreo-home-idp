@@ -1,0 +1,40 @@
+Previewing update (dev):
+warning: [pre-flight] Node 192.168.0.100:50000 is not reachable (TCP connection failed)
+warning: [pre-flight] Node is unreachable — assuming it will come up in maintenance mode. Full bootstrap pipeline will run.
+  pulumi:pulumi:Stack: (same)
+    [urn=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::pulumi:pulumi:Stack::openchoreo-talos-cluster-baremetal-dev]
+@ previewing update....
+    + talos:machine/configurationApply:ConfigurationApply: (create)
+        [urn=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::talos:machine/configurationApply:ConfigurationApply::control-plane-config]
+        [provider=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::pulumi:providers:talos::default_0_7_1_github_/api.github.com/pulumiverse::4ffe3b5f-ed37-487d-95a2-fd76caae2be7]
+        applyMode                : "auto"
+        clientConfiguration      : [secret]
+        endpoint                 : "192.168.0.100"
+        machineConfigurationInput: [secret]
+        node                     : "192.168.0.100"
+        timeouts                 : {
+            create: "20m"
+            update: "20m"
+        }
+    + pulumi-python:dynamic:Resource: (create)
+        [urn=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::pulumi-python:dynamic:Resource::wait-talos-node-ready]
+        endpoint        : "192.168.0.100"
+        initial_delay   : 30
+        node            : "192.168.0.100"
+        poll_interval   : 10
+        port            : 50000
+        talosconfig_path: "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig"
+        timeout         : 600
+    + talos:machine/bootstrap:Bootstrap: (create)
+        [urn=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::talos:machine/bootstrap:Bootstrap::bootstrap]
+        [provider=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::pulumi:providers:talos::default_0_7_1_github_/api.github.com/pulumiverse::4ffe3b5f-ed37-487d-95a2-fd76caae2be7]
+        clientConfiguration: [secret]
+        endpoint           : "192.168.0.100"
+        node               : "192.168.0.100"
+    + pulumi-python:dynamic:Resource: (create)
+        [urn=urn:pulumi:dev::openchoreo-talos-cluster-baremetal::pulumi-python:dynamic:Resource::wait-k8s-api-ready]
+        host         : "192.168.0.100"
+        initial_delay: 15
+        poll_interval: 10
+        port         : 6443
+        timeout      : 600

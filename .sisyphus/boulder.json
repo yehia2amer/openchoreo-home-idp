@@ -1,62 +1,77 @@
 {
-  "active_plan": "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/.sisyphus/plans/talos-baremetal-deploy.md",
-  "started_at": "2026-03-30T10:00:00.000Z",
+  "active_plan": "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/.sisyphus/plans/stage3-flux-fix.md",
+  "started_at": "2026-04-04T20:27:51.063Z",
   "session_ids": [
-    "ses_2c503860bffewbftrc0tBgkM1P",
-    "ses_2c05a7646ffe3Bk6Ub80tu9Qx0",
-    "ses_2c049c098ffeGGRJVJRQRLvRNE",
-    "ses_2c0494c36ffevV5RQ9joU4nJCo",
-    "ses_2c0425151ffeXvb8G10lRDMr37",
-    "ses_2c039e1f0ffeXzzIalGDtB35an",
-    "ses_2c033e49effe31HACAD7cCQ4RM"
+    "ses_2a6017250ffekFBMeNMgh8HQPh",
+    "ses_2a5ce631bffemeWhopueUgCZ1S",
+    "ses_2a5bbbe60ffe7Jbas0ZS1bxqbh",
+    "ses_2a59c6e94ffex7KlCOVfqyNrdp",
+    "ses_2a58aa278ffeOvNqOFB1FBV4OR",
+    "ses_2a58032d1ffeK9ZAIFUp1zgm6w",
+    "ses_2a5732e57ffe65Pn01Byg8HPV5",
+    "ses_2a5690a1bffeXLa239N2ZCFyZh",
+    "ses_2a5605becffebStTm48YMKW8tw",
+    "ses_2a555fd84ffe0ChAL4xvVFR4VK",
+    "ses_2a5566759ffeiC4cVX5BZpNwlL",
+    "ses_2a54e1dd8ffeaS0LX64a7OqjXh",
+    "ses_2a549bc56ffePTdV5p5c85YvqH",
+    "ses_2a54446d1ffe3otTMdcpC7iqc8",
+    "ses_2a543d932ffeBmzcbXKfa2ipLJ",
+    "ses_2a53ae0d0ffeWUgB9ZAh9JVcYi",
+    "ses_2a5271e42ffeFs7JUieRD353lh",
+    "ses_2a4e97d5cffePi2gfSvjdoCqd6",
+    "ses_2a4e95d31ffeZYZExSZvW1xOtf",
+    "ses_2a4c21705ffehjmWNeQSgYpjSs",
+    "ses_2a4c2170affeI9lm52cPBhpnBq",
+    "ses_2a4c2160affeFCVHI9k3vlDViF",
+    "ses_2a4aef655ffeT2JPlH4W5t4uHt",
+    "ses_2a4af1ba0ffe0qBpJ7Zyn9KUaJ",
+    "ses_2a4af3be7ffezEEhtpSokSYRUO",
+    "ses_2a4a815a4ffeQ7Pn4vJdZTvGAR",
+    "ses_2a4a7e8baffemJPsFTLNEZ5YFP",
+    "ses_2a4a7b538ffeEUOchWK0TtDx6n",
+    "ses_2a49e6d93ffeMkmRdhJa2aSUMi",
+    "ses_2a49e8f4cffeJt73TGXn0vnr5l",
+    "ses_2a49ec012ffejCSCSt8BbbGDS1"
   ],
-  "plan_name": "talos-baremetal-deploy",
+  "plan_name": "stage3-flux-fix",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Extend PlatformProfile with bare-metal Cilium L2 fields",
-      "session_id": "ses_2c05abad8ffe0AFLBwM2AY9paI",
+      "task_title": "Fix `FLUX_INSTALL_URL` in `config.py` to use local file",
+      "session_id": "ses_2a58032d1ffeK9ZAIFUp1zgm6w",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-03-30T16:49:20.465Z"
+      "updated_at": "2026-04-04T22:07:38.885Z"
     },
-    "todo:2": {
-      "task_key": "todo:2",
-      "task_label": "2",
-      "task_title": "Update talos_baremetal profile with L2/BPF values",
-      "session_id": "ses_2c049c098ffeGGRJVJRQRLvRNE",
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Verify Flux deployment and GitOps reconciliation via kubectl",
+      "session_id": "ses_2a5690a1bffeXLa239N2ZCFyZh",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-03-30T17:07:18.000Z"
+      "updated_at": "2026-04-04T22:27:41.564Z"
     },
-    "todo:5": {
-      "task_key": "todo:5",
-      "task_label": "5",
-      "task_title": "Add ALL machine config patches to __main__.py",
-      "session_id": "ses_2c0425151ffeXvb8G10lRDMr37",
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_2a54446d1ffe3otTMdcpC7iqc8",
       "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-03-30T17:17:29.277Z"
+      "category": "unspecified-high",
+      "updated_at": "2026-04-04T23:04:15.665Z"
     },
-    "todo:6": {
-      "task_key": "todo:6",
-      "task_label": "6",
-      "task_title": "Update Pulumi.dev.yaml with real bare-metal values",
-      "session_id": "ses_2c039e1f0ffeXzzIalGDtB35an",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-03-30T17:25:00.554Z"
-    },
-    "todo:8": {
-      "task_key": "todo:8",
-      "task_label": "8",
-      "task_title": "Add pytest unit tests for config patch generation",
-      "session_id": "ses_2c033e49effe31HACAD7cCQ4RM",
+    "final-wave:f4": {
+      "task_key": "final-wave:f4",
+      "task_label": "F4",
+      "task_title": "**Scope Fidelity Check** — `deep`",
+      "session_id": "ses_2a5271e42ffeFs7JUieRD353lh",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-03-30T17:32:34.701Z"
+      "updated_at": "2026-04-04T23:36:18.310Z"
     }
   }
 }

@@ -66,7 +66,9 @@ class WorkflowPlane(pulumi.ComponentResource):
                 repository_opts=k8s.helm.v4.RepositoryOptsArgs(
                     repo=DOCKER_REGISTRY_HELM_REPO,
                 ),
-                values=registry_values(wp_registry_port=cfg.wp_registry_port),
+                values=registry_values(
+                    wp_registry_port=cfg.wp_registry_port, registry_node_port=cfg.registry_node_port
+                ),
             ),
             opts=pulumi.ResourceOptions.merge(
                 self._child_opts(provider=k8s_provider, depends_on=[ns]),

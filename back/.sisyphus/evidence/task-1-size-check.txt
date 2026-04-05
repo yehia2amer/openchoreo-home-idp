@@ -1,0 +1,7 @@
+QA Scenario: No full file dump in evidence
+Date: 2026-03-31
+
+Line count: 230 (< 500 ✅)
+Full rawstate.go is 925 lines — evidence is extracted sections only.
+
+RESULT: PASS

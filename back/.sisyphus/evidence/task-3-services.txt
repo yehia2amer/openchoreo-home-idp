@@ -1,0 +1,13 @@
+
+=== CONTROL PLANE SERVICES ===
+NAME       TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+kgateway   ClusterIP   10.111.147.24   <none>        9977/TCP   66m
+
+=== CLUSTERISSUERS ===
+NAME                   READY   AGE
+openchoreo-ca          True    67m
+selfsigned-bootstrap   True    67m
+
+=== CLUSTERSECRETSTORE ===
+NAME      AGE   STATUS   CAPABILITIES   READY
+default   64m   Valid    ReadWrite      True

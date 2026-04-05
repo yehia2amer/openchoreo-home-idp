@@ -1,0 +1,8 @@
+QA Scenario: All 4 bugs documented with details
+Date: 2026-03-31
+
+File exists: YES
+Bug references (grep -c "Bug|bug"): 6 (✅)
+Key terms (grep -c "TLS|readyz|float|rawstate|bridge"): 14 (✅)
+
+RESULT: PASS

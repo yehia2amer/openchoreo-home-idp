@@ -1,0 +1,51 @@
+NAMESPACE                  NAME                                                     READY   STATUS      RESTARTS        AGE
+cert-manager               cert-manager-helm-9ee3a4b1-59fc879b9f-5vdjf              1/1     Running     0               68m
+cert-manager               cert-manager-helm-9ee3a4b1-cainjector-5b84d89f66-qkm7f   1/1     Running     0               68m
+cert-manager               cert-manager-helm-9ee3a4b1-webhook-54578df999-mglkb      1/1     Running     0               68m
+external-secrets           external-secrets-85dccb745d-j7zkb                        1/1     Running     0               67m
+external-secrets           external-secrets-cert-controller-6d9964dd6b-wfgp2        1/1     Running     0               67m
+external-secrets           external-secrets-webhook-5bff9d77fb-dv24j                1/1     Running     0               67m
+kube-system                cilium-4l9fh                                             1/1     Running     1 (5h12m ago)   11h
+kube-system                cilium-envoy-rrjpk                                       1/1     Running     1 (5h12m ago)   11h
+kube-system                cilium-operator-5b89bbcf55-7zmwz                         1/1     Running     1 (5h12m ago)   11h
+kube-system                coredns-6b4c956686-5lgmq                                 1/1     Running     1 (5h12m ago)   12h
+kube-system                coredns-6b4c956686-m78j6                                 1/1     Running     1 (5h12m ago)   12h
+kube-system                hubble-relay-6b6fd4ffb4-k4c6f                            1/1     Running     0               5h12m
+kube-system                hubble-ui-76d4965bb6-4rrds                               2/2     Running     0               5h12m
+kube-system                hubble-ui-76d4965bb6-w2jmg                               0/2     Completed   0               11h
+kube-system                kube-apiserver-talos-c43-5pl                             1/1     Running     0               4h29m
+kube-system                kube-controller-manager-talos-c43-5pl                    1/1     Running     3 (4h30m ago)   4h29m
+kube-system                kube-scheduler-talos-c43-5pl                             1/1     Running     3 (4h29m ago)   4h29m
+kube-system                snapshot-controller-7fcb985488-4ds6p                     1/1     Running     0               113m
+kube-system                snapshot-controller-7fcb985488-gd2d4                     1/1     Running     0               113m
+longhorn-system            csi-attacher-6cc66dfc7-56866                             1/1     Running     1 (106m ago)    110m
+longhorn-system            csi-attacher-6cc66dfc7-cpl9s                             1/1     Running     1 (106m ago)    110m
+longhorn-system            csi-attacher-6cc66dfc7-xgc6q                             1/1     Running     1 (106m ago)    110m
+longhorn-system            csi-provisioner-bf9f5dcf-6jbr6                           1/1     Running     1 (107m ago)    110m
+longhorn-system            csi-provisioner-bf9f5dcf-77h2k                           1/1     Running     1 (107m ago)    110m
+longhorn-system            csi-provisioner-bf9f5dcf-k25sc                           1/1     Running     1 (107m ago)    110m
+longhorn-system            csi-resizer-79f94cf664-252dd                             1/1     Running     0               110m
+longhorn-system            csi-resizer-79f94cf664-5gwql                             1/1     Running     0               110m
+longhorn-system            csi-resizer-79f94cf664-zkj86                             1/1     Running     0               110m
+longhorn-system            csi-snapshotter-55f6bf5866-b9nhs                         1/1     Running     0               110m
+longhorn-system            csi-snapshotter-55f6bf5866-czbvv                         1/1     Running     0               110m
+longhorn-system            csi-snapshotter-55f6bf5866-jjh4l                         1/1     Running     0               110m
+longhorn-system            engine-image-ei-b4bcf0a5-vnq77                           1/1     Running     0               110m
+longhorn-system            instance-manager-9a0991a7eb8c6c74752b6df40fea8cdd        1/1     Running     0               110m
+longhorn-system            longhorn-csi-plugin-qjmrp                                3/3     Running     0               110m
+longhorn-system            longhorn-driver-deployer-5647c54d4f-vddms                1/1     Running     0               112m
+longhorn-system            longhorn-manager-z7q5r                                   2/2     Running     0               112m
+longhorn-system            longhorn-ui-8666455ff7-8ckrv                             1/1     Running     0               112m
+longhorn-system            longhorn-ui-8666455ff7-jtmsk                             1/1     Running     0               112m
+openbao                    openbao-0                                                1/1     Running     0               65m
+openchoreo-control-plane   kgateway-7dcf4bf945-dcb8n                                1/1     Running     0               66m
+
+=== NON-RUNNING PODS CHECK ===
+
+=== CONTROL PLANE PODS ===
+NAME                        READY   STATUS    RESTARTS   AGE
+kgateway-7dcf4bf945-dcb8n   1/1     Running   0          66m
+
+=== DATA PLANE PODS ===
+
+=== WORKFLOW PLANE PODS ===

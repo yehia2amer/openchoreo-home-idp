@@ -1,0 +1,4 @@
+enforce label present: True
+audit label present: True
+warn label present: True
+namespace resource present: True

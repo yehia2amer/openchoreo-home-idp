@@ -29,4 +29,5 @@ def patch_cfg() -> PatchConfig:
         cloudflared_token="test-token-xyz",
         enable_nvidia=True,
         enable_zfs=False,
+        registry_mirror_endpoint="http://192.168.0.100:30082",
     )

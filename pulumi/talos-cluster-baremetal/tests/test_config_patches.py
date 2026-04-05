@@ -11,6 +11,7 @@ from patches import (
     render_logging_patch,
     render_network_patch,
     render_nvidia_patch,
+    render_registry_mirrors_patch,
     render_storage_patch,
 )
 
@@ -219,17 +220,36 @@ def test_nvidia_patch_returns_empty_when_disabled(patch_cfg: PatchConfig):
 
 
 # ---------------------------------------------------------------------------
+# render_registry_mirrors_patch
+# ---------------------------------------------------------------------------
+
+
+def test_registry_mirrors_patch_structure(patch_cfg: PatchConfig):
+    data = json.loads(render_registry_mirrors_patch(patch_cfg))
+
+    mirrors = data["machine"]["registries"]["mirrors"]
+    key = "registry.openchoreo-workflow-plane.svc.cluster.local:10082"
+    assert key in mirrors
+    assert mirrors[key]["endpoints"] == ["http://192.168.0.100:30082"]
+
+
+def test_registry_mirrors_patch_returns_empty_when_no_endpoint(patch_cfg: PatchConfig):
+    cfg = replace(patch_cfg, registry_mirror_endpoint="")
+    assert render_registry_mirrors_patch(cfg) == ""
+
+
+# ---------------------------------------------------------------------------
 # build_control_plane_patches (aggregation)
 # ---------------------------------------------------------------------------
 
 
 def test_build_control_plane_patches_returns_all_patches(patch_cfg: PatchConfig):
-    """With everything enabled, we expect 8 non-empty patches."""
+    """With everything enabled, we expect 9 non-empty patches."""
     patches = build_control_plane_patches(patch_cfg)
 
-    # install_image, cluster_settings, kernel_drivers, logging,
-    # network, storage, cloudflared, nvidia = 8
-    assert len(patches) == 8
+    # install_image, cluster_settings, kernel_drivers, registry_mirrors,
+    # logging, network, storage, cloudflared, nvidia = 9
+    assert len(patches) == 9
     assert all(isinstance(p, str) for p in patches)
     assert all(len(p) > 0 for p in patches)
 
@@ -242,6 +262,7 @@ def test_build_control_plane_patches_filters_empty(patch_cfg: PatchConfig):
         longhorn_disk="",  # storage -> ""
         enable_cloudflared=False,  # cloudflared -> ""
         enable_nvidia=False,  # nvidia -> ""
+        registry_mirror_endpoint="",  # registry_mirrors -> ""
     )
     patches = build_control_plane_patches(cfg)
 
@@ -250,17 +271,14 @@ def test_build_control_plane_patches_filters_empty(patch_cfg: PatchConfig):
 
 
 def test_build_control_plane_patches_order(patch_cfg: PatchConfig):
-    """Common patches come before control-plane extras."""
     patches = build_control_plane_patches(patch_cfg)
 
-    # First four are common: install_image, cluster_settings, kernel_drivers, logging
-    # Then: network, storage, cloudflared, nvidia
-    # Verify by checking known unique content in each position
     assert "factory.talos.dev" in patches[0]  # install_image
     assert "max-pods" in patches[1]  # cluster_settings
     assert "vfio_pci" in patches[2]  # kernel_drivers
-    assert "json_lines" in patches[3]  # logging
-    assert '"cni"' in patches[4]  # network
-    assert "longhorn" in patches[5]  # storage
-    assert "cloudflared" in patches[6]  # cloudflared
-    assert "PCIDriverRebindConfig" in patches[7]  # nvidia
+    assert "registry.openchoreo-workflow-plane" in patches[3]  # registry_mirrors
+    assert "json_lines" in patches[4]  # logging
+    assert '"cni"' in patches[5]  # network
+    assert "longhorn" in patches[6]  # storage
+    assert "cloudflared" in patches[7]  # cloudflared
+    assert "PCIDriverRebindConfig" in patches[8]  # nvidia

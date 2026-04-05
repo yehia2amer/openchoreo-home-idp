@@ -1,0 +1,599 @@
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig version
+Label:     version
+Duration:  0.069 seconds
+------------------------------
+Client:
+	Tag:         v1.12.5
+	SHA:         da6c6e46
+	Built:       
+	Go version:  go1.25.8
+	OS/Arch:     darwin/arm64
+Server:
+	NODE:        192.168.0.100
+	Tag:         v1.12.5
+	SHA:         da6c6e46
+	Built:       
+	Go version:  go1.25.8
+	OS/Arch:     linux/amd64
+	Enabled:     RBAC
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig time
+Label:     time
+Duration:  0.162 seconds
+------------------------------
+NODE            NTP-SERVER            NODE-TIME                                 NTP-SERVER-TIME
+192.168.0.100   time.cloudflare.com   2026-04-01 20:14:47.823561707 +0000 UTC   2026-04-01 20:14:47.809914564 +0000 UTC
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig services
+Label:     services
+Duration:  0.075 seconds
+------------------------------
+NODE            SERVICE           STATE     HEALTH   LAST CHANGE        LAST EVENT
+192.168.0.100   apid              Running   OK       57454h38m58s ago   Health check successful
+192.168.0.100   auditd            Running   OK       57454h39m10s ago   Health check successful
+192.168.0.100   containerd        Running   OK       57454h39m10s ago   Health check successful
+192.168.0.100   cri               Running   OK       57454h38m58s ago   Health check successful
+192.168.0.100   dashboard         Running   ?        57454h39m1s ago    Process Process(["/sbin/dashboard"]) started with PID 3466
+192.168.0.100   etcd              Running   OK       34m18s ago         Health check successful
+192.168.0.100   ext-cloudflared   Running   ?        57454h38m57s ago   Started task ext-cloudflared (PID 3895) for container ext-cloudflared
+192.168.0.100   ext-iscsid        Running   ?        57454h38m57s ago   Started task ext-iscsid (PID 3896) for container ext-iscsid
+192.168.0.100   ext-zfs-service   Running   ?        57454h38m57s ago   Started task ext-zfs-service (PID 3894) for container ext-zfs-service
+192.168.0.100   kubelet           Running   OK       34m16s ago         Health check successful
+192.168.0.100   machined          Running   OK       57454h39m10s ago   Health check successful
+192.168.0.100   syslogd           Running   OK       57454h39m9s ago    Health check successful
+192.168.0.100   trustd            Running   OK       34m22s ago         Health check successful
+192.168.0.100   udevd             Running   OK       57454h39m2s ago    Health check successful
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig containers
+Label:     containers
+Duration:  0.124 seconds
+------------------------------
+NODE            NAMESPACE   ID                IMAGE   PID    STATUS
+192.168.0.100   system      apid                      3686   RUNNING
+192.168.0.100   system      ext-cloudflared           3895   RUNNING
+192.168.0.100   system      ext-iscsid                3896   RUNNING
+192.168.0.100   system      ext-zfs-service           3894   RUNNING
+192.168.0.100   system      trustd                    3990   RUNNING
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig memory
+Label:     memory
+Duration:  0.066 seconds
+------------------------------
+NODE            TOTAL    USED   FREE     SHARED   BUFFERS   CACHE   AVAILABLE
+192.168.0.100   128822   5378   120267   238      5         3169    122572
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig usage /var/lib
+Label:     usage /var/lib
+Duration:  6.668 seconds
+------------------------------
+NODE            SIZE          NAME
+192.168.0.100   154563        cni
+192.168.0.100   8890405814    containerd
+192.168.0.100   418552731     etcd
+192.168.0.100   10330         iscsi
+192.168.0.100   17674641      kubelet
+192.168.0.100   83923054224   longhorn
+192.168.0.100   93249852394   .
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig mounts
+Label:     mounts
+Duration:  0.087 seconds
+------------------------------
+NODE            FILESYSTEM                                               SIZE(GB)   USED(GB)   AVAILABLE(GB)   PERCENT USED   MOUNTED ON
+192.168.0.100   none                                                     67.47      0.00       67.47           0.00%          /dev
+192.168.0.100   none                                                     67.54      0.00       67.54           0.00%          /dev/shm
+192.168.0.100   none                                                     0.00       0.00       0.00            96.62%         /sys/firmware/efi/efivars
+192.168.0.100   none                                                     0.00       0.00       0.00            100.00%        /
+192.168.0.100   rootfs                                                   67.47      0.24       67.23           0.35%          /usr/lib/firmware
+192.168.0.100   rootfs                                                   67.47      0.24       67.23           0.35%          /.extra
+192.168.0.100   none                                                     67.54      0.01       67.53           0.02%          /run
+192.168.0.100   none                                                     67.54      0.00       67.54           0.00%          /system
+192.168.0.100   none                                                     0.07       0.00       0.07            0.00%          /tmp
+192.168.0.100   none                                                     0.01       0.00       0.01            3.17%          /etc/cri/conf.d/hosts
+192.168.0.100   none                                                     67.54      0.00       67.54           0.00%          /usr/lib/udev
+192.168.0.100   /dev/sda4                                                497.54     21.91      475.63          4.40%          /var
+192.168.0.100   /dev/sdb1                                                959.73     20.79      938.93          2.17%          /var/lib/longhorn
+192.168.0.100   none                                                     497.54     21.91      475.63          4.40%          /etc/cni
+192.168.0.100   none                                                     497.54     21.91      475.63          4.40%          /etc/kubernetes
+192.168.0.100   none                                                     497.54     21.91      475.63          4.40%          /usr/libexec/kubernetes
+192.168.0.100   none                                                     497.54     21.91      475.63          4.40%          /opt
+192.168.0.100   none                                                     67.54      0.00       67.54           0.00%          /usr/local/lib/containers/cloudflared
+192.168.0.100   none                                                     67.54      0.00       67.54           0.00%          /usr/local/lib/containers/zfs-service
+192.168.0.100   none                                                     67.54      0.00       67.54           0.00%          /usr/local/lib/containers/iscsid
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/system/kubelet/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/system/etcd/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/4941cfa7a19324b617e3f48cb6436e5bd7698254f2d2f47645e6451fdd066bc6/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/730c4c4cf4945f349129c90c9deb5543d482ead241efa9cc20657708ac4c39ae/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/2f9454d1619b0d610103033c2c899266af92fd18ab9f416845f25ea9820c64b2/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/4941cfa7a19324b617e3f48cb6436e5bd7698254f2d2f47645e6451fdd066bc6/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/730c4c4cf4945f349129c90c9deb5543d482ead241efa9cc20657708ac4c39ae/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/2f9454d1619b0d610103033c2c899266af92fd18ab9f416845f25ea9820c64b2/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f60c85b3dfcbf78d7c94d0a2395dca83f7398cd15eb840509fb93aee2e145351/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/7d27ef92727a8ded382d09b1dc84add2b42ae9f0a71509a5561c8fd852b8b82c/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/38c57d240ecae3df8f479fe0d994e88e4ce95036f419202115e23f0efcc84b3b/rootfs
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/3911c766-fd76-4b0c-9572-4dc82f27f866/volumes/kubernetes.io~secret/longhorn-grpc-tls
+192.168.0.100   tmpfs                                                    0.18       0.00       0.18            0.01%          /var/lib/kubelet/pods/d164a849-ff27-4407-b0d9-2fa4cc158222/volumes/kubernetes.io~projected/kube-api-access-l6b7l
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/3911c766-fd76-4b0c-9572-4dc82f27f866/volumes/kubernetes.io~projected/kube-api-access-2hk4r
+192.168.0.100   tmpfs                                                    0.18       0.00       0.18            0.01%          /var/lib/kubelet/pods/3dcc686f-1266-4f40-989f-6f4d2d1f9e08/volumes/kubernetes.io~projected/kube-api-access-84m6g
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/0f73ac89-348c-4418-8927-b2b31d938ee0/volumes/kubernetes.io~projected/kube-api-access-9qfkp
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/ca245adc-42e2-4dcb-a42a-92820ee6d1ad/volumes/kubernetes.io~projected/kube-api-access-6bs8p
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/e872b075-e334-47c5-b75a-b604009d8432/volumes/kubernetes.io~projected/clustermesh-secrets
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/e872b075-e334-47c5-b75a-b604009d8432/volumes/kubernetes.io~projected/hubble-tls
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/ddde791a-95f1-426a-acc9-cea164899d99/volumes/kubernetes.io~projected/kube-api-access-v2mnd
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/bca0669e-d1c5-4efd-a3fa-add11490a497/volumes/kubernetes.io~projected/kube-api-access-lmskq
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/e872b075-e334-47c5-b75a-b604009d8432/volumes/kubernetes.io~projected/kube-api-access-ql55h
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/258047fe-4054-4ee1-8f5f-e6750dc0b3ab/volumes/kubernetes.io~projected/kube-api-access-jtx28
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.01%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/ba546492e1e376e04f53dc9972167a544671a5544ca334903a8b39564587f550/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/e851240a90fa341b721667fe8b7470b48f202089eb76cef2ba298100a9cb89e5/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/ba546492e1e376e04f53dc9972167a544671a5544ca334903a8b39564587f550/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/e851240a90fa341b721667fe8b7470b48f202089eb76cef2ba298100a9cb89e5/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/27094f2ccd2fef990a99d2b5b046d12b17af1894fd4845465491e215e9b5b892/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/27094f2ccd2fef990a99d2b5b046d12b17af1894fd4845465491e215e9b5b892/rootfs
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/0f6c1a13-c2de-4e25-86d2-d299d7be9fd9/volumes/kubernetes.io~projected/kube-api-access-57gnd
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/a18cd38c-932d-4a1b-94f1-158518bba722/volumes/kubernetes.io~projected/kube-api-access-tv6bt
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/179fb046-ee52-4622-85d4-aa195dd42a0d/volumes/kubernetes.io~secret/certs
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/e35b7011-cfdf-4a98-9a1f-7d98a746456b/volumes/kubernetes.io~projected/tls
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/4d2953cf-0e47-44ac-8735-a577989cb4db/volumes/kubernetes.io~projected/kube-api-access-cxq27
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/9eb7f7fb-82a2-4671-8595-0622820e18be/volumes/kubernetes.io~projected/kube-api-access-prrlc
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/61cdd176-bbcb-4f69-93f6-7a6b6803d5f9/volumes/kubernetes.io~projected/kube-api-access-jwv5d
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/ecbbc942-b81f-4256-87a1-1a4986c1de91/volumes/kubernetes.io~projected/kube-api-access-nvxzk
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/201f7af0-57e9-4367-a56f-fbe15d5c8b58/volumes/kubernetes.io~projected/kube-api-access-dcc9c
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/302ec0a7-e15e-475d-859f-d49f26dd3043/volumes/kubernetes.io~projected/kube-api-access-bmb2t
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/b31a3a76-9578-41e3-8fbb-43400b18883a/volumes/kubernetes.io~projected/kube-api-access-pwjz2
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/bf7bac02-2a75-4cbb-9a66-f0ece62f934b/volumes/kubernetes.io~projected/kube-api-access-tbfw2
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/c2e0f98f-c092-494c-83cd-42a2f55ef867/volumes/kubernetes.io~projected/kube-api-access-phxb6
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/a60b7dcd-9c85-44f5-afa7-cfd8797e3ade/volumes/kubernetes.io~projected/kube-api-access-gzp6v
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/179fb046-ee52-4622-85d4-aa195dd42a0d/volumes/kubernetes.io~projected/kube-api-access-2pw6n
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/d43e5276-d27a-4875-b299-bf0c8ff7dca8/volumes/kubernetes.io~projected/kube-api-access-flgtg
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/0370d213-5ab4-4ac3-91ec-a3dd458b1bf0/volumes/kubernetes.io~projected/kube-api-access-75fpg
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/9149a12f-1ef6-41dc-9f4c-df2e95840736/volumes/kubernetes.io~projected/kube-api-access-vjpkx
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/1b66ead8-a4ec-4a95-ba64-1f9d88dfbaf7/volumes/kubernetes.io~projected/kube-api-access-lvgzs
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/bb023ac6-04cc-45a0-beae-b2b09f6c9816/volumes/kubernetes.io~projected/kube-api-access-jdwbg
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/d6433d82-30b4-4e63-b64f-0727de28ce42/volumes/kubernetes.io~projected/kube-api-access-776nc
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/5e7ffa06-778c-4f2e-8130-5cb31754b3aa/volumes/kubernetes.io~projected/kube-api-access-wrsjk
+192.168.0.100   tmpfs                                                    1.07       0.00       1.07            0.00%          /var/lib/kubelet/pods/aa3a93e9-4f61-4164-82ea-1ae82421ca40/volumes/kubernetes.io~secret/cert
+192.168.0.100   tmpfs                                                    1.07       0.00       1.07            0.00%          /var/lib/kubelet/pods/aa3a93e9-4f61-4164-82ea-1ae82421ca40/volumes/kubernetes.io~secret/cluster-gateway-ca
+192.168.0.100   tmpfs                                                    0.27       0.00       0.27            0.00%          /var/lib/kubelet/pods/3c552322-8c6d-4a82-9b8e-72ad488ea4a5/volumes/kubernetes.io~secret/client-certs
+192.168.0.100   tmpfs                                                    0.27       0.00       0.27            0.00%          /var/lib/kubelet/pods/b8555949-883f-4a77-8968-95cc25d24b18/volumes/kubernetes.io~secret/server-certs
+192.168.0.100   tmpfs                                                    0.27       0.00       0.27            0.00%          /var/lib/kubelet/pods/3c552322-8c6d-4a82-9b8e-72ad488ea4a5/volumes/kubernetes.io~projected/kube-api-access-ddj8g
+192.168.0.100   tmpfs                                                    1.07       0.00       1.07            0.00%          /var/lib/kubelet/pods/aa3a93e9-4f61-4164-82ea-1ae82421ca40/volumes/kubernetes.io~projected/kube-api-access-dgkm4
+192.168.0.100   tmpfs                                                    0.07       0.00       0.07            0.02%          /var/lib/kubelet/pods/685b6387-5a08-4872-9921-964cc8022c0a/volumes/kubernetes.io~projected/kube-api-access-sq6x9
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/aee0ff09-99bb-4cbf-887f-120c28a7a3f4/volumes/kubernetes.io~projected/xds-token
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/be3a643b-7970-4031-9f13-7e6a20f2a1b9/volumes/kubernetes.io~projected/kube-api-access-6x8r5
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/83aad2b9-8337-41bd-82ef-0b81be438466/volumes/kubernetes.io~projected/xds-token
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/0889b39b-00db-41a5-a588-1d324c961625/volumes/kubernetes.io~projected/xds-token
+192.168.0.100   tmpfs                                                    1.07       0.00       1.07            0.00%          /var/lib/kubelet/pods/ffd5859f-edda-48fb-9be8-3da6230285fd/volumes/kubernetes.io~projected/kube-api-access-5sc8b
+192.168.0.100   tmpfs                                                    0.27       0.00       0.27            0.00%          /var/lib/kubelet/pods/32fa4571-a568-46d2-8205-386a3464c0d0/volumes/kubernetes.io~secret/client-certs
+192.168.0.100   tmpfs                                                    0.27       0.00       0.27            0.00%          /var/lib/kubelet/pods/b8555949-883f-4a77-8968-95cc25d24b18/volumes/kubernetes.io~projected/kube-api-access-p7tzq
+192.168.0.100   tmpfs                                                    2.15       0.00       2.15            0.00%          /var/lib/kubelet/pods/67f1c652-ad77-46bb-b850-01a22b103559/volumes/kubernetes.io~projected/kube-api-access-g87zb
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/43cb9018-ce6e-46af-b2c8-88ced0ab16af/volumes/kubernetes.io~projected/kube-api-access-zxcz8
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/a5e39b25-3436-439d-bbb0-9850e09d0334/volumes/kubernetes.io~projected/kube-api-access-k7b5h
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/df113b2b-eea8-48f6-bbdc-a5a6fe06dc96/volumes/kubernetes.io~projected/kube-api-access-8wnvm
+192.168.0.100   tmpfs                                                    0.27       0.00       0.27            0.00%          /var/lib/kubelet/pods/32fa4571-a568-46d2-8205-386a3464c0d0/volumes/kubernetes.io~projected/kube-api-access-cvhd8
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/ee8dd9ab-7eb5-4e76-888f-f66d85b38a34/volumes/kubernetes.io~projected/kube-api-access-m8sk6
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/fa63ad2b-10fd-4949-a44d-ba17a71f476a/volumes/kubernetes.io~projected/kube-api-access-m78fv
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/a06269643bfec6d2fcd612e6c1b0e183fafb66ea40ff1bd8a41fbd5364686403/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/fe8a5e9c196b166624d0bbd57370d4bd6ac3070557cc127a2b81eb55700b20e5/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/0ce5ba1dfb858fd15451dbea84386ca50de7c4903136fbee9e5886297c541a77/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/e4aecf2ea68c72755fb2a955e74739ae5c6994ff9dbfba0e45b6e90aeedbf1a8/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/f32d4e0ee4cf3f3c8388edaf9cd56eaf37b878d016e1ff4274618545a836f9a7/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/3541de9537151a3d1eba660c2972e07d96c8a4f5beddd202410b2b1778b2bcdb/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/08f85bca017f48b6783a275d9ad9bbe263c47b34905592095d8e945e2cb3ed2c/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/c1fe07899c7b64a51c02c25e37b874436bcbaffde06b1e0ea63ac165658ba68d/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/6df5839fff7a77f45d80e93b7b6fcd6c4825fbee03441d6c3dccb436ce6d5812/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/28b0c32406b566767c888f31e0d3e3cd96782486f5bddc76aaf7bec49dd6f0d6/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/e6676086f78f659b1f4ec042bdbb551aa34fb206129b4e4fc356489566df6fcc/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/e4aecf2ea68c72755fb2a955e74739ae5c6994ff9dbfba0e45b6e90aeedbf1a8/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f32d4e0ee4cf3f3c8388edaf9cd56eaf37b878d016e1ff4274618545a836f9a7/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/08f85bca017f48b6783a275d9ad9bbe263c47b34905592095d8e945e2cb3ed2c/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/3541de9537151a3d1eba660c2972e07d96c8a4f5beddd202410b2b1778b2bcdb/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/c1fe07899c7b64a51c02c25e37b874436bcbaffde06b1e0ea63ac165658ba68d/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/6df5839fff7a77f45d80e93b7b6fcd6c4825fbee03441d6c3dccb436ce6d5812/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/28b0c32406b566767c888f31e0d3e3cd96782486f5bddc76aaf7bec49dd6f0d6/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/e6676086f78f659b1f4ec042bdbb551aa34fb206129b4e4fc356489566df6fcc/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/59277b760a77d5d3a715f2c228377471d28cac9081998ebfd1eed4bc7cf07f11/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/91ea7bd85b14d86f0426ec4f110ac08b0bf58b0ba68bff1fdc14191fe0ea92f6/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/2e192592a9a97d097618bdf7947fae149c90093b31686fd1424883b8868ebc53/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/1f4f6a811eed6a6121b66f057676fd0baad616b68da39df28289577ab0905a92/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/54e39421b7dacc1c7c69c4c9ad9ea720115f23b90987340eacc0a5d5dee8765d/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/a39d66092e1e05803b6762469779cdd7e70bd97ceb1a7e506663b7abb34f8069/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/7026da51208950fff27ecda9d8e0c308cb3234e7ceb43e0f72a42c194b900f36/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/4bf1af31d50102da06d6baddb1b394b7f586556e1a02a44faac4f54464b4ba3c/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/ad62f87ad4500ac37d047d1915a21c2c54cf687b3db759b885ad2cda055ada43/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/54e39421b7dacc1c7c69c4c9ad9ea720115f23b90987340eacc0a5d5dee8765d/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/dfde368c8d2a8ea82d54337fe844625acecf5fa88daa4fad03f198b492c62408/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/964c870a7785771c0db8382e26405dc5a092f38098d261e75e3a28b141f163fa/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/69d3d19a85aa9c5466da8448acb1d9a7ad5e96e5e9d7eaa3662026e6a8cedd05/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/69d3d19a85aa9c5466da8448acb1d9a7ad5e96e5e9d7eaa3662026e6a8cedd05/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/08c311c468baf909c3644fd1c6c56b9715f468aac07498bb47c6d2861a1e7040/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/697d6c7f764c2c444ce28262f00ee97cb53a4314f364ad0175d82bc7a8facd4d/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/436196c3c267d76edd13b21f908675167e0000320f4fbfef630fe7466eb7ece6/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/436196c3c267d76edd13b21f908675167e0000320f4fbfef630fe7466eb7ece6/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/fd0ef7045525403b55aa16b88bf362441f77d06ae6bc7bad35f4166e2da776b6/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/5b6ac39c39b2c691c258a4fe46843081f187d858d97c140eb8e7abc14710ea82/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/5b6ac39c39b2c691c258a4fe46843081f187d858d97c140eb8e7abc14710ea82/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/2db220a1192a7c7b7d81b7b5c583dcc3e6bb41d5747fcdedb78d22a752c488a7/rootfs
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/36150e89-bda2-4576-826c-fddad7d5cb29/volumes/kubernetes.io~secret/longhorn-grpc-tls
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/36150e89-bda2-4576-826c-fddad7d5cb29/volumes/kubernetes.io~projected/kube-api-access-jp9gh
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/93d33c4e589ad8017b43e2b11b21877859b39c06856882294c7eb7793747f865/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/93d33c4e589ad8017b43e2b11b21877859b39c06856882294c7eb7793747f865/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/4b9c2eebbd79de0422fb4547c8e8c3f19321ddb031f8182484165db962ebea05/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/cfb5cb99f19a420284aacae51209666b80b0cc9eca9bb3c923989fb81fb31f20/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/cfb5cb99f19a420284aacae51209666b80b0cc9eca9bb3c923989fb81fb31f20/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/e0b74b562eee1a6e5437cd68a59986075b84124389241cb661165f025a26b37f/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/03ae4fa57ec62c3229fbad9faa121901745db9f9f0236f22cf5977d2aa9aeda2/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/03ae4fa57ec62c3229fbad9faa121901745db9f9f0236f22cf5977d2aa9aeda2/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/08d684cdfc15b4498706118635b459ff097838212c8ea4173a5a28f87089fce0/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/056b63b53b513656a25a160dc0bb7fb238a8dc0c75294944e5825d438a1cf261/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/ec4d2ee157b5c37a90d356b5788f3839b86c64f251f95d67d8e27f00e0291607/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/ee6e0f7d43ff4872186a0a1c8c0a6eb6f9f40676a11613deee0b4e3144e900cc/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/ee6e0f7d43ff4872186a0a1c8c0a6eb6f9f40676a11613deee0b4e3144e900cc/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/8ecd8384265dfd4990498d3514418e8268e1cd5c6e6f70ac370875fdd600cea1/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/c2aa754cbb81c257ae97cb35bbbfd6dcfbca8b83f5a97f89d57f93f7b44e280a/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/c2aa754cbb81c257ae97cb35bbbfd6dcfbca8b83f5a97f89d57f93f7b44e280a/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/fc1a574368f365481fdeb9209eefe16701d89ebe5701ea479441e1a58476a977/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/bec91856da4aa2fb53e733bc061dc0f1104863173bbefd45921f5b82d5e3bfa1/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/bec91856da4aa2fb53e733bc061dc0f1104863173bbefd45921f5b82d5e3bfa1/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/deb97339abccefce8769e9d9a098e6a3df060bcc5a5e29c05878928d9fd7c70f/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/3c139a5742955df7b58002e62645dc3628777d2639745533e470e7887cb0d7bf/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/70625eada558735af4070f8393e3db22dc47e56633a8460e38fec96bba5303a7/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/3c139a5742955df7b58002e62645dc3628777d2639745533e470e7887cb0d7bf/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/70625eada558735af4070f8393e3db22dc47e56633a8460e38fec96bba5303a7/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/8a4fdbc888958aa004ae75df3ad7be6ea5aa59b55677765fafc4766150c073af/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/8a4fdbc888958aa004ae75df3ad7be6ea5aa59b55677765fafc4766150c073af/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/3051bfaa3f84c6203bcc93f5bce9d38119210d31f58267ec0fefd7c8e2c03d94/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/44c11c5b6906418f2d03e88fe8b60ad7aa3f333116b31684f17b0cd5f7c5f68e/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/bc37678398f111ed22baedaaf26d45bbb2adc6ebe23101cc9c2013a054412d42/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/bc37678398f111ed22baedaaf26d45bbb2adc6ebe23101cc9c2013a054412d42/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/90456e920bfa3a76bd52a7c04449f4448c0fdeee2d8044851c406308a6b2b583/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/90456e920bfa3a76bd52a7c04449f4448c0fdeee2d8044851c406308a6b2b583/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/f8982385a255e6fdbef11f757bf929c223379aef99fba218985781d361ea2f46/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f8982385a255e6fdbef11f757bf929c223379aef99fba218985781d361ea2f46/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/54a63dfb378ef99f2f4493e7d256a7132630495816d0133ef241eff28cc72ee6/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/b9798e39bb64c559bd79a57b45d5decf47ddca9c1469f05ac126edfc60889f08/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/b90b74058e575104acde69a6e994abd6e75fc81ce1ad6d455aee930159fd1394/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/bc4961d0c06a0ebf4dc3ca2604bbd439232e849e8f3c3d6d2473ed5af0436c88/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/bc4961d0c06a0ebf4dc3ca2604bbd439232e849e8f3c3d6d2473ed5af0436c88/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/8078391e1a3b9e004c9503112f9b54d343926d156e1922ff9d4a877b1deb1861/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/8078391e1a3b9e004c9503112f9b54d343926d156e1922ff9d4a877b1deb1861/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/a8653d3055c5facf6cda0ab85d9dcbb20795bb8bbfebf342fe4836befddabef9/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/849b94518599754e2a6b9cce87f6352aa26ef5bca3be57eada31f71e2bbf1290/shm
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/dad41cbb4e26cc83b14eecc76e3a71b3ad4f9cdc75a8f4ac0b30457b79960ce3/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/849b94518599754e2a6b9cce87f6352aa26ef5bca3be57eada31f71e2bbf1290/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/dad41cbb4e26cc83b14eecc76e3a71b3ad4f9cdc75a8f4ac0b30457b79960ce3/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/ccb22abe3680eadaa1996985ba2e62ef4bef56ebbe3875894a7beafb2b2a75fd/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/f328191e41c124f24eeae0a2926067d34b32596dd9734523aceae1f3bb4e593a/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f328191e41c124f24eeae0a2926067d34b32596dd9734523aceae1f3bb4e593a/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/617f300253dc39d8e496645386fffad9cb45acb502a4dbb6051a28b54a692a92/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/48b61e2b9a34a4ca2ed425bdcb85a0bfa861dab19ca9aecc5f66691794c0bd5b/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/48b61e2b9a34a4ca2ed425bdcb85a0bfa861dab19ca9aecc5f66691794c0bd5b/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/5322baea9b9fbe52834c333a91fba448fedbf174581545b5ad5e0113c8044f29/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/4a3d61f35d7f9531b6b092aa12316b208c5c7c982677597a64356ecb5d4db34b/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/4a3d61f35d7f9531b6b092aa12316b208c5c7c982677597a64356ecb5d4db34b/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/4de541e78cd08223e2df6701038cb7bb1ce59cc35dc25f2813a0b1a3ddcbd183/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/1b4638bff15e049dd030ae7683a5b9ec403dc34a4c7ecfb131f667277cd6550d/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/42fedf6d0ac522c62cfcdd18b0c35c2139561bcb3432271c9dacb03b1d222e3b/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/4de541e78cd08223e2df6701038cb7bb1ce59cc35dc25f2813a0b1a3ddcbd183/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/64a7af4d5f4c6a7f432b6cb09fc56b68506b5fef8bc7f8f7c68055714d3b10c9/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/c62e35e2989ddbb98213840447900c01b3bc2cdbe9c1768d85e6c9d9b9c3f468/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/c62e35e2989ddbb98213840447900c01b3bc2cdbe9c1768d85e6c9d9b9c3f468/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/2a8b84900a9ab1b99aef973060d16f68f9d3760c3f7f7bbaca2817f254e8a580/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/d1b11370322ee35e512221a08e64bced0380a99d1300f596ec23d3b8dadc2776/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/d1b11370322ee35e512221a08e64bced0380a99d1300f596ec23d3b8dadc2776/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/326050f297547719f10ec8142140e3bb9da588bc21f6f540073fc31f090ccf3f/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/326050f297547719f10ec8142140e3bb9da588bc21f6f540073fc31f090ccf3f/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/dea15b3b2564780310e14e1f2cc3358da7d81ab76f0315842ffee9826e89bafd/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/dea15b3b2564780310e14e1f2cc3358da7d81ab76f0315842ffee9826e89bafd/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/52c35156a163a4dd90754192e7bd3d3a677ad4dfa8e9e839de8354cc21222e87/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/2258851ed05d653394c201cff81a17cbf7780e59f811835b7884152c411373d8/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/2258851ed05d653394c201cff81a17cbf7780e59f811835b7884152c411373d8/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/98e919cd79c7cbc2a1a0fae84f4ceb83ce047784f8b503642635fc8d166e7acc/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/b9f9a24d021bedb4c5abb0f63e2b0a4dcd5338d836f5d2219feb7469f64c90dc/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/38f2e34c0842ac8faecefe8925d342363fc2de8d4b87ba605b2f55e373ad8c58/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/b9f9a24d021bedb4c5abb0f63e2b0a4dcd5338d836f5d2219feb7469f64c90dc/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/b061919a0de1530d0e5c492dfd601fea0fbf8fc410bcc571c433ffc5baa8b0aa/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/fd9381a6d940128208cd975125033138a97243012da4795ec5b859429a98e711/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/fd9381a6d940128208cd975125033138a97243012da4795ec5b859429a98e711/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/d2d8de4c608b58266e9c973533941067b58bee67eaef7ffc0cf3d164e98c6374/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/f4ead1ce2036645dd9e0755f206cfb33bde165dfea583ba2b1fb3758c775b8af/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f4ead1ce2036645dd9e0755f206cfb33bde165dfea583ba2b1fb3758c775b8af/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f88df8feaf6b2b0e6662b96976a3f5a8089a973d68c76df78a864b2a5a9013f9/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/5a3b506f6fcd41ed74e1f92be7d2c77b84b81a5a0c3e223bf142e825bf96ac83/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/21a329424e294b99f1a0d9746ff8a37efd2166c03d538fbbaf0d48652d8e50ff/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/21a329424e294b99f1a0d9746ff8a37efd2166c03d538fbbaf0d48652d8e50ff/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/ac1ebeca2f65f0bf5a21d97b5803dfb0f3587b8748134c2840329d45ac92abce/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/4365d3a6f60430883e64d41b3f76b363e75992910c1b0ee53bf7d55ae575804b/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/ac1ebeca2f65f0bf5a21d97b5803dfb0f3587b8748134c2840329d45ac92abce/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/f5de2e8604088294010d0371e1c3892a28114df429f2861a347bd5625ee32e7b/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/f5de2e8604088294010d0371e1c3892a28114df429f2861a347bd5625ee32e7b/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/b1e6215808172c327adff390bb34e7b5f752cf025e5906576c565cdd8ed404f0/rootfs
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/7ccc0981005b4790386d7bcd56ddf6674a154d55a88866b8c1fbaab5b1d7469d/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/bfb956e26926e4600b4a07064e71f0806ed1b58ac9b7e65166b5d304808e60e3/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/7ccc0981005b4790386d7bcd56ddf6674a154d55a88866b8c1fbaab5b1d7469d/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/9acb257a25b8237fbffbc36460697780407a024304fa8eabddc23f94c9791b1a/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/29aa4ea4d0e8dfef1c2c9a4d24a178969b64ce4a58b2b93620a20baae8f92c8a/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/bd7547243838fbafa6d3857d400afc8bbb9a372829870fb7e809fc24b0235394/rootfs
+192.168.0.100   /dev/longhorn/pvc-e8c5c748-10b2-4bd9-8517-a4a6fdc5241b   10.46      0.02       10.45           0.16%          /var/lib/kubelet/plugins/kubernetes.io/csi/driver.longhorn.io/1228b171f7da71485625374240d4b0a415b727d273775278c024c3bac69a4d2b/globalmount
+192.168.0.100   /dev/longhorn/pvc-f2f97cd4-9141-4168-a030-9f0e34069152   1.02       0.02       1.00            1.75%          /var/lib/kubelet/plugins/kubernetes.io/csi/driver.longhorn.io/e993f8105221c19bd5e66cd81868eb3c1eeb3dfb3705c0ea9cf3202ef30d3984/globalmount
+192.168.0.100   /dev/longhorn/pvc-e8c5c748-10b2-4bd9-8517-a4a6fdc5241b   10.46      0.02       10.45           0.16%          /var/lib/kubelet/pods/7fb84a66-9cec-4a1b-a644-81f7bda6da91/volumes/kubernetes.io~csi/pvc-e8c5c748-10b2-4bd9-8517-a4a6fdc5241b/mount
+192.168.0.100   tmpfs                                                    134.44     0.00       134.44          0.00%          /var/lib/kubelet/pods/7fb84a66-9cec-4a1b-a644-81f7bda6da91/volumes/kubernetes.io~projected/kube-api-access-tqgz2
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/b9c1eaa18ad8d1d3a0ebcfb43050a2bcdf980204c1b5e32cf5674400c856043d/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/b9c1eaa18ad8d1d3a0ebcfb43050a2bcdf980204c1b5e32cf5674400c856043d/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/5e94d79c462e3d61dbadfbfff53b8e7f1d5a1a49394ab51f2f9a553a279d5eb4/rootfs
+192.168.0.100   /dev/longhorn/pvc-f2f97cd4-9141-4168-a030-9f0e34069152   1.02       0.02       1.00            1.75%          /var/lib/kubelet/pods/40a5cb88-9e5a-4bca-bdde-69967410cc8a/volumes/kubernetes.io~csi/pvc-f2f97cd4-9141-4168-a030-9f0e34069152/mount
+192.168.0.100   tmpfs                                                    0.10       0.00       0.10            0.01%          /var/lib/kubelet/pods/40a5cb88-9e5a-4bca-bdde-69967410cc8a/volumes/kubernetes.io~projected/kube-api-access-km4zf
+192.168.0.100   shm                                                      0.07       0.00       0.07            0.00%          /run/containerd/io.containerd.grpc.v1.cri/sandboxes/655e566552c6e330fccb582381ac9b64ce00ae7b0f75f3c4db0df2c5fc46ee71/shm
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/655e566552c6e330fccb582381ac9b64ce00ae7b0f75f3c4db0df2c5fc46ee71/rootfs
+192.168.0.100   overlay                                                  497.54     21.91      475.63          4.40%          /run/containerd/io.containerd.runtime.v2.task/k8s.io/d676a21d1a7922114a0462d50cdfddca5ba4d36f37a66faea5000df0883941e3/rootfs
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig image list
+Label:     image list
+Duration:  0.610 seconds
+------------------------------
+NODE            IMAGE                                                                                                                                 DIGEST                                                                    SIZE     CREATED
+192.168.0.100   cr.kgateway.dev/kgateway-dev/envoy-wrapper:v2.2.1                                                                                     sha256:ec5daaa68c73f9a3bdaa401e6db3697d48a05f2fe07e7ca0f0ff863467006315   95 MB    2026-04-01T02:01:14Z
+192.168.0.100   cr.kgateway.dev/kgateway-dev/envoy-wrapper@sha256:ec5daaa68c73f9a3bdaa401e6db3697d48a05f2fe07e7ca0f0ff863467006315                    sha256:ec5daaa68c73f9a3bdaa401e6db3697d48a05f2fe07e7ca0f0ff863467006315   95 MB    2026-04-01T02:01:14Z
+192.168.0.100   cr.kgateway.dev/kgateway-dev/kgateway:v2.2.1                                                                                          sha256:beac9c3a50c7e19746c01de110d31b30be40973bfa84481595adf136efde1f5f   110 MB   2026-04-01T00:32:55Z
+192.168.0.100   cr.kgateway.dev/kgateway-dev/kgateway@sha256:beac9c3a50c7e19746c01de110d31b30be40973bfa84481595adf136efde1f5f                         sha256:beac9c3a50c7e19746c01de110d31b30be40973bfa84481595adf136efde1f5f   110 MB   2026-04-01T00:32:55Z
+192.168.0.100   docker.io/library/busybox:latest                                                                                                      sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e   2.2 MB   2026-04-01T13:22:20Z
+192.168.0.100   docker.io/library/busybox@sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e                                     sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e   2.2 MB   2026-04-01T13:22:20Z
+192.168.0.100   docker.io/library/registry:3.0.0                                                                                                      sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e   19 MB    2026-04-01T02:27:20Z
+192.168.0.100   docker.io/library/registry@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e                                    sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e   19 MB    2026-04-01T02:27:20Z
+192.168.0.100   docker.io/longhornio/csi-attacher:v4.9.0-20250709                                                                                     sha256:4786c3f9b9a0d9649ccf00e97369e36286b7d129c87dbe0f6a3f4149ee7dd4f6   34 MB    2026-03-31T23:51:08Z
+192.168.0.100   docker.io/longhornio/csi-attacher@sha256:4786c3f9b9a0d9649ccf00e97369e36286b7d129c87dbe0f6a3f4149ee7dd4f6                             sha256:4786c3f9b9a0d9649ccf00e97369e36286b7d129c87dbe0f6a3f4149ee7dd4f6   34 MB    2026-03-31T23:51:08Z
+192.168.0.100   docker.io/longhornio/csi-node-driver-registrar:v2.14.0-20250709                                                                       sha256:749938604d4b1129c59cd6db3a2229214428dbbe3e7f8c32c243338fbecf2c91   16 MB    2026-03-31T23:51:22Z
+192.168.0.100   docker.io/longhornio/csi-node-driver-registrar@sha256:749938604d4b1129c59cd6db3a2229214428dbbe3e7f8c32c243338fbecf2c91                sha256:749938604d4b1129c59cd6db3a2229214428dbbe3e7f8c32c243338fbecf2c91   16 MB    2026-03-31T23:51:22Z
+192.168.0.100   docker.io/longhornio/csi-provisioner:v5.3.0-20250709                                                                                  sha256:ea9a31cd482ac381329abcbcd6071833d3b2259b5b999f258c8614fd41dccf18   36 MB    2026-03-31T23:51:01Z
+192.168.0.100   docker.io/longhornio/csi-provisioner@sha256:ea9a31cd482ac381329abcbcd6071833d3b2259b5b999f258c8614fd41dccf18                          sha256:ea9a31cd482ac381329abcbcd6071833d3b2259b5b999f258c8614fd41dccf18   36 MB    2026-03-31T23:51:01Z
+192.168.0.100   docker.io/longhornio/csi-resizer:v1.14.0-20250709                                                                                     sha256:1d2a08fcdba3e1e9fc7bd7a96429ed8543c8234c034699aadcf1e3651dd512e3   34 MB    2026-03-31T23:51:37Z
+192.168.0.100   docker.io/longhornio/csi-resizer@sha256:1d2a08fcdba3e1e9fc7bd7a96429ed8543c8234c034699aadcf1e3651dd512e3                              sha256:1d2a08fcdba3e1e9fc7bd7a96429ed8543c8234c034699aadcf1e3651dd512e3   34 MB    2026-03-31T23:51:37Z
+192.168.0.100   docker.io/longhornio/csi-snapshotter:v8.3.0-20250709                                                                                  sha256:40ec7de434d680038a6e0604e75464d73f75f294d15a50a63404b76e223dfe45   34 MB    2026-03-31T23:51:53Z
+192.168.0.100   docker.io/longhornio/csi-snapshotter@sha256:40ec7de434d680038a6e0604e75464d73f75f294d15a50a63404b76e223dfe45                          sha256:40ec7de434d680038a6e0604e75464d73f75f294d15a50a63404b76e223dfe45   34 MB    2026-03-31T23:51:53Z
+192.168.0.100   docker.io/longhornio/livenessprobe:v2.16.0-20250709                                                                                   sha256:82d59c88296195f769df27ecff5a1091b01c6e8c6415204fe0dc1b30125873b0   16 MB    2026-03-31T23:51:45Z
+192.168.0.100   docker.io/longhornio/livenessprobe@sha256:82d59c88296195f769df27ecff5a1091b01c6e8c6415204fe0dc1b30125873b0                            sha256:82d59c88296195f769df27ecff5a1091b01c6e8c6415204fe0dc1b30125873b0   16 MB    2026-03-31T23:51:45Z
+192.168.0.100   docker.io/longhornio/longhorn-engine:v1.9.1                                                                                           sha256:fa695fbd582e290dcf904c2687c52974b7558ce8c100b4891864b4ecec479a4e   158 MB   2026-03-31T23:48:39Z
+192.168.0.100   docker.io/longhornio/longhorn-engine@sha256:fa695fbd582e290dcf904c2687c52974b7558ce8c100b4891864b4ecec479a4e                          sha256:fa695fbd582e290dcf904c2687c52974b7558ce8c100b4891864b4ecec479a4e   158 MB   2026-03-31T23:48:39Z
+192.168.0.100   docker.io/longhornio/longhorn-instance-manager:v1.9.1                                                                                 sha256:dc09bae442f8c5e611e4a96af81d7ae30bfa89df3f13d82b929250559542ba82   442 MB   2026-03-31T23:51:47Z
+192.168.0.100   docker.io/longhornio/longhorn-instance-manager@sha256:dc09bae442f8c5e611e4a96af81d7ae30bfa89df3f13d82b929250559542ba82                sha256:dc09bae442f8c5e611e4a96af81d7ae30bfa89df3f13d82b929250559542ba82   442 MB   2026-03-31T23:51:47Z
+192.168.0.100   docker.io/longhornio/longhorn-manager:v1.9.1                                                                                          sha256:8e6c84f1a27c1c3276a208963cefbacb852461f3ba42937b53da49b1d329ff07   118 MB   2026-03-31T23:47:16Z
+192.168.0.100   docker.io/longhornio/longhorn-manager@sha256:8e6c84f1a27c1c3276a208963cefbacb852461f3ba42937b53da49b1d329ff07                         sha256:8e6c84f1a27c1c3276a208963cefbacb852461f3ba42937b53da49b1d329ff07   118 MB   2026-03-31T23:47:16Z
+192.168.0.100   docker.io/longhornio/longhorn-share-manager:v1.9.1                                                                                    sha256:f5ec61733a8d1418d059baa92418cb19e9b045863733cecf1738205eb6d8b4f5   88 MB    2026-03-31T23:47:41Z
+192.168.0.100   docker.io/longhornio/longhorn-share-manager@sha256:f5ec61733a8d1418d059baa92418cb19e9b045863733cecf1738205eb6d8b4f5                   sha256:f5ec61733a8d1418d059baa92418cb19e9b045863733cecf1738205eb6d8b4f5   88 MB    2026-03-31T23:47:41Z
+192.168.0.100   docker.io/longhornio/longhorn-ui:v1.9.1                                                                                               sha256:300e6d677db08352df988c8e2c9ca787beace8b953ae8e5ee99e708b95195a73   74 MB    2026-03-31T23:47:25Z
+192.168.0.100   docker.io/longhornio/longhorn-ui@sha256:300e6d677db08352df988c8e2c9ca787beace8b953ae8e5ee99e708b95195a73                              sha256:300e6d677db08352df988c8e2c9ca787beace8b953ae8e5ee99e708b95195a73   74 MB    2026-03-31T23:47:25Z
+192.168.0.100   docker.io/opensearchproject/opensearch:3.3.0                                                                                          sha256:d96afaf6cbd2a6a3695aeb2f1d48c9a16ad5c8918eb849e5cbf43475f0f8e146   1.0 GB   2026-04-01T13:33:45Z
+192.168.0.100   docker.io/opensearchproject/opensearch@sha256:d96afaf6cbd2a6a3695aeb2f1d48c9a16ad5c8918eb849e5cbf43475f0f8e146                        sha256:d96afaf6cbd2a6a3695aeb2f1d48c9a16ad5c8918eb849e5cbf43475f0f8e146   1.0 GB   2026-04-01T13:33:45Z
+192.168.0.100   docker.io/otel/opentelemetry-collector-contrib:0.146.1                                                                                sha256:f6e429c1052ab50f85a7afa5f7e32f25931697751622b0e1f453d10f79a1df3c   95 MB    2026-04-01T13:24:15Z
+192.168.0.100   docker.io/otel/opentelemetry-collector-contrib@sha256:f6e429c1052ab50f85a7afa5f7e32f25931697751622b0e1f453d10f79a1df3c                sha256:f6e429c1052ab50f85a7afa5f7e32f25931697751622b0e1f453d10f79a1df3c   95 MB    2026-04-01T13:24:15Z
+192.168.0.100   ghcr.io/asgardeo/thunder:0.28.0                                                                                                       sha256:08d821ad0c6e201a92439b85cc343c6733cbabdeb3248887c344addd5bcc4584   96 MB    2026-04-01T01:45:59Z
+192.168.0.100   ghcr.io/asgardeo/thunder@sha256:08d821ad0c6e201a92439b85cc343c6733cbabdeb3248887c344addd5bcc4584                                      sha256:08d821ad0c6e201a92439b85cc343c6733cbabdeb3248887c344addd5bcc4584   96 MB    2026-04-01T01:45:59Z
+192.168.0.100   ghcr.io/external-secrets/external-secrets:v2.0.1                                                                                      sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f   89 MB    2026-04-01T00:32:33Z
+192.168.0.100   ghcr.io/external-secrets/external-secrets@sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f                     sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f   89 MB    2026-04-01T00:32:33Z
+192.168.0.100   ghcr.io/openchoreo/cluster-agent:v1.0.0                                                                                               sha256:0041543cd81cdef3d2dc62835a337b1d2f3592d227fe5130c0014e25de0a25ae   12 MB    2026-04-01T02:27:08Z
+192.168.0.100   ghcr.io/openchoreo/cluster-agent@sha256:0041543cd81cdef3d2dc62835a337b1d2f3592d227fe5130c0014e25de0a25ae                              sha256:0041543cd81cdef3d2dc62835a337b1d2f3592d227fe5130c0014e25de0a25ae   12 MB    2026-04-01T02:27:08Z
+192.168.0.100   ghcr.io/openchoreo/cluster-gateway:v1.0.0                                                                                             sha256:a02adf14b33f1d0a262848f2d925b17e90a93feb18e006c1fd8a0d15b9560a0c   13 MB    2026-04-01T02:01:03Z
+192.168.0.100   ghcr.io/openchoreo/cluster-gateway@sha256:a02adf14b33f1d0a262848f2d925b17e90a93feb18e006c1fd8a0d15b9560a0c                            sha256:a02adf14b33f1d0a262848f2d925b17e90a93feb18e006c1fd8a0d15b9560a0c   13 MB    2026-04-01T02:01:03Z
+192.168.0.100   ghcr.io/openchoreo/controller:v1.0.0                                                                                                  sha256:7c067c98b293f370b418e29e01f94bc0f366a28d5631a887bd1149856fb22c64   19 MB    2026-04-01T02:23:06Z
+192.168.0.100   ghcr.io/openchoreo/controller@sha256:7c067c98b293f370b418e29e01f94bc0f366a28d5631a887bd1149856fb22c64                                 sha256:7c067c98b293f370b418e29e01f94bc0f366a28d5631a887bd1149856fb22c64   19 MB    2026-04-01T02:23:06Z
+192.168.0.100   ghcr.io/openchoreo/observability-metrics-prometheus-adapter:latest                                                                    sha256:150afbfd04d93f25f2203ab3de08b0b2463efbe844af2cc57494cc3283163961   9.8 MB   2026-04-01T13:22:38Z
+192.168.0.100   ghcr.io/openchoreo/observability-metrics-prometheus-adapter@sha256:150afbfd04d93f25f2203ab3de08b0b2463efbe844af2cc57494cc3283163961   sha256:150afbfd04d93f25f2203ab3de08b0b2463efbe844af2cc57494cc3283163961   9.8 MB   2026-04-01T13:22:38Z
+192.168.0.100   ghcr.io/openchoreo/observability-tracing-opensearch-setup:0.3.10                                                                      sha256:006962b151b8e3df4536d21fb6ec520854c3d86296210ca0d7957e2f7f6ef363   7.8 MB   2026-04-01T13:25:04Z
+192.168.0.100   ghcr.io/openchoreo/observability-tracing-opensearch-setup@sha256:006962b151b8e3df4536d21fb6ec520854c3d86296210ca0d7957e2f7f6ef363     sha256:006962b151b8e3df4536d21fb6ec520854c3d86296210ca0d7957e2f7f6ef363   7.8 MB   2026-04-01T13:25:04Z
+192.168.0.100   ghcr.io/openchoreo/observer:v1.0.0                                                                                                    sha256:04682dcc015fc19ad131338309c81db10a3c85402c599f9076c64a5de1638ca4   20 MB    2026-04-01T13:13:40Z
+192.168.0.100   ghcr.io/openchoreo/observer@sha256:04682dcc015fc19ad131338309c81db10a3c85402c599f9076c64a5de1638ca4                                   sha256:04682dcc015fc19ad131338309c81db10a3c85402c599f9076c64a5de1638ca4   20 MB    2026-04-01T13:13:40Z
+192.168.0.100   ghcr.io/openchoreo/openchoreo-api:v1.0.0                                                                                              sha256:bb3c3e9db2f177d8923d1a26b481b61aaf3da4ce4b72f83f8db048db1bbd7fed   19 MB    2026-04-01T02:23:05Z
+192.168.0.100   ghcr.io/openchoreo/openchoreo-api@sha256:bb3c3e9db2f177d8923d1a26b481b61aaf3da4ce4b72f83f8db048db1bbd7fed                             sha256:bb3c3e9db2f177d8923d1a26b481b61aaf3da4ce4b72f83f8db048db1bbd7fed   19 MB    2026-04-01T02:23:05Z
+192.168.0.100   ghcr.io/openchoreo/openchoreo-ui:v1.0.0                                                                                               sha256:3ca8dcfdbb056115e9df16d7b181350175857a0f09e05c044bbc4bfeb3d1e72f   360 MB   2026-04-01T02:25:41Z
+192.168.0.100   ghcr.io/openchoreo/openchoreo-ui@sha256:3ca8dcfdbb056115e9df16d7b181350175857a0f09e05c044bbc4bfeb3d1e72f                              sha256:3ca8dcfdbb056115e9df16d7b181350175857a0f09e05c044bbc4bfeb3d1e72f   360 MB   2026-04-01T02:25:41Z
+192.168.0.100   quay.io/argoproj/argocli:v3.6.2                                                                                                       sha256:7b06ffaf2260654cacf5e44982744c26fcc89502cd4592685086aff601073382   61 MB    2026-04-01T03:31:32Z
+192.168.0.100   quay.io/argoproj/argocli@sha256:7b06ffaf2260654cacf5e44982744c26fcc89502cd4592685086aff601073382                                      sha256:7b06ffaf2260654cacf5e44982744c26fcc89502cd4592685086aff601073382   61 MB    2026-04-01T03:31:32Z
+192.168.0.100   quay.io/argoproj/workflow-controller:v3.6.2                                                                                           sha256:be8bd63ad545442a216a951d4ab568afea1d873e78fd0a596b56d886e3424725   42 MB    2026-04-01T03:31:29Z
+192.168.0.100   quay.io/argoproj/workflow-controller@sha256:be8bd63ad545442a216a951d4ab568afea1d873e78fd0a596b56d886e3424725                          sha256:be8bd63ad545442a216a951d4ab568afea1d873e78fd0a596b56d886e3424725   42 MB    2026-04-01T03:31:29Z
+192.168.0.100   quay.io/cilium/cilium-envoy@sha256:318eff387835ca2717baab42a84f35a83a5f9e7d519253df87269f80b9ff0171                                   sha256:318eff387835ca2717baab42a84f35a83a5f9e7d519253df87269f80b9ff0171   66 MB    2026-03-31T14:04:12Z
+192.168.0.100   quay.io/cilium/cilium@sha256:544de3d4fed7acba72758413812780a4972d47c39035f2a06d6145d8644a3353                                         sha256:544de3d4fed7acba72758413812780a4972d47c39035f2a06d6145d8644a3353   272 MB   2026-03-31T14:04:16Z
+192.168.0.100   quay.io/cilium/hubble-relay@sha256:7d17ec10b3d37341c18ca56165b2f29a715cb8ee81311fd07088d8bf68c01e60                                   sha256:7d17ec10b3d37341c18ca56165b2f29a715cb8ee81311fd07088d8bf68c01e60   29 MB    2026-03-31T14:05:06Z
+192.168.0.100   quay.io/cilium/hubble-ui-backend@sha256:a034b7e98e6ea796ed26df8f4e71f83fc16465a19d166eff67a03b822c0bfa15                              sha256:a034b7e98e6ea796ed26df8f4e71f83fc16465a19d166eff67a03b822c0bfa15   20 MB    2026-03-31T14:05:04Z
+192.168.0.100   quay.io/cilium/hubble-ui@sha256:9e37c1296b802830834cc87342a9182ccbb71ffebb711971e849221bd9d59392                                      sha256:9e37c1296b802830834cc87342a9182ccbb71ffebb711971e849221bd9d59392   11 MB    2026-03-31T14:04:46Z
+192.168.0.100   quay.io/cilium/operator-generic@sha256:91ac3bf7be7bed30e90218f219d4f3062a63377689ee7246062fa0cc3839d096                               sha256:91ac3bf7be7bed30e90218f219d4f3062a63377689ee7246062fa0cc3839d096   34 MB    2026-03-31T14:03:30Z
+192.168.0.100   quay.io/jetstack/cert-manager-cainjector:v1.19.4                                                                                      sha256:5d810724b177746a8aeafd5db111b55b72389861bcec03a6d50f9c6d56ec37c0   12 MB    2026-04-01T00:30:45Z
+192.168.0.100   quay.io/jetstack/cert-manager-cainjector@sha256:5d810724b177746a8aeafd5db111b55b72389861bcec03a6d50f9c6d56ec37c0                      sha256:5d810724b177746a8aeafd5db111b55b72389861bcec03a6d50f9c6d56ec37c0   12 MB    2026-04-01T00:30:45Z
+192.168.0.100   quay.io/jetstack/cert-manager-controller:v1.19.4                                                                                      sha256:9cad8065bbf57815cbcfa813b903dd8822bcd0271f7443192082b54e96a55585   24 MB    2026-04-01T00:30:53Z
+192.168.0.100   quay.io/jetstack/cert-manager-controller@sha256:9cad8065bbf57815cbcfa813b903dd8822bcd0271f7443192082b54e96a55585                      sha256:9cad8065bbf57815cbcfa813b903dd8822bcd0271f7443192082b54e96a55585   24 MB    2026-04-01T00:30:53Z
+192.168.0.100   quay.io/jetstack/cert-manager-startupapicheck:v1.19.4                                                                                 sha256:8e897895b9e9749447ccb84842176212195f4687e0a3c4ca892d9d410e0fd43e   12 MB    2026-04-01T00:31:09Z
+192.168.0.100   quay.io/jetstack/cert-manager-startupapicheck@sha256:8e897895b9e9749447ccb84842176212195f4687e0a3c4ca892d9d410e0fd43e                 sha256:8e897895b9e9749447ccb84842176212195f4687e0a3c4ca892d9d410e0fd43e   12 MB    2026-04-01T00:31:09Z
+192.168.0.100   quay.io/jetstack/cert-manager-webhook:v1.19.4                                                                                         sha256:f41b4ac798c8ff200c29756cf86e70a00e73fe489fb6ab80d9210d1b5f476852   20 MB    2026-04-01T00:30:41Z
+192.168.0.100   quay.io/jetstack/cert-manager-webhook@sha256:f41b4ac798c8ff200c29756cf86e70a00e73fe489fb6ab80d9210d1b5f476852                         sha256:f41b4ac798c8ff200c29756cf86e70a00e73fe489fb6ab80d9210d1b5f476852   20 MB    2026-04-01T00:30:42Z
+192.168.0.100   quay.io/openbao/openbao:2.5.1                                                                                                         sha256:87d715029a47328172774638cabfeb04d5b356678d660621b796b6a671f93581   77 MB    2026-04-01T00:33:40Z
+192.168.0.100   quay.io/openbao/openbao@sha256:87d715029a47328172774638cabfeb04d5b356678d660621b796b6a671f93581                                       sha256:87d715029a47328172774638cabfeb04d5b356678d660621b796b6a671f93581   77 MB    2026-04-01T00:33:40Z
+192.168.0.100   quay.io/prometheus-operator/prometheus-config-reloader:v0.88.1                                                                        sha256:27da7b23b862e83581872d464a39a9477de705e86e46e3da18cf55d560caaa79   15 MB    2026-04-01T13:24:33Z
+192.168.0.100   quay.io/prometheus-operator/prometheus-config-reloader@sha256:27da7b23b862e83581872d464a39a9477de705e86e46e3da18cf55d560caaa79        sha256:27da7b23b862e83581872d464a39a9477de705e86e46e3da18cf55d560caaa79   15 MB    2026-04-01T13:24:33Z
+192.168.0.100   quay.io/prometheus-operator/prometheus-operator:v0.88.1                                                                               sha256:d3d65efa3beeacdc9af743fa892daa1e935f23e4de98c84894a4d25d59a840a4   19 MB    2026-04-01T13:23:07Z
+192.168.0.100   quay.io/prometheus-operator/prometheus-operator@sha256:d3d65efa3beeacdc9af743fa892daa1e935f23e4de98c84894a4d25d59a840a4               sha256:d3d65efa3beeacdc9af743fa892daa1e935f23e4de98c84894a4d25d59a840a4   19 MB    2026-04-01T13:23:07Z
+192.168.0.100   quay.io/prometheus/alertmanager:v0.31.0                                                                                               sha256:cc54cc450174ada901b32eb2538de5fc70ee259a1ac551ed38023f2ca2ad00e3   39 MB    2026-04-01T13:28:19Z
+192.168.0.100   quay.io/prometheus/alertmanager@sha256:cc54cc450174ada901b32eb2538de5fc70ee259a1ac551ed38023f2ca2ad00e3                               sha256:cc54cc450174ada901b32eb2538de5fc70ee259a1ac551ed38023f2ca2ad00e3   39 MB    2026-04-01T13:28:19Z
+192.168.0.100   quay.io/prometheus/prometheus:v3.9.1                                                                                                  sha256:1f0f50f06acaceb0f5670d2c8a658a599affe7b0d8e78b898c1035653849a702   134 MB   2026-04-01T13:27:42Z
+192.168.0.100   quay.io/prometheus/prometheus@sha256:1f0f50f06acaceb0f5670d2c8a658a599affe7b0d8e78b898c1035653849a702                                 sha256:1f0f50f06acaceb0f5670d2c8a658a599affe7b0d8e78b898c1035653849a702   134 MB   2026-04-01T13:27:42Z
+192.168.0.100   registry.k8s.io/coredns/coredns:v1.13.2                                                                                               sha256:94caebb89dcfb9d2c4be45bfda34410a3e1092458fbbbc0284365c9e4c9a7818   24 MB    2026-03-31T14:04:55Z
+192.168.0.100   registry.k8s.io/coredns/coredns@sha256:94caebb89dcfb9d2c4be45bfda34410a3e1092458fbbbc0284365c9e4c9a7818                               sha256:94caebb89dcfb9d2c4be45bfda34410a3e1092458fbbbc0284365c9e4c9a7818   24 MB    2026-03-31T14:04:55Z
+192.168.0.100   registry.k8s.io/kube-apiserver:v1.33.0                                                                                                sha256:6679a9970a8b2f18647b33bf02e5e9895d286689256e2f7172481b4096e46a32   30 MB    2026-03-31T13:36:11Z
+192.168.0.100   registry.k8s.io/kube-apiserver@sha256:6679a9970a8b2f18647b33bf02e5e9895d286689256e2f7172481b4096e46a32                                sha256:6679a9970a8b2f18647b33bf02e5e9895d286689256e2f7172481b4096e46a32   30 MB    2026-03-31T13:36:11Z
+192.168.0.100   registry.k8s.io/kube-controller-manager:v1.33.0                                                                                       sha256:f0b32ab11fd06504608cdb9084f7284106b4f5f07f35eb8823e70ea0eaaf252a   28 MB    2026-03-31T13:36:26Z
+192.168.0.100   registry.k8s.io/kube-controller-manager@sha256:f0b32ab11fd06504608cdb9084f7284106b4f5f07f35eb8823e70ea0eaaf252a                       sha256:f0b32ab11fd06504608cdb9084f7284106b4f5f07f35eb8823e70ea0eaaf252a   28 MB    2026-03-31T13:36:26Z
+192.168.0.100   registry.k8s.io/kube-scheduler:v1.33.0                                                                                                sha256:8dd2fbeb7f711da53a89ded239e54133f34110d98de887a39a9021e651b51f1f   22 MB    2026-03-31T13:36:19Z
+192.168.0.100   registry.k8s.io/kube-scheduler@sha256:8dd2fbeb7f711da53a89ded239e54133f34110d98de887a39a9021e651b51f1f                                sha256:8dd2fbeb7f711da53a89ded239e54133f34110d98de887a39a9021e651b51f1f   22 MB    2026-03-31T13:36:19Z
+192.168.0.100   registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.18.0                                                                         sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e   19 MB    2026-04-01T13:23:08Z
+192.168.0.100   registry.k8s.io/kube-state-metrics/kube-state-metrics@sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e         sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e   19 MB    2026-04-01T13:23:08Z
+192.168.0.100   registry.k8s.io/pause:3.10                                                                                                            sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a   320 kB   2026-03-31T13:35:56Z
+192.168.0.100   registry.k8s.io/pause@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a                                         sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a   320 kB   2026-03-31T13:35:56Z
+192.168.0.100   registry.k8s.io/sig-storage/snapshot-controller:v8.2.1                                                                                sha256:472fa35a89dadb5a715454fad576ec11aa6f2e8378fc09ae26473d139b77c437   30 MB    2026-03-31T23:45:39Z
+192.168.0.100   registry.k8s.io/sig-storage/snapshot-controller@sha256:472fa35a89dadb5a715454fad576ec11aa6f2e8378fc09ae26473d139b77c437               sha256:472fa35a89dadb5a715454fad576ec11aa6f2e8378fc09ae26473d139b77c437   30 MB    2026-03-31T23:45:39Z
+192.168.0.100   sha256:019727d2ee8e261fed594969f8a99f0fef36329d600f7058e8cbe68fa2754e9c                                                               sha256:fa695fbd582e290dcf904c2687c52974b7558ce8c100b4891864b4ecec479a4e   158 MB   2026-03-31T23:48:39Z
+192.168.0.100   sha256:03ceb32d17e934624a1f43fa1f7f18ef5d714d64aea43433f3e046cb294da595                                                               sha256:7d17ec10b3d37341c18ca56165b2f29a715cb8ee81311fd07088d8bf68c01e60   29 MB    2026-03-31T14:05:06Z
+192.168.0.100   sha256:05c07698b7b359bbce0f07e8042771b02f18cd6af9f81186cfceb46446ada1d0                                                               sha256:f5ec61733a8d1418d059baa92418cb19e9b045863733cecf1738205eb6d8b4f5   88 MB    2026-03-31T23:47:41Z
+192.168.0.100   sha256:06c6a143aafbff2641da3bc7f9b9807dfb1e1afaa0621755deaa9fca99e5af69                                                               sha256:150afbfd04d93f25f2203ab3de08b0b2463efbe844af2cc57494cc3283163961   9.8 MB   2026-04-01T13:22:38Z
+192.168.0.100   sha256:06ee2558c646f1ca5dd70ee74744e3f191720a436bcfc784577d9850161df69b                                                               sha256:d3d65efa3beeacdc9af743fa892daa1e935f23e4de98c84894a4d25d59a840a4   19 MB    2026-04-01T13:23:07Z
+192.168.0.100   sha256:1a0b10ffd0070041617bda6d0a369175012ca4638c3cd7a81597df3d2a7c4395                                                               sha256:04682dcc015fc19ad131338309c81db10a3c85402c599f9076c64a5de1638ca4   20 MB    2026-04-01T13:13:40Z
+192.168.0.100   sha256:1d579cb6d696709ea7c8613023cbc1204ac2af295477fe577c8fa741a76efa02                                                               sha256:f0b32ab11fd06504608cdb9084f7284106b4f5f07f35eb8823e70ea0eaaf252a   28 MB    2026-03-31T13:36:26Z
+192.168.0.100   sha256:1db7af80c99ddce4c88a087b7c026ef3485c8f80fbae6adf8da84b5b2533b1f9                                                               sha256:beac9c3a50c7e19746c01de110d31b30be40973bfa84481595adf136efde1f5f   110 MB   2026-04-01T00:32:55Z
+192.168.0.100   sha256:1f6ffaf97d8a8f6967b31779b6a6d2a7afb2a5571b2cb76f902d9362053463e1                                                               sha256:94caebb89dcfb9d2c4be45bfda34410a3e1092458fbbbc0284365c9e4c9a7818   24 MB    2026-03-31T14:04:55Z
+192.168.0.100   sha256:273ff72a5f99bb9c4ff0523568ecbc060b2e3b080f2659c797a1a04a747a414f                                                               sha256:8e897895b9e9749447ccb84842176212195f4687e0a3c4ca892d9d410e0fd43e   12 MB    2026-04-01T00:31:09Z
+192.168.0.100   sha256:40c15f03eb84b156b28d26bbdb3616c61a3adebc0684bf6a4e4b0c1d26b0241d                                                               sha256:544de3d4fed7acba72758413812780a4972d47c39035f2a06d6145d8644a3353   272 MB   2026-03-31T14:04:16Z
+192.168.0.100   sha256:40d48c3e342ca437b89b733ce2062c2502c9ce4a3ea9ba69601671d4dfe08519                                                               sha256:d96afaf6cbd2a6a3695aeb2f1d48c9a16ad5c8918eb849e5cbf43475f0f8e146   1.0 GB   2026-04-01T13:33:45Z
+192.168.0.100   sha256:410f7af8fd47b9e4837931755d725a98643caadce1790d6c5c5672f2c2c5aae0                                                               sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f   89 MB    2026-04-01T00:32:33Z
+192.168.0.100   sha256:47dcda5b17ede0bd1db37ec31896d5cc0941f2eabd1b920df536495afdc98efd                                                               sha256:3ca8dcfdbb056115e9df16d7b181350175857a0f09e05c044bbc4bfeb3d1e72f   360 MB   2026-04-01T02:25:41Z
+192.168.0.100   sha256:48bdcd4253db763801226738e51df973ce9872157bb89ecc352d1ca93509584e                                                               sha256:318eff387835ca2717baab42a84f35a83a5f9e7d519253df87269f80b9ff0171   66 MB    2026-03-31T14:04:12Z
+192.168.0.100   sha256:52b20bdb6759efb102d72354a84d275e83e49ec1c5aa743c0c8792f3dcf9cad3                                                               sha256:749938604d4b1129c59cd6db3a2229214428dbbe3e7f8c32c243338fbecf2c91   16 MB    2026-03-31T23:51:22Z
+192.168.0.100   sha256:535842d389eb8a5d62dabb2907edb8c6e31533c200f3bcc1330c29bc740aa938                                                               sha256:a02adf14b33f1d0a262848f2d925b17e90a93feb18e006c1fd8a0d15b9560a0c   13 MB    2026-04-01T02:01:03Z
+192.168.0.100   sha256:56474c4c3268f2f6a15f0f0323ba842c053a5c7387e4dce88ecf0e1bad7ff337                                                               sha256:4786c3f9b9a0d9649ccf00e97369e36286b7d129c87dbe0f6a3f4149ee7dd4f6   34 MB    2026-03-31T23:51:08Z
+192.168.0.100   sha256:5897fb3baf0ad6919058f80c52ae72e8754d1c1b98d499b621045bc40b7c3f79                                                               sha256:dc09bae442f8c5e611e4a96af81d7ae30bfa89df3f13d82b929250559542ba82   442 MB   2026-03-31T23:51:47Z
+192.168.0.100   sha256:6235b43459a244a3103f858965864a537d3dae3cbc59dd881d0ca376fa0eb30a                                                               sha256:87d715029a47328172774638cabfeb04d5b356678d660621b796b6a671f93581   77 MB    2026-04-01T00:33:40Z
+192.168.0.100   sha256:6ba9545b2183ef722d7e8a7f9e9c2abfaf483cd980bc378480631699413d9cf4                                                               sha256:6679a9970a8b2f18647b33bf02e5e9895d286689256e2f7172481b4096e46a32   30 MB    2026-03-31T13:36:11Z
+192.168.0.100   sha256:712edf01231297306d3fe4c832e1a51a2eac7c6d72318c16c89571f2f2e85715                                                               sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e   19 MB    2026-04-01T13:23:08Z
+192.168.0.100   sha256:873ed75102791e5b0b8a7fcd41606c92fcec98d56d05ead4ac5131650004c136                                                               sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a   320 kB   2026-03-31T13:35:56Z
+192.168.0.100   sha256:875daebd108d05fe3859c14244e873337f985156fd702a128d20169d71b7e9b4                                                               sha256:9e37c1296b802830834cc87342a9182ccbb71ffebb711971e849221bd9d59392   11 MB    2026-03-31T14:04:46Z
+192.168.0.100   sha256:8d72586a76469984dc4c5c7c36b24fbe4baed63056998c682f07b591d5e0aba4                                                               sha256:8dd2fbeb7f711da53a89ded239e54133f34110d98de887a39a9021e651b51f1f   22 MB    2026-03-31T13:36:19Z
+192.168.0.100   sha256:8e454a027c2818b53c485bc4e9a30f1633bef6322a02c16ec5fd03c9740de615                                                               sha256:0041543cd81cdef3d2dc62835a337b1d2f3592d227fe5130c0014e25de0a25ae   12 MB    2026-04-01T02:27:08Z
+192.168.0.100   sha256:8eac4eebac5d5c6c36512a5f2e555d4faec97926ac686923088cf363bea292d2                                                               sha256:300e6d677db08352df988c8e2c9ca787beace8b953ae8e5ee99e708b95195a73   74 MB    2026-03-31T23:47:25Z
+192.168.0.100   sha256:925ff61909aebae4bcc9bc04bb96a8bd15cd2271f13159fe95ce4338824531dd                                                               sha256:1487d0af5f52b4ba31c7e465126ee2123fe3f2305d638e7827681e7cf6c83d5e   2.2 MB   2026-04-01T13:22:20Z
+192.168.0.100   sha256:937690d77350877cc773f574d6150bc9d1fbcb1a2e23a5ae9c1553d5d29465a5                                                               sha256:1f0f50f06acaceb0f5670d2c8a658a599affe7b0d8e78b898c1035653849a702   134 MB   2026-04-01T13:27:42Z
+192.168.0.100   sha256:95a65abe2c979c80172550ab907a64b4cd1590aaa06561fce81b7880f7f32af4                                                               sha256:91ac3bf7be7bed30e90218f219d4f3062a63377689ee7246062fa0cc3839d096   34 MB    2026-03-31T14:03:30Z
+192.168.0.100   sha256:989b046f5b66728ea52b3a9f08cde107d3ec934d886f6252bd0e11f74613520a                                                               sha256:9cad8065bbf57815cbcfa813b903dd8822bcd0271f7443192082b54e96a55585   24 MB    2026-04-01T00:30:53Z
+192.168.0.100   sha256:99b916d8206bcbfc54c95fb06076751932c902254277f149b082dd5d4d67fccb                                                               sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e   19 MB    2026-04-01T02:27:20Z
+192.168.0.100   sha256:99e565f47fa1b90a20c327a216af59d0690a066250e44f3671159a9f55afb33e                                                               sha256:5d810724b177746a8aeafd5db111b55b72389861bcec03a6d50f9c6d56ec37c0   12 MB    2026-04-01T00:30:45Z
+192.168.0.100   sha256:9a49668cda8c1d6ffcb79b1a5d5884e3d542f25875c98969097f37b636ce72c6                                                               sha256:bb3c3e9db2f177d8923d1a26b481b61aaf3da4ce4b72f83f8db048db1bbd7fed   19 MB    2026-04-01T02:23:05Z
+192.168.0.100   sha256:9bdd63b509a1eca3146a91923281ffce5e75e86b865b10fc367857da173219c1                                                               sha256:f41b4ac798c8ff200c29756cf86e70a00e73fe489fb6ab80d9210d1b5f476852   20 MB    2026-04-01T00:30:42Z
+192.168.0.100   sha256:a11c883f9a0c51c64ff44da01e2efeceaaafbf8494b116db901998cfb6445ef9                                                               sha256:472fa35a89dadb5a715454fad576ec11aa6f2e8378fc09ae26473d139b77c437   30 MB    2026-03-31T23:45:39Z
+192.168.0.100   sha256:a58255cfafb43ef58613010f0f536bd22ba1c4d2228de8ad27eff80735fc7932                                                               sha256:ea9a31cd482ac381329abcbcd6071833d3b2259b5b999f258c8614fd41dccf18   36 MB    2026-03-31T23:51:01Z
+192.168.0.100   sha256:a74d499c4854d825b754840ead190a38a1dc445f44287cf4c5944c07f09a092d                                                               sha256:7b06ffaf2260654cacf5e44982744c26fcc89502cd4592685086aff601073382   61 MB    2026-04-01T03:31:32Z
+192.168.0.100   sha256:b930311d902c16a5135bd5f7206d6cf881b4b0c2577e31a67aa7feb16a7e4fe4                                                               sha256:be8bd63ad545442a216a951d4ab568afea1d873e78fd0a596b56d886e3424725   42 MB    2026-04-01T03:31:29Z
+192.168.0.100   sha256:c25d94da57c233f420f9f80265c4cc87a7ee43602d3e1b724bddc6d5e09f7ff1                                                               sha256:08d821ad0c6e201a92439b85cc343c6733cbabdeb3248887c344addd5bcc4584   96 MB    2026-04-01T01:45:59Z
+192.168.0.100   sha256:c5fb164bd3a72a4e4d3e2a50355fc1e819dd5d454761d1ca2a7bfc7a9f0b7f30                                                               sha256:006962b151b8e3df4536d21fb6ec520854c3d86296210ca0d7957e2f7f6ef363   7.8 MB   2026-04-01T13:25:04Z
+192.168.0.100   sha256:c616df2c8d9ce8557297cdff3f037386f239b088245ffa3f3b9a75531b4f95aa                                                               sha256:27da7b23b862e83581872d464a39a9477de705e86e46e3da18cf55d560caaa79   15 MB    2026-04-01T13:24:33Z
+192.168.0.100   sha256:c8291102321ac7505330b89def5542d8af8f792c21e56916d085c88a882bbf66                                                               sha256:1d2a08fcdba3e1e9fc7bd7a96429ed8543c8234c034699aadcf1e3651dd512e3   34 MB    2026-03-31T23:51:37Z
+192.168.0.100   sha256:cfdb2722e5e9f6e6afc33d6899cd8961d509f7dd486a9481cad16972debfe470                                                               sha256:7c067c98b293f370b418e29e01f94bc0f366a28d5631a887bd1149856fb22c64   19 MB    2026-04-01T02:23:06Z
+192.168.0.100   sha256:d0eab05a17379d3617c04dc40c1ea78965754379d5845cb910d328f3b7f1904f                                                               sha256:f6e429c1052ab50f85a7afa5f7e32f25931697751622b0e1f453d10f79a1df3c   95 MB    2026-04-01T13:24:15Z
+192.168.0.100   sha256:d807cd6bcc48466552e6c57b91ec80fa51f3162f8e78974588358bc2d8cf1e81                                                               sha256:40ec7de434d680038a6e0604e75464d73f75f294d15a50a63404b76e223dfe45   34 MB    2026-03-31T23:51:53Z
+192.168.0.100   sha256:e02dc0cd28c1f5661b1d9579006387ea6ab5b03a69bba6938e885d6653a332de                                                               sha256:8e6c84f1a27c1c3276a208963cefbacb852461f3ba42937b53da49b1d329ff07   118 MB   2026-03-31T23:47:16Z
+192.168.0.100   sha256:e6237bd9d702c69e9648f6914a90c53ac7be4c1b62271bbb05a006c0957661f6                                                               sha256:ec5daaa68c73f9a3bdaa401e6db3697d48a05f2fe07e7ca0f0ff863467006315   95 MB    2026-04-01T02:01:14Z
+192.168.0.100   sha256:e844f0154823ad0744a9d50c485d22d017776340ada9ad20ff22124e8cf37a5e                                                               sha256:cc54cc450174ada901b32eb2538de5fc70ee259a1ac551ed38023f2ca2ad00e3   39 MB    2026-04-01T13:28:19Z
+192.168.0.100   sha256:ea0d31b07382091e2ee1fd2ebb8b0d29ffc0d814765a9a172326bb4acc4981fa                                                               sha256:a034b7e98e6ea796ed26df8f4e71f83fc16465a19d166eff67a03b822c0bfa15   20 MB    2026-03-31T14:05:04Z
+192.168.0.100   sha256:edde3a9b1f602a145a15583d39c3332040ca337513a8785a5e53c5250f2b03a2                                                               sha256:82d59c88296195f769df27ecff5a1091b01c6e8c6415204fe0dc1b30125873b0   16 MB    2026-03-31T23:51:45Z
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig stats
+Label:     stats
+Duration:  0.133 seconds
+------------------------------
+NODE            NAMESPACE   ID                MEMORY(MB)   CPU
+192.168.0.100   system      apid              29.38        25558956000
+192.168.0.100   system      ext-cloudflared   56.84        11524462000
+192.168.0.100   system      ext-iscsid        10.30        108119000
+192.168.0.100   system      ext-zfs-service   6.41         132742000
+192.168.0.100   system      trustd            13.55        621292000
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig list /
+Label:     list /
+Duration:  0.080 seconds
+------------------------------
+NODE            NAME
+192.168.0.100   .
+192.168.0.100   .extra
+192.168.0.100   bin
+192.168.0.100   boot
+192.168.0.100   dev
+192.168.0.100   etc
+192.168.0.100   lib
+192.168.0.100   lib64
+192.168.0.100   mnt
+192.168.0.100   opt
+192.168.0.100   proc
+192.168.0.100   root
+192.168.0.100   run
+192.168.0.100   sbin
+192.168.0.100   sys
+192.168.0.100   system
+192.168.0.100   tmp
+192.168.0.100   usr
+192.168.0.100   var
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig read /etc/os-release
+Label:     read /etc/os-release
+Duration:  0.066 seconds
+------------------------------
+NAME="Talos"
+ID=talos
+VERSION_ID=v1.12.5
+PRETTY_NAME="Talos (v1.12.5)"
+HOME_URL="https://www.talos.dev/"
+BUG_REPORT_URL="https://github.com/siderolabs/talos/issues"
+VENDOR_NAME="Sidero Labs"
+VENDOR_URL="https://www.siderolabs.com/"
+
+
+------------------------------
+Command:   talosctl -n 192.168.0.100 -e 192.168.0.100 --talosconfig /Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/pulumi/talos-cluster-baremetal/outputs/talosconfig read /proc/modules
+Label:     read /proc/modules
+Duration:  0.062 seconds
+------------------------------
+zfs 6631424 0 - Live 0x0000000000000000 (PO)
+spl 135168 1 zfs, Live 0x0000000000000000 (O)
+vfio_pci 16384 0 - Live 0x0000000000000000
+vfio_pci_core 90112 1 vfio_pci, Live 0x0000000000000000
+vfio_iommu_type1 57344 0 - Live 0x0000000000000000
+vfio 53248 4 vfio_pci,vfio_pci_core,vfio_iommu_type1, Live 0x0000000000000000
+cx23885 233472 0 - Live 0x0000000000000000
+tveeprom 20480 1 cx23885, Live 0x0000000000000000
+cx2341x 28672 1 cx23885, Live 0x0000000000000000
+tda18271 57344 1 cx23885, Live 0x0000000000000000
+snd_pcm 188416 1 cx23885, Live 0x0000000000000000
+snd_timer 53248 1 snd_pcm, Live 0x0000000000000000
+snd 114688 3 cx23885,snd_pcm,snd_timer, Live 0x0000000000000000
+soundcore 12288 1 snd, Live 0x0000000000000000
+videobuf2_dvb 12288 1 cx23885, Live 0x0000000000000000
+videobuf2_dma_sg 20480 1 cx23885, Live 0x0000000000000000
+dvb_core 155648 2 cx23885,videobuf2_dvb, Live 0x0000000000000000
+videobuf2_memops 12288 1 videobuf2_dma_sg, Live 0x0000000000000000
+videobuf2_v4l2 28672 1 cx23885, Live 0x0000000000000000
+videobuf2_common 77824 5 cx23885,videobuf2_dvb,videobuf2_dma_sg,videobuf2_memops,videobuf2_v4l2, Live 0x0000000000000000
+rc_core 53248 1 cx23885, Live 0x0000000000000000
+videodev 344064 3 cx23885,cx2341x,videobuf2_v4l2, Live 0x0000000000000000
+mc 69632 3 videobuf2_v4l2,videobuf2_common,videodev, Live 0x0000000000000000
+iTCO_wdt 12288 0 - Live 0x0000000000000000
+iTCO_vendor_support 12288 1 iTCO_wdt, Live 0x0000000000000000
+intel_rapl_msr 12288 0 - Live 0x0000000000000000
+watchdog 40960 1 iTCO_wdt, Live 0x0000000000000000
+igb 319488 0 - Live 0x0000000000000000
+mpt3sas 430080 1 - Live 0x0000000000000000
+intel_rapl_common 45056 1 intel_rapl_msr, Live 0x0000000000000000
+hid_microsoft 12288 0 - Live 0x0000000000000000
+sb_edac 36864 0 - Live 0x0000000000000000
+i2c_algo_bit 16384 1 igb, Live 0x0000000000000000
+i2c_i801 32768 0 - Live 0x0000000000000000
+e1000e 323584 0 - Live 0x0000000000000000
+lpc_ich 28672 0 - Live 0x0000000000000000
+ahci 45056 1 - Live 0x0000000000000000
+libahci 49152 1 ahci, Live 0x0000000000000000
+i2c_smbus 12288 1 i2c_i801, Live 0x0000000000000000
+mfd_core 12288 1 lpc_ich, Live 0x0000000000000000
+

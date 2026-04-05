@@ -1,0 +1,62 @@
+{
+  "active_plan": "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/.sisyphus/plans/talos-baremetal-deploy.md",
+  "started_at": "2026-03-30T10:00:00.000Z",
+  "session_ids": [
+    "ses_2c503860bffewbftrc0tBgkM1P",
+    "ses_2c05a7646ffe3Bk6Ub80tu9Qx0",
+    "ses_2c049c098ffeGGRJVJRQRLvRNE",
+    "ses_2c0494c36ffevV5RQ9joU4nJCo",
+    "ses_2c0425151ffeXvb8G10lRDMr37",
+    "ses_2c039e1f0ffeXzzIalGDtB35an",
+    "ses_2c033e49effe31HACAD7cCQ4RM"
+  ],
+  "plan_name": "talos-baremetal-deploy",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Extend PlatformProfile with bare-metal Cilium L2 fields",
+      "session_id": "ses_2c05abad8ffe0AFLBwM2AY9paI",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-03-30T16:49:20.465Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Update talos_baremetal profile with L2/BPF values",
+      "session_id": "ses_2c049c098ffeGGRJVJRQRLvRNE",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-03-30T17:07:18.000Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Add ALL machine config patches to __main__.py",
+      "session_id": "ses_2c0425151ffeXvb8G10lRDMr37",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-03-30T17:17:29.277Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "Update Pulumi.dev.yaml with real bare-metal values",
+      "session_id": "ses_2c039e1f0ffeXzzIalGDtB35an",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-03-30T17:25:00.554Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "Add pytest unit tests for config patch generation",
+      "session_id": "ses_2c033e49effe31HACAD7cCQ4RM",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-03-30T17:32:34.701Z"
+    }
+  }
+}

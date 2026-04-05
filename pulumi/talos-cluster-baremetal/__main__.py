@@ -49,6 +49,7 @@ enable_cloudflared = cfg.get_bool("enable_cloudflared") or False
 cloudflared_token = cfg.get("cloudflared_token") or ""
 enable_nvidia = cfg.get_bool("enable_nvidia") or False
 enable_zfs = cfg.get_bool("enable_zfs") or False
+registry_mirror_endpoint = cfg.get("registry_mirror_endpoint") or ""
 
 cilium_version = cfg.get("cilium_version") or "1.17.6"
 gateway_api_version = cfg.get("gateway_api_version") or "v1.3.0"
@@ -82,6 +83,7 @@ patch_cfg = PatchConfig(
     cloudflared_token=cloudflared_token,
     enable_nvidia=enable_nvidia,
     enable_zfs=enable_zfs,
+    registry_mirror_endpoint=registry_mirror_endpoint,
 )
 
 config_patches = build_control_plane_patches(patch_cfg)

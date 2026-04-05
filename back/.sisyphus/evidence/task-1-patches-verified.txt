@@ -1,0 +1,8 @@
+QA Scenario: Patches extracted completely
+Date: 2026-03-31
+
+File exists: YES
+Patch count (grep -c "Patch"): 5 (>= 4 ✅)
+Key function references (grep -c "inferRawStateDelta|turnaroundCheck|stripNulls"): 18 (✅)
+
+RESULT: PASS
