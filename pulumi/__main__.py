@@ -151,6 +151,15 @@ def main() -> None:
             depends=[obs.register_cmd] if obs else [cp.helm_chart],
         )
 
+        # Auto-annotate all dp-* namespaces for OTel injection
+        from helpers.annotate_dp_namespaces import annotate_dp_namespaces
+
+        annotate_dp_namespaces(
+            "annotate-dp-ns-otel",
+            cfg=cfg,
+            depends=[otel_op],
+        )
+
     # ─── Step 7: Flux CD & GitOps (optional) ───
     if cfg.enable_flux and cfg.gitops_repo_url:
         flux_gitops.FluxGitOps(
