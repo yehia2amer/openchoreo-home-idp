@@ -13,6 +13,7 @@ config:
   openchoreo:gateway_pin_ip_op: "192.168.0.12"
   openchoreo:coredns_bind_ip: "192.168.0.100"
   openchoreo:enable_observability: "true"
+  openchoreo:enable_demo_app_bootstrap: "true"
   openchoreo:github_pat:
     secure: v1:QerXHFHFjBVf+qHY:K2Z8T7Ke2DKGkjrQPy3ID7UrvxQfPjmWIqpxcytiy3CWWW59foz2uk4PZjwgvE1FC54zIzbqt5k=
 encryptionsalt: v1:aUpt1JxkDUk=:v1:GQ45diR9XGdv/K2z:5G61+IXRPMP7nnESFCT1lmr3tZXwJg==

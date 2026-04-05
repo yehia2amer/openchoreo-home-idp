@@ -12,6 +12,7 @@ import pulumi_kubernetes as k8s
 from components import (
     control_plane,
     data_plane,
+    demo_app_bootstrap,
     flux_gitops,
     integration_tests,
     link_planes,
@@ -423,6 +424,15 @@ def main() -> None:
         test_depends.append(obs.register_cmd)
     integration_tests.IntegrationTests("integration-tests", cfg=cfg, depends=test_depends)
 
+    # ─── Step 9: Demo App Bootstrap (optional) ───
+    # Automates tutorial Step 6: trigger WorkflowRuns, merge PRs, verify.
+    if cfg.enable_demo_app_bootstrap and cfg.enable_flux and cfg.github_pat:
+        demo_app_bootstrap.DemoAppBootstrap(
+            "demo-app-bootstrap",
+            cfg=cfg,
+            depends=test_depends,
+        )
+
     # ─── Outputs: URLs ───
     pulumi.export("backstage_url", cfg.backstage_url)
     pulumi.export("api_url", cfg.api_url)
@@ -450,6 +460,7 @@ def main() -> None:
     pulumi.export("cilium_enabled", cfg.platform.gateway_mode == "cilium")
     pulumi.export("flux_enabled", cfg.enable_flux)
     pulumi.export("observability_enabled", cfg.enable_observability)
+    pulumi.export("demo_app_bootstrap_enabled", cfg.enable_demo_app_bootstrap)
 
     # ─── Outputs: Namespaces ───
     pulumi.export(

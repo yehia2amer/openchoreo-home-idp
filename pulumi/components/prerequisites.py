@@ -382,7 +382,25 @@ class Prerequisites(pulumi.ComponentResource):
             opts=self._child_opts(depends_on=[cluster_secret_store, openbao_validated]),
         )
 
-        # ─── 9. CoreDNS rewrite (platform-specific) ───
+        # ─── 9. Workflow namespace (pre-create with PodSecurity labels) ───
+        # OpenChoreo creates workflows-{ns} namespaces dynamically, but on
+        # Talos the default PodSecurity is *baseline* which rejects the
+        # privileged containers needed for Podman/buildah image builds.
+        # Pre-create the namespace so labels are in place before any build runs.
+        k8s.core.v1.Namespace(
+            "workflows-default",
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name="workflows-default",
+                labels={
+                    "pod-security.kubernetes.io/enforce": "privileged",
+                    "pod-security.kubernetes.io/audit": "privileged",
+                    "pod-security.kubernetes.io/warn": "privileged",
+                },
+            ),
+            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
+        )
+
+        # ─── 10. CoreDNS rewrite (platform-specific) ───
         if p.requires_coredns_rewrite:
             k8s.yaml.v2.ConfigGroup(
                 "coredns-rewrite",
