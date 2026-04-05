@@ -141,6 +141,16 @@ def main() -> None:
         link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
         link_planes.LinkPlanesComponent("link-planes", cfg=cfg, depends=link_depends)
 
+    # ─── Step 6.5: OTel Operator + Auto-Instrumentation (optional) ───
+    if cfg.enable_openobserve and cfg.enable_observability:
+        from components import otel_operator
+
+        otel_op = otel_operator.deploy(
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+            depends=[obs.register_cmd] if obs else [cp.helm_chart],
+        )
+
     # ─── Step 7: Flux CD & GitOps (optional) ───
     if cfg.enable_flux and cfg.gitops_repo_url:
         flux_gitops.FluxGitOps(

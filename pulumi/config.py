@@ -22,6 +22,7 @@ CERT_MANAGER_CHART_REPO = "oci://quay.io/jetstack/charts"
 EXTERNAL_SECRETS_CHART_REPO = "oci://ghcr.io/external-secrets/charts"
 KGATEWAY_CHART_REPO = "oci://cr.kgateway.dev/kgateway-dev/charts"
 OPENBAO_CHART_REPO = "oci://ghcr.io/openbao/charts"
+OTEL_OPERATOR_CHART_REPO = "oci://ghcr.io/open-telemetry/opentelemetry-helm-charts"
 THUNDER_CHART_REPO = "oci://ghcr.io/asgardeo/helm-charts"
 
 # Helm chart HTTP repositories
@@ -37,6 +38,7 @@ NS_CERT_MANAGER = "cert-manager"
 NS_EXTERNAL_SECRETS = "external-secrets"
 NS_THUNDER = "thunder"
 NS_FLUX_SYSTEM = "flux-system"
+NS_OTEL_OPERATOR = "opentelemetry-operator-system"
 
 # Well-known Kubernetes resource names
 SECRET_GATEWAY_CA = "cluster-gateway-ca"
@@ -127,6 +129,7 @@ class OpenChoreoConfig:
     metrics_prometheus_version: str
     logs_openobserve_version: str
     tracing_openobserve_version: str
+    otel_operator_version: str
 
     # Credentials
     openbao_root_token: str
@@ -254,6 +257,7 @@ def load_config() -> OpenChoreoConfig:
     metrics_prometheus_version = cfg.get("metrics_prometheus_version") or "0.2.5"
     logs_openobserve_version = cfg.get("logs_openobserve_version") or "0.4.2"
     tracing_openobserve_version = cfg.get("tracing_openobserve_version") or "0.2.1"
+    otel_operator_version = cfg.get("otel_operator_version") or "0.109.0"
 
     # Credentials — warn on non-dev stacks when using insecure defaults.
     # Use cfg.get() for plain strings needed by dynamic providers.
@@ -364,6 +368,7 @@ def load_config() -> OpenChoreoConfig:
         metrics_prometheus_version=metrics_prometheus_version,
         logs_openobserve_version=logs_openobserve_version,
         tracing_openobserve_version=tracing_openobserve_version,
+        otel_operator_version=otel_operator_version,
         openbao_root_token=openbao_root_token,
         opensearch_username=opensearch_username,
         opensearch_password=opensearch_password,
