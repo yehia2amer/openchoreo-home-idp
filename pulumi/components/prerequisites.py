@@ -295,6 +295,28 @@ class Prerequisites(pulumi.ComponentResource):
                 opts=self._child_opts(depends_on=[wait_poststart]),
             )
             pat_depends.append(pat_store)
+
+        # ─── 7a. Store OpenObserve credentials (conditional) ───
+        if cfg.enable_openobserve and cfg.openobserve_admin_password:
+            oo_store = OpenBaoSecrets(
+                "store-openobserve-creds",
+                kubeconfig_path=cfg.kubeconfig_path,
+                context=cfg.kubeconfig_context,
+                namespace=NS_OPENBAO,
+                root_token=cfg.openbao_root_token,
+                secrets=[
+                    {
+                        "path": "openobserve-admin-credentials",
+                        "data": {
+                            "ZO_ROOT_USER_EMAIL": cfg.openobserve_admin_email,
+                            "ZO_ROOT_USER_PASSWORD": cfg.openobserve_admin_password,
+                        },
+                    },
+                ],
+                opts=self._child_opts(depends_on=[wait_poststart]),
+            )
+            pat_depends.append(oo_store)
+
         elif cfg.enable_flux or cfg.gitops_repo_url:
             pulumi.log.warn(
                 "github_pat is not set but Flux/GitOps features are enabled. "
@@ -316,6 +338,10 @@ class Prerequisites(pulumi.ComponentResource):
         if _validate_git_secrets:
             _expected_paths.append({"path": "git-token", "fields": ["git-token"]})
             _expected_paths.append({"path": "gitops-token", "fields": ["git-token"]})
+        if cfg.enable_openobserve:
+            _expected_paths.append(
+                {"path": "openobserve-admin-credentials", "fields": ["ZO_ROOT_USER_EMAIL", "ZO_ROOT_USER_PASSWORD"]}
+            )
 
         openbao_validated = ValidateOpenBaoSecrets(
             "validate-openbao-secrets",
