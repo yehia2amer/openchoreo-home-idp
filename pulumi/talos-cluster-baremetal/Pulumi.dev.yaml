@@ -8,7 +8,7 @@ config:
   openchoreo-talos-cluster-baremetal:network_interface: "enp7s0"
   openchoreo-talos-cluster-baremetal:network_addresses: '["192.168.0.100/24"]'
   openchoreo-talos-cluster-baremetal:network_gateway: "192.168.0.1"
-  openchoreo-talos-cluster-baremetal:dns_servers: '["8.8.8.8", "8.8.4.4"]'
+  openchoreo-talos-cluster-baremetal:dns_servers: '["192.168.0.100", "8.8.8.8"]'
   openchoreo-talos-cluster-baremetal:cert_sans: '["192.168.0.100", "talos.amernas.work"]'
   openchoreo-talos-cluster-baremetal:longhorn_disk: "/dev/disk/by-id/ata-SanDisk_SDSSDHII960G_151740411937"
   openchoreo-talos-cluster-baremetal:install_disk_wwid: "naa.5002538e7026fcb7"
@@ -20,4 +20,5 @@ config:
   openchoreo-talos-cluster-baremetal:cilium_version: "1.17.6"
   openchoreo-talos-cluster-baremetal:gateway_api_version: "v1.3.0"
   openchoreo-talos-cluster-baremetal:longhorn_version: "1.9.1"
+  openchoreo-talos-cluster-baremetal:registry_mirror_endpoint: "http://registry.openchoreo-workflow-plane.svc.cluster.local:10082"
 encryptionsalt: v1:kXPsy9KW2QY=:v1:E7akSISJlCC41ndE:YbIFcAXVeTb88iCsG4Y8H0ZrqHV/5w==

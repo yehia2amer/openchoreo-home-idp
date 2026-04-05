@@ -7,6 +7,7 @@ def get_corefile(
     cp_ip: str,
     dp_ip: str,
     op_ip: str,
+    kube_dns_ip: str = "10.96.0.10",
     bind_ip: str = "",
 ) -> str:
     """Return a CoreDNS Corefile for *.openchoreo.local resolution.
@@ -16,14 +17,24 @@ def get_corefile(
     - Data plane (dp_ip): everything else (wildcard catch-all)
     - Observability (op_ip): observer.*, rca-agent.*
 
+    Also forwards .cluster.local queries to kube-dns so that
+    containerd on the node can resolve in-cluster service names.
+
     Args:
         cp_ip: Control plane gateway IP.
         dp_ip: Data plane gateway IP (also used as wildcard default).
         op_ip: Observability plane gateway IP.
+        kube_dns_ip: ClusterIP of the kube-dns service.
         bind_ip: If set, bind only to this IP instead of 0.0.0.0.
     """
     bind_directive = f"\n    bind {bind_ip}" if bind_ip else ""
     return f"""\
+cluster.local:53 {{{bind_directive}
+    forward . {kube_dns_ip}
+    cache 5
+    errors
+}}
+
 .:53 {{{bind_directive}
     template IN A openchoreo.local {{
         match ^(openchoreo\\.local|api\\.openchoreo\\.local|thunder\\.openchoreo\\.local)[.]?$
