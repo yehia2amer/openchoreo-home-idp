@@ -16,4 +16,7 @@ config:
   openchoreo:enable_demo_app_bootstrap: "true"
   openchoreo:github_pat:
     secure: v1:QerXHFHFjBVf+qHY:K2Z8T7Ke2DKGkjrQPy3ID7UrvxQfPjmWIqpxcytiy3CWWW59foz2uk4PZjwgvE1FC54zIzbqt5k=
+  openchoreo:flux_telegram_bot_token:
+    secure: v1:BUSlyh7Uxlvlzr7y:tuifJn7RdrVioov98OdlP6gwGaVidUtnrpZLKs+HNpC/5/BfCSWM0VRek0+aoCYGy+j4FC/7x/QrSmy+ypU=
+  openchoreo:flux_telegram_chat_id: "1203090452"
 encryptionsalt: v1:aUpt1JxkDUk=:v1:GQ45diR9XGdv/K2z:5G61+IXRPMP7nnESFCT1lmr3tZXwJg==
