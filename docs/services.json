@@ -1,0 +1,119 @@
+[
+  {
+    "name": "openchoreo-api",
+    "hostname": "api.openchoreo.local",
+    "http_url": "http://api.openchoreo.local:8080",
+    "https_url": "https://api.openchoreo.local:8443",
+    "http_status": 404,
+    "https_status": 404,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "argo-server",
+    "hostname": "argo.openchoreo.local",
+    "http_url": "http://argo.openchoreo.local:8080",
+    "https_url": "https://argo.openchoreo.local:8443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "hubble-ui",
+    "hostname": "hubble.openchoreo.local",
+    "http_url": "http://hubble.openchoreo.local:8080",
+    "https_url": "https://hubble.openchoreo.local:8443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "longhorn-ui",
+    "hostname": "longhorn.openchoreo.local",
+    "http_url": "http://longhorn.openchoreo.local:8080",
+    "https_url": "https://longhorn.openchoreo.local:8443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "openbao-ui",
+    "hostname": "openbao.openchoreo.local",
+    "http_url": "http://openbao.openchoreo.local:8080",
+    "https_url": "https://openbao.openchoreo.local:8443",
+    "http_status": 307,
+    "https_status": 307,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "backstage",
+    "hostname": "openchoreo.local",
+    "http_url": "http://openchoreo.local:8080",
+    "https_url": "https://openchoreo.local:8443",
+    "http_status": 0,
+    "https_status": 0,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "thunder-httproute",
+    "hostname": "thunder.openchoreo.local",
+    "http_url": "http://thunder.openchoreo.local:8080",
+    "https_url": "https://thunder.openchoreo.local:8443",
+    "http_status": 401,
+    "https_status": 401,
+    "gateway_ip": "192.168.0.10"
+  },
+  {
+    "name": "frontend-http-80454fc2",
+    "hostname": "http-frontend-development-default-4cc7110c.openchoreo.local",
+    "http_url": "http://http-frontend-development-default-4cc7110c.openchoreo.local:19080",
+    "https_url": "https://http-frontend-development-default-4cc7110c.openchoreo.local:19443",
+    "http_status": 503,
+    "https_status": 503,
+    "gateway_ip": "192.168.0.11"
+  },
+  {
+    "name": "registry",
+    "hostname": "registry.openchoreo.local",
+    "http_url": "http://registry.openchoreo.local:19080",
+    "https_url": "https://registry.openchoreo.local:19443",
+    "http_status": 200,
+    "https_status": 404,
+    "gateway_ip": "192.168.0.11"
+  },
+  {
+    "name": "alertmanager",
+    "hostname": "alertmanager.openchoreo.local",
+    "http_url": "http://alertmanager.openchoreo.local:11080",
+    "https_url": "https://alertmanager.openchoreo.local:11085",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.12"
+  },
+  {
+    "name": "observer",
+    "hostname": "observer.openchoreo.local",
+    "http_url": "http://observer.openchoreo.local:11080",
+    "https_url": "https://observer.openchoreo.local:11085",
+    "http_status": 404,
+    "https_status": 404,
+    "gateway_ip": "192.168.0.12"
+  },
+  {
+    "name": "opensearch",
+    "hostname": "opensearch.openchoreo.local",
+    "http_url": "http://opensearch.openchoreo.local:11080",
+    "https_url": "https://opensearch.openchoreo.local:11085",
+    "http_status": 401,
+    "https_status": 401,
+    "gateway_ip": "192.168.0.12"
+  },
+  {
+    "name": "prometheus",
+    "hostname": "prometheus.openchoreo.local",
+    "http_url": "http://prometheus.openchoreo.local:11080",
+    "https_url": "https://prometheus.openchoreo.local:11085",
+    "http_status": 302,
+    "https_status": 302,
+    "gateway_ip": "192.168.0.12"
+  }
+]
