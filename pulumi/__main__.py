@@ -145,6 +145,38 @@ def main() -> None:
             depends=[cp.helm_chart, dp.register_cmd, wp.register_cmd],
         )
 
+    # ─── Step 7.5: CoreDNS LAN DNS + Gateway IP pinning (bare-metal only) ───
+    if cfg.platform.name == "talos-baremetal" and cfg.gateway_pin_ip:
+        from components import coredns_lan
+
+        coredns_lan.CoreDnsLan(
+            "coredns-lan",
+            cp_ip=cfg.gateway_pin_ip,
+            dp_ip=cfg.gateway_pin_ip_dp,
+            op_ip=cfg.gateway_pin_ip_op,
+            bind_ip=cfg.coredns_bind_ip,
+            k8s_provider=k8s_provider,
+        )
+
+        # Pin each gateway-default Service to its own LB IP.
+        # Different namespaces can't share IPs in Cilium 1.17.
+        _gw_pins = [
+            (NS_CONTROL_PLANE, cfg.gateway_pin_ip),
+            (NS_DATA_PLANE, cfg.gateway_pin_ip_dp),
+            (NS_OBSERVABILITY_PLANE, cfg.gateway_pin_ip_op),
+        ]
+        for ns, ip in _gw_pins:
+            if ip:
+                k8s.core.v1.ServicePatch(
+                    f"gateway-pin-ip-{ns}",
+                    metadata=k8s.meta.v1.ObjectMetaPatchArgs(
+                        name="gateway-default",
+                        namespace=ns,
+                        annotations={"io.cilium/lb-ipam-ips": ip},
+                    ),
+                    opts=pulumi.ResourceOptions(provider=k8s_provider),
+                )
+
     # ─── Step 8: Integration Tests ───
     test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]
     if obs is not None:

@@ -7,6 +7,11 @@ config:
   openchoreo:domain_base: "openchoreo.local"
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
+  openchoreo:registry_node_port: "30082"
+  openchoreo:gateway_pin_ip: "192.168.0.10"
+  openchoreo:gateway_pin_ip_dp: "192.168.0.11"
+  openchoreo:gateway_pin_ip_op: "192.168.0.12"
+  openchoreo:coredns_bind_ip: "192.168.0.100"
   openchoreo:enable_observability: "true"
   openchoreo:github_pat:
     secure: v1:QerXHFHFjBVf+qHY:K2Z8T7Ke2DKGkjrQPy3ID7UrvxQfPjmWIqpxcytiy3CWWW59foz2uk4PZjwgvE1FC54zIzbqt5k=

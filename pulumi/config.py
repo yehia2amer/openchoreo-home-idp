@@ -102,6 +102,11 @@ class OpenChoreoConfig:
     dp_https_port: int
     wp_argo_port: int
     wp_registry_port: int
+    registry_node_port: int
+    gateway_pin_ip: str
+    gateway_pin_ip_dp: str
+    gateway_pin_ip_op: str
+    coredns_bind_ip: str
     op_http_port: int
     op_https_port: int
     opensearch_dashboards_port: int
@@ -204,6 +209,11 @@ def load_config() -> OpenChoreoConfig:
     dp_https_port = cfg.get_int("dp_https_port") or 19443
     wp_argo_port = cfg.get_int("wp_argo_port") or 10081
     wp_registry_port = cfg.get_int("wp_registry_port") or 10082
+    registry_node_port = cfg.get_int("registry_node_port") or 0
+    gateway_pin_ip = cfg.get("gateway_pin_ip") or ""
+    gateway_pin_ip_dp = cfg.get("gateway_pin_ip_dp") or ""
+    gateway_pin_ip_op = cfg.get("gateway_pin_ip_op") or ""
+    coredns_bind_ip = cfg.get("coredns_bind_ip") or ""
     op_http_port = cfg.get_int("op_http_port") or 11080
     op_https_port = cfg.get_int("op_https_port") or 11085
     opensearch_dashboards_port = cfg.get_int("opensearch_dashboards_port") or 11081
@@ -299,6 +309,11 @@ def load_config() -> OpenChoreoConfig:
         dp_https_port=dp_https_port,
         wp_argo_port=wp_argo_port,
         wp_registry_port=wp_registry_port,
+        registry_node_port=registry_node_port,
+        gateway_pin_ip=gateway_pin_ip,
+        gateway_pin_ip_dp=gateway_pin_ip_dp,
+        gateway_pin_ip_op=gateway_pin_ip_op,
+        coredns_bind_ip=coredns_bind_ip,
         op_http_port=op_http_port,
         op_https_port=op_https_port,
         opensearch_dashboards_port=opensearch_dashboards_port,
