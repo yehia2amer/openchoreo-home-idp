@@ -70,7 +70,8 @@ class FluxGitOps(pulumi.ComponentResource):
 
         # ─── 2b. GitRepository ───
         git_repo_spec: dict = {
-            "interval": "1m",
+            "interval": "5m",
+            "timeout": "90s",
             "url": cfg.gitops_repo_url,
             "ref": {"branch": cfg.gitops_repo_branch},
         }
