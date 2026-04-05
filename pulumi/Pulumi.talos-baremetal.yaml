@@ -23,4 +23,5 @@ config:
   openchoreo:openobserve_admin_email: admin@openchoreo.local
   openchoreo:openobserve_admin_password:
     secure: v1:2l0VC3V6L6a8eh0S:aD2jnd0DDsCU+a15/KWA7jVJa6LMMqsi8obKkN6Za9wsKbMTvDjJ
+  openchoreo:odigos_version: 1.23.0
 encryptionsalt: v1:aUpt1JxkDUk=:v1:GQ45diR9XGdv/K2z:5G61+IXRPMP7nnESFCT1lmr3tZXwJg==

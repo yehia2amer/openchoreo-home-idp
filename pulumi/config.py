@@ -130,6 +130,7 @@ class OpenChoreoConfig:
     logs_openobserve_version: str
     tracing_openobserve_version: str
     otel_operator_version: str
+    odigos_version: str
 
     # Credentials
     openbao_root_token: str
@@ -258,6 +259,7 @@ def load_config() -> OpenChoreoConfig:
     logs_openobserve_version = cfg.get("logs_openobserve_version") or "0.4.2"
     tracing_openobserve_version = cfg.get("tracing_openobserve_version") or "0.2.1"
     otel_operator_version = cfg.get("otel_operator_version") or "0.109.0"
+    odigos_version = cfg.get("odigos_version") or "1.23.0"
 
     # Credentials — warn on non-dev stacks when using insecure defaults.
     # Use cfg.get() for plain strings needed by dynamic providers.
@@ -369,6 +371,7 @@ def load_config() -> OpenChoreoConfig:
         logs_openobserve_version=logs_openobserve_version,
         tracing_openobserve_version=tracing_openobserve_version,
         otel_operator_version=otel_operator_version,
+        odigos_version=odigos_version,
         openbao_root_token=openbao_root_token,
         opensearch_username=opensearch_username,
         opensearch_password=opensearch_password,

@@ -141,23 +141,14 @@ def main() -> None:
         link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
         link_planes.LinkPlanesComponent("link-planes", cfg=cfg, depends=link_depends)
 
-    # ─── Step 6.5: OTel Operator + Auto-Instrumentation (optional) ───
+    # ─── Step 6.5: Odigos — automatic distributed tracing (optional) ───
     if cfg.enable_openobserve and cfg.enable_observability:
-        from components import otel_operator
+        from components import odigos
 
-        otel_op = otel_operator.deploy(
+        odigos.deploy(
             cfg=cfg,
             k8s_provider=k8s_provider,
             depends=[obs.register_cmd] if obs else [cp.helm_chart],
-        )
-
-        # Auto-annotate all dp-* namespaces for OTel injection
-        from helpers.annotate_dp_namespaces import annotate_dp_namespaces
-
-        annotate_dp_namespaces(
-            "annotate-dp-ns-otel",
-            cfg=cfg,
-            depends=[otel_op],
         )
 
     # ─── Step 7: Flux CD & GitOps (optional) ───
