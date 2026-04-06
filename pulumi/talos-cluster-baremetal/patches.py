@@ -216,22 +216,41 @@ def render_registry_mirrors_patch(cfg: PatchConfig) -> str:
     On Talos, containerd resolves registry hostnames via node DNS (not cluster DNS),
     so cluster-internal names like ``registry.<ns>.svc.cluster.local`` are unreachable.
     A mirror entry rewrites the pull to a NodePort endpoint reachable by the host.
+
+    Two entries are created:
+    - The cluster-internal name → NodePort endpoint (for pods using internal DNS)
+    - The NodePort ``host:port`` → itself as HTTP (for direct NodePort references)
     """
     if not cfg.registry_mirror_endpoint:
         return ""
-    return json.dumps(
-        {
-            "machine": {
-                "registries": {
-                    "mirrors": {
-                        "registry.openchoreo-workflow-plane.svc.cluster.local:10082": {
-                            "endpoints": [cfg.registry_mirror_endpoint],
-                        }
-                    }
-                }
+    # Extract host:port from endpoint URL (e.g. "http://192.168.0.100:30082" → "192.168.0.100:30082")
+    from urllib.parse import urlparse
+
+    parsed = urlparse(cfg.registry_mirror_endpoint)
+    nodeport_host_port = parsed.netloc or parsed.path  # netloc for http://..., path for bare host:port
+
+    patch: dict = {
+        "machine": {
+            "registries": {
+                "mirrors": {
+                    "registry.openchoreo-workflow-plane.svc.cluster.local:10082": {
+                        "endpoints": [cfg.registry_mirror_endpoint],
+                    },
+                    nodeport_host_port: {
+                        "endpoints": [cfg.registry_mirror_endpoint],
+                    },
+                },
+                "config": {
+                    nodeport_host_port: {
+                        "tls": {
+                            "insecureSkipVerify": True,
+                        },
+                    },
+                },
             }
         }
-    )
+    }
+    return json.dumps(patch)
 
 
 def build_control_plane_patches(cfg: PatchConfig) -> list[str]:

@@ -232,6 +232,14 @@ def test_registry_mirrors_patch_structure(patch_cfg: PatchConfig):
     assert key in mirrors
     assert mirrors[key]["endpoints"] == ["http://192.168.0.100:30082"]
 
+    nodeport_key = "192.168.0.100:30082"
+    assert nodeport_key in mirrors
+    assert mirrors[nodeport_key]["endpoints"] == ["http://192.168.0.100:30082"]
+
+    config = data["machine"]["registries"]["config"]
+    assert nodeport_key in config
+    assert config[nodeport_key]["tls"]["insecureSkipVerify"] is True
+
 
 def test_registry_mirrors_patch_returns_empty_when_no_endpoint(patch_cfg: PatchConfig):
     cfg = replace(patch_cfg, registry_mirror_endpoint="")
