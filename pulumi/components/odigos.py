@@ -21,7 +21,7 @@ from config import (
 )
 
 NS_ODIGOS = "odigos-system"
-ODIGOS_CHART_REPO = "https://odigos-io.github.io/odigos-charts"
+ODIGOS_CHART_REPO = "https://odigos-io.github.io/odigos/"
 
 
 class OdigosResult:
@@ -71,10 +71,6 @@ class Odigos(pulumi.ComponentResource):
                 version=cfg.odigos_version,
                 namespace=NS_ODIGOS,
                 values={
-                    "autoscaler": {"replicas": 1},
-                    "instrumentor": {"replicas": 1},
-                    "scheduler": {"replicas": 1},
-                    "ui": {"replicas": 1},
                     "collectorGateway": {
                         "minReplicas": 1,
                         "maxReplicas": 2,

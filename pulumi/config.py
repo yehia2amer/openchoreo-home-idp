@@ -47,6 +47,7 @@ SECRET_BACKSTAGE = "backstage-secrets"
 SECRET_OPENSEARCH_ADMIN = "opensearch-admin-credentials"
 SECRET_OBSERVER_OPENSEARCH = "observer-opensearch-credentials"
 SECRET_OBSERVER = "observer-secret"
+SECRET_RCA_AGENT = "rca-agent-secret"
 SECRET_OPENOBSERVE_ADMIN = "openobserve-admin-credentials"
 SA_ESO_OPENBAO = "external-secrets-openbao"
 CLUSTER_SECRET_STORE_NAME = "default"
@@ -149,6 +150,12 @@ class OpenChoreoConfig:
     enable_openobserve: bool
     openobserve_admin_email: str
     openobserve_admin_password: str
+
+    # AI / RCA Agent
+    enable_rca: bool
+    rca_llm_model: str
+    rca_llm_api_key: str
+    rca_llm_base_url: str
 
     # Flux Telegram notifications (optional)
     flux_telegram_bot_token: str
@@ -294,6 +301,12 @@ def load_config() -> OpenChoreoConfig:
     openobserve_admin_email = cfg.get("openobserve_admin_email") or "admin@openchoreo.local"
     openobserve_admin_password = cfg.get("openobserve_admin_password") or ""
 
+    # AI / RCA Agent
+    enable_rca = cfg.get_bool("enable_rca") or False
+    rca_llm_model = cfg.get("rca_llm_model") or "claude-sonnet-4-20250514"
+    rca_llm_api_key = cfg.get("rca_llm_api_key") or ""
+    rca_llm_base_url = cfg.get("rca_llm_base_url") or ""
+
     # Flux Telegram notifications (optional)
     flux_telegram_bot_token = cfg.get("flux_telegram_bot_token") or ""
     flux_telegram_chat_id = cfg.get("flux_telegram_chat_id") or ""
@@ -384,6 +397,10 @@ def load_config() -> OpenChoreoConfig:
         enable_openobserve=enable_openobserve,
         openobserve_admin_email=openobserve_admin_email,
         openobserve_admin_password=openobserve_admin_password,
+        enable_rca=enable_rca,
+        rca_llm_model=rca_llm_model,
+        rca_llm_api_key=rca_llm_api_key,
+        rca_llm_base_url=rca_llm_base_url,
         flux_telegram_bot_token=flux_telegram_bot_token,
         flux_telegram_chat_id=flux_telegram_chat_id,
         k3d_cluster_name=k3d_cluster_name,

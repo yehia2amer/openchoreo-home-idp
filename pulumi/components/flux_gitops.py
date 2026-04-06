@@ -224,7 +224,9 @@ class FluxGitOps(pulumi.ComponentResource):
 
         # Alert on any Kustomization or GitRepository failure.
         # Provider name depends on which provider was created above.
-        _provider_name = "telegram" if (cfg.flux_telegram_bot_token and cfg.flux_telegram_chat_id) else "generic-webhook"
+        _provider_name = (
+            "telegram" if (cfg.flux_telegram_bot_token and cfg.flux_telegram_chat_id) else "generic-webhook"
+        )
         k8s.apiextensions.CustomResource(
             "flux-alert",
             api_version="notification.toolkit.fluxcd.io/v1beta3",
@@ -232,6 +234,7 @@ class FluxGitOps(pulumi.ComponentResource):
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 name="flux-alerts",
                 namespace=NS_FLUX_SYSTEM,
+                annotations={"pulumi.com/patchForce": "true"},
             ),
             spec={
                 "providerRef": {"name": _provider_name},

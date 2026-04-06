@@ -29,6 +29,17 @@ def get_values(
                 "server": {
                     "publicUrl": f"{scheme}://api.{domain_base}:{cp_port}",
                 },
+                "mcp": {
+                    "enabled": True,
+                    "toolsets": [
+                        "namespace",
+                        "project",
+                        "component",
+                        "deployment",
+                        "build",
+                        "pe",
+                    ],
+                },
             },
         },
         "backstage": {

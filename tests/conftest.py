@@ -39,7 +39,7 @@ def test_config() -> dict:
         "kube_context": get_env("KUBE_CONTEXT", "admin@openchoreo"),
         "domain_base": get_env("DOMAIN_BASE", "openchoreo.local"),
         "tls_enabled": get_env("TLS_ENABLED", "true").lower() == "true",
-        "ca_cert_path": get_env("CA_CERT_PATH", None),
+        "ca_cert_path": os.environ.get("CA_CERT_PATH", ""),
         "openbao_token": get_env("OPENBAO_TOKEN", "root"),
         "opensearch_user": get_env("OPENSEARCH_USER", "admin"),
         "opensearch_pass": get_env("OPENSEARCH_PASS", "ThisIsTheOpenSearchPassword1"),

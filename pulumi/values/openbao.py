@@ -56,6 +56,7 @@ def _post_start_script(token: str, os_user: str, os_pass: str, *, is_dev_stack: 
             'bao kv put secret/backstage-jenkins-api-key value="placeholder-not-in-use"\n'
             'bao kv put secret/observer-oauth-client-secret value="openchoreo-observer-resource-reader-client-secret"\n'
             'bao kv put secret/rca-oauth-client-secret value="openchoreo-rca-agent-secret"\n'
+            'bao kv put secret/rca-llm-api-key value="REPLACE_WITH_YOUR_LLM_API_KEY"\n'
             f'bao kv put secret/opensearch-username value="{os_user}"\n'
             f'bao kv put secret/opensearch-password value="{os_pass}"\n'
         )

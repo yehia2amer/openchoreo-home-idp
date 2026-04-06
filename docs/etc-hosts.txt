@@ -7,5 +7,5 @@
 # /etc/hosts is the reliable approach.
 
 192.168.0.10  api.openchoreo.local argo.openchoreo.local hubble.openchoreo.local longhorn.openchoreo.local openbao.openchoreo.local openchoreo.local thunder.openchoreo.local
-192.168.0.11  http-frontend-development-default-4cc7110c.openchoreo.local registry.openchoreo.local
-192.168.0.12  alertmanager.openchoreo.local observer.openchoreo.local opensearch.openchoreo.local prometheus.openchoreo.local
+192.168.0.11  development-default.openchoreo.local endpoint-1-sonarr-development-default-36191239.openchoreo.local http-frontend-development-default-4cc7110c.openchoreo.local registry.openchoreo.local
+192.168.0.12  alertmanager.openchoreo.local observer.openchoreo.local openobserve.openchoreo.local opensearch.openchoreo.local prometheus.openchoreo.local rca-agent.openchoreo.local

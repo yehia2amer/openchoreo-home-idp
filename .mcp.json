@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "openchoreo-control-plane": {
+      "url": "https://api.openchoreo.local:8443/mcp",
+      "headers": {
+        "Authorization": "Bearer {token}"
+      },
+      "_comment": "Get token with: ./scripts/get-mcp-token.sh — OpenChoreo Control Plane MCP (projects, components, builds, deployments, namespaces)"
+    },
+    "openchoreo-observability": {
+      "url": "https://observer.openchoreo.local:11085/mcp",
+      "headers": {
+        "Authorization": "Bearer {token}"
+      },
+      "_comment": "Get token with: ./scripts/get-mcp-token.sh — OpenChoreo Observer MCP (logs, traces, metrics)"
+    }
+  }
+}

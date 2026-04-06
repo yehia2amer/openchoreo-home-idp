@@ -63,12 +63,30 @@
     "gateway_ip": "192.168.0.10"
   },
   {
+    "name": "document-svc-http-ce97f2c8",
+    "hostname": "development-default.openchoreo.local",
+    "http_url": "http://development-default.openchoreo.local:19080",
+    "https_url": "https://development-default.openchoreo.local:19443",
+    "http_status": 404,
+    "https_status": 404,
+    "gateway_ip": "192.168.0.11"
+  },
+  {
+    "name": "sonarr-endpoint-1-27b6008e",
+    "hostname": "endpoint-1-sonarr-development-default-36191239.openchoreo.local",
+    "http_url": "http://endpoint-1-sonarr-development-default-36191239.openchoreo.local:19080",
+    "https_url": "https://endpoint-1-sonarr-development-default-36191239.openchoreo.local:19443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.11"
+  },
+  {
     "name": "frontend-http-80454fc2",
     "hostname": "http-frontend-development-default-4cc7110c.openchoreo.local",
     "http_url": "http://http-frontend-development-default-4cc7110c.openchoreo.local:19080",
     "https_url": "https://http-frontend-development-default-4cc7110c.openchoreo.local:19443",
-    "http_status": 503,
-    "https_status": 503,
+    "http_status": 200,
+    "https_status": 200,
     "gateway_ip": "192.168.0.11"
   },
   {
@@ -99,6 +117,15 @@
     "gateway_ip": "192.168.0.12"
   },
   {
+    "name": "openobserve-ui",
+    "hostname": "openobserve.openchoreo.local",
+    "http_url": "http://openobserve.openchoreo.local:11080",
+    "https_url": "https://openobserve.openchoreo.local:11085",
+    "http_status": 308,
+    "https_status": 308,
+    "gateway_ip": "192.168.0.12"
+  },
+  {
     "name": "opensearch",
     "hostname": "opensearch.openchoreo.local",
     "http_url": "http://opensearch.openchoreo.local:11080",
@@ -114,6 +141,15 @@
     "https_url": "https://prometheus.openchoreo.local:11085",
     "http_status": 302,
     "https_status": 302,
+    "gateway_ip": "192.168.0.12"
+  },
+  {
+    "name": "ai-rca-agent",
+    "hostname": "rca-agent.openchoreo.local",
+    "http_url": "http://rca-agent.openchoreo.local:11080",
+    "https_url": "https://rca-agent.openchoreo.local:11085",
+    "http_status": 404,
+    "https_status": 404,
     "gateway_ip": "192.168.0.12"
   }
 ]
