@@ -96,11 +96,9 @@ class ControlPlane(pulumi.ComponentResource):
         thunder_bootstrap_scripts = thunder_values.get("bootstrap", {}).get("scripts", {})
         # Fix redirect URIs in bootstrap scripts to match the target platform domain.
         for script_name, script_body in thunder_bootstrap_scripts.items():
-            thunder_bootstrap_scripts[script_name] = (
-                script_body
-                .replace("http://openchoreo.localhost:8080", cfg.backstage_url)
-                .replace("http://thunder.openchoreo.localhost:8080", cfg.thunder_url)
-            )
+            thunder_bootstrap_scripts[script_name] = script_body.replace(
+                "http://openchoreo.localhost:8080", cfg.backstage_url
+            ).replace("http://thunder.openchoreo.localhost:8080", cfg.thunder_url)
         # Assign a default theme to Backstage and Console apps.
         # Thunder Gate UI returns DSR-1005 if APPLICATION.THEME_ID is NULL.
         thunder_bootstrap_scripts["60-assign-themes.sh"] = """#!/bin/bash
@@ -352,6 +350,8 @@ fi
                     cp_https_port=cfg.cp_https_port,
                     tls_enabled=cfg.tls_enabled,
                     thunder_url=cfg.thunder_url,
+                    backstage_url=cfg.backstage_url,
+                    api_url=cfg.api_url,
                 ),
                 timeout=TIMEOUT_DEFAULT,
             ),

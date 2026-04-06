@@ -1,7 +1,7 @@
-"""CoreDNS LAN DNS component — hostNetwork pod for *.openchoreo.local resolution.
+"""CoreDNS LAN DNS component — hostNetwork pod for local domain resolution.
 
 Deploys a single CoreDNS pod on hostNetwork that binds to the node's LAN IP
-on port 53, resolving *.openchoreo.local to the Gateway LB IP and forwarding
+on port 53, resolving *.<domain> to the shared gateway LB IP and forwarding
 all other queries to public DNS.
 
 Only used on talos-baremetal where the node needs to resolve local domains

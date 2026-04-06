@@ -323,12 +323,18 @@ def load_config() -> OpenChoreoConfig:
     cp_port = cp_https_port if tls_enabled else cp_http_port
     dp_port = dp_https_port if tls_enabled else dp_http_port
     op_port = op_https_port if tls_enabled else op_http_port
-    backstage_url = f"{scheme}://{domain_base}:{cp_port}"
-    api_url = f"{scheme}://api.{domain_base}:{cp_port}"
-    thunder_url = f"{scheme}://thunder.{domain_base}:{cp_port}"
-    observer_url = f"{scheme}://observer.{domain_base}:{op_port}"
-    dp_http_url = f"http://{domain_base}:{dp_http_port}"
-    dp_https_url = f"https://{domain_base}:{dp_https_port}"
+
+    def _port_suffix(port: int, url_scheme: str) -> str:
+        if (url_scheme == "https" and port == 443) or (url_scheme == "http" and port == 80):
+            return ""
+        return f":{port}"
+
+    backstage_url = f"{scheme}://{domain_base}{_port_suffix(cp_port, scheme)}"
+    api_url = f"{scheme}://api.{domain_base}{_port_suffix(cp_port, scheme)}"
+    thunder_url = f"{scheme}://thunder.{domain_base}{_port_suffix(cp_port, scheme)}"
+    observer_url = f"{scheme}://observer.{domain_base}{_port_suffix(op_port, scheme)}"
+    dp_http_url = f"http://{domain_base}{_port_suffix(dp_http_port, 'http')}"
+    dp_https_url = f"https://{domain_base}{_port_suffix(dp_https_port, 'https')}"
 
     # Derived URLs
     gateway_api_crds_url = (

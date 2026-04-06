@@ -173,25 +173,6 @@ def main() -> None:
             k8s_provider=k8s_provider,
         )
 
-        # Pin each gateway-default Service to its own LB IP.
-        # Different namespaces can't share IPs in Cilium 1.17.
-        _gw_pins = [
-            (NS_CONTROL_PLANE, cfg.gateway_pin_ip),
-            (NS_DATA_PLANE, cfg.gateway_pin_ip_dp),
-            (NS_OBSERVABILITY_PLANE, cfg.gateway_pin_ip_op),
-        ]
-        for ns, ip in _gw_pins:
-            if ip:
-                k8s.core.v1.ServicePatch(
-                    f"gateway-pin-ip-{ns}",
-                    metadata=k8s.meta.v1.ObjectMetaPatchArgs(
-                        name="gateway-default",
-                        namespace=ns,
-                        annotations={"io.cilium/lb-ipam-ips": ip},
-                    ),
-                    opts=pulumi.ResourceOptions(provider=k8s_provider),
-                )
-
         # Registry HTTPRoute — expose in-cluster registry via Gateway
         k8s.apiextensions.CustomResource(
             "registry-httproute",
@@ -365,11 +346,13 @@ def main() -> None:
                 },
             ]
             if cfg.tls_enabled:
-                parent_refs.append({
-                    "name": "gateway-default",
-                    "namespace": rt["gateway_ns"],
-                    "sectionName": "https",
-                })
+                parent_refs.append(
+                    {
+                        "name": "gateway-default",
+                        "namespace": rt["gateway_ns"],
+                        "sectionName": "https",
+                    }
+                )
             k8s.apiextensions.CustomResource(
                 f"httproute-{rt['name']}",
                 api_version="gateway.networking.k8s.io/v1",
@@ -401,7 +384,8 @@ def main() -> None:
             for src_ns in source_namespaces:
                 # Find all backend services in target_ns referenced from src_ns
                 svc_names = [
-                    rt["backend_name"] for rt in _infra_routes
+                    rt["backend_name"]
+                    for rt in _infra_routes
                     if rt["backend_ns"] == target_ns and rt["gateway_ns"] == src_ns
                 ]
                 k8s.apiextensions.CustomResource(
@@ -420,10 +404,7 @@ def main() -> None:
                                 "namespace": src_ns,
                             },
                         ],
-                        "to": [
-                            {"group": "", "kind": "Service", "name": name}
-                            for name in svc_names
-                        ],
+                        "to": [{"group": "", "kind": "Service", "name": name} for name in svc_names],
                     },
                     opts=pulumi.ResourceOptions(provider=k8s_provider),
                 )

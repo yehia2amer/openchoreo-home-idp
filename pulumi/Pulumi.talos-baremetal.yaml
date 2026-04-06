@@ -4,13 +4,19 @@ config:
   openchoreo:kubeconfig_path: talos-cluster-baremetal/outputs/kubeconfig
   openchoreo:enable_flux: "true"
   openchoreo:tls_enabled: "true"
-  openchoreo:domain_base: "openchoreo.local"
+  openchoreo:domain_base: "amernas.work"
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
   openchoreo:registry_node_port: "30082"
-  openchoreo:gateway_pin_ip: "192.168.0.10"
-  openchoreo:gateway_pin_ip_dp: "192.168.0.11"
-  openchoreo:gateway_pin_ip_op: "192.168.0.12"
+  openchoreo:cp_http_port: "80"
+  openchoreo:cp_https_port: "443"
+  openchoreo:dp_http_port: "80"
+  openchoreo:dp_https_port: "443"
+  openchoreo:op_http_port: "80"
+  openchoreo:op_https_port: "443"
+  openchoreo:gateway_pin_ip: "192.168.0.14"
+  openchoreo:gateway_pin_ip_dp: "192.168.0.14"
+  openchoreo:gateway_pin_ip_op: "192.168.0.14"
   openchoreo:coredns_bind_ip: "192.168.0.100"
   openchoreo:enable_observability: "true"
   openchoreo:enable_demo_app_bootstrap: "true"
@@ -20,7 +26,7 @@ config:
     secure: v1:BUSlyh7Uxlvlzr7y:tuifJn7RdrVioov98OdlP6gwGaVidUtnrpZLKs+HNpC/5/BfCSWM0VRek0+aoCYGy+j4FC/7x/QrSmy+ypU=
   openchoreo:flux_telegram_chat_id: "1203090452"
   openchoreo:enable_openobserve: "true"
-  openchoreo:openobserve_admin_email: admin@openchoreo.local
+  openchoreo:openobserve_admin_email: admin@amernas.work
   openchoreo:openobserve_admin_password:
     secure: v1:2l0VC3V6L6a8eh0S:aD2jnd0DDsCU+a15/KWA7jVJa6LMMqsi8obKkN6Za9wsKbMTvDjJ
   openchoreo:odigos_version: 1.23.0

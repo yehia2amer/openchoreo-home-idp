@@ -15,9 +15,12 @@ def get_values(
     cp_https_port: int,
     tls_enabled: bool,
     thunder_url: str,
+    backstage_url: str = "",
+    api_url: str = "",
 ) -> dict[str, Any]:
     """Return Helm values for the OpenChoreo Control Plane chart."""
-    backstage_base_url = f"{scheme}://{domain_base}:{cp_port}"
+    backstage_base_url = backstage_url or f"{scheme}://{domain_base}:{cp_port}"
+    api_base_url = api_url or f"{scheme}://api.{domain_base}:{cp_port}"
     backstage_redirect_url = f"{backstage_base_url}/api/auth/openchoreo-auth/handler/frame"
 
     return {
@@ -27,7 +30,7 @@ def get_values(
             },
             "config": {
                 "server": {
-                    "publicUrl": f"{scheme}://api.{domain_base}:{cp_port}",
+                    "publicUrl": api_base_url,
                 },
                 "mcp": {
                     "enabled": True,
