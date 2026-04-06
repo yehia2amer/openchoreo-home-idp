@@ -280,6 +280,31 @@ class IntegrationTests(pulumi.ComponentResource):
                     resource_name=ctrl,
                 )
 
+            _test(
+                test_name="e2e-backstage-fork-externalsecret-synced",
+                test_type=TEST_CR_CONDITION,
+                cr_group="external-secrets.io",
+                cr_version="v1",
+                cr_plural="externalsecrets",
+                resource_name="backstage-fork-secrets",
+                namespace="backstage-fork",
+                condition_type="Ready",
+            )
+
+            _test(
+                test_name="e2e-backstage-fork-secret-exists",
+                test_type=TEST_SECRET_EXISTS,
+                namespace="backstage-fork",
+                resource_name="backstage-fork-secrets",
+                expected_keys=[
+                    "backend-secret",
+                    "client-id",
+                    "client-secret",
+                    "auth-authorization-url",
+                    "auth-token-url",
+                ],
+            )
+
         # ─── Observability (optional) ─────────────────────────────
 
         if cfg.enable_observability:
@@ -305,6 +330,16 @@ class IntegrationTests(pulumi.ComponentResource):
             expected_paths=[
                 {"path": "git-token", "fields": ["git-token"]},
                 {"path": "gitops-token", "fields": ["git-token"]},
+                {
+                    "path": "backstage-fork-secrets",
+                    "fields": [
+                        "backend-secret",
+                        "client-id",
+                        "client-secret",
+                        "auth-authorization-url",
+                        "auth-token-url",
+                    ],
+                },
             ],
         )
 

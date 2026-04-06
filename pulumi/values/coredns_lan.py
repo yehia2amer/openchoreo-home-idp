@@ -31,22 +31,27 @@ def get_corefile(
     """
     bind_directive = f"\n    bind {bind_ip}" if bind_ip else ""
     # Hostnames routed to each gateway — regex alternation
-    cp_hosts = "|".join([
-        r"openchoreo\.local",
-        r"api\.openchoreo\.local",
-        r"thunder\.openchoreo\.local",
-        r"hubble\.openchoreo\.local",
-        r"longhorn\.openchoreo\.local",
-        r"argo\.openchoreo\.local",
-        r"openbao\.openchoreo\.local",
-    ])
-    op_hosts = "|".join([
-        r"observer\.openchoreo\.local",
-        r"rca-agent\.openchoreo\.local",
-        r"prometheus\.openchoreo\.local",
-        r"opensearch\.openchoreo\.local",
-        r"alertmanager\.openchoreo\.local",
-    ])
+    cp_hosts = "|".join(
+        [
+            r"openchoreo\.local",
+            r"api\.openchoreo\.local",
+            r"thunder\.openchoreo\.local",
+            r"hubble\.openchoreo\.local",
+            r"longhorn\.openchoreo\.local",
+            r"argo\.openchoreo\.local",
+            r"openbao\.openchoreo\.local",
+            r"portal\.openchoreo\.local",
+        ]
+    )
+    op_hosts = "|".join(
+        [
+            r"observer\.openchoreo\.local",
+            r"rca-agent\.openchoreo\.local",
+            r"prometheus\.openchoreo\.local",
+            r"opensearch\.openchoreo\.local",
+            r"alertmanager\.openchoreo\.local",
+        ]
+    )
     return f"""\
 cluster.local:53 {{{bind_directive}
     forward . {kube_dns_ip}

@@ -30,9 +30,7 @@ def _kubectl(kubeconfig: str, context: str, *args: str, timeout: int = 30) -> st
     return result.stdout.strip()
 
 
-def _input_diff(
-    olds: dict[str, Any], news: dict[str, Any], keys: list[str]
-) -> DiffResult:
+def _input_diff(olds: dict[str, Any], news: dict[str, Any], keys: list[str]) -> DiffResult:
     """Always re-run (changes=True) — these are imperative actions."""
     return DiffResult(changes=True)
 
@@ -43,15 +41,52 @@ def _input_diff(
 
 
 class _TriggerWorkflowRunProvider(ResourceProvider):
+    def _check_existing(self, kubeconfig: str, context: str, run_name: str) -> str | None:
+        try:
+            raw = _kubectl(
+                kubeconfig,
+                context,
+                "get",
+                f"workflowruns.openchoreo.dev/{run_name}",
+                "-o",
+                "jsonpath={.status.conditions[*]}",
+            )
+            if "WorkflowSucceeded" in raw and '"status":"True"' in raw:
+                return "Succeeded"
+            if "WorkflowFailed" in raw and '"status":"True"' in raw:
+                return "Failed"
+            return "Running"
+        except RuntimeError:
+            return None
+
     def create(self, inputs: dict[str, Any]) -> CreateResult:
         kubeconfig = inputs["kubeconfig_path"]
         context = inputs["context"]
         manifest = inputs["manifest_json"]
-        timeout = inputs.get("timeout", 900)  # 15 min default
+        timeout = inputs.get("timeout", 900)
         poll_interval = inputs.get("poll_interval", 15)
         run_name = inputs["run_name"]
 
-        # Apply the WorkflowRun CR
+        existing = self._check_existing(kubeconfig, context, run_name)
+        if existing == "Succeeded":
+            return CreateResult(
+                id_=f"workflowrun/{run_name}",
+                outs={**inputs, "status": "Succeeded"},
+            )
+
+        if existing == "Failed":
+            try:
+                _kubectl(
+                    kubeconfig,
+                    context,
+                    "delete",
+                    f"workflowruns.openchoreo.dev/{run_name}",
+                    "--ignore-not-found=true",
+                )
+                time.sleep(5)
+            except RuntimeError:
+                pass
+
         proc = subprocess.run(
             ["kubectl", "--kubeconfig", kubeconfig, "--context", context, "apply", "-f", "-"],
             input=manifest,
@@ -68,9 +103,12 @@ class _TriggerWorkflowRunProvider(ResourceProvider):
         while time.time() < deadline:
             try:
                 raw = _kubectl(
-                    kubeconfig, context,
-                    "get", f"workflowruns.openchoreo.dev/{run_name}",
-                    "-o", "jsonpath={.status.conditions[*]}",
+                    kubeconfig,
+                    context,
+                    "get",
+                    f"workflowruns.openchoreo.dev/{run_name}",
+                    "-o",
+                    "jsonpath={.status.conditions[*]}",
                 )
                 if "WorkflowSucceeded" in raw and '"status":"True"' in raw:
                     final_status = "Succeeded"
@@ -78,13 +116,14 @@ class _TriggerWorkflowRunProvider(ResourceProvider):
                 if "WorkflowFailed" in raw and '"status":"True"' in raw:
                     # Get task details for error message
                     tasks = _kubectl(
-                        kubeconfig, context,
-                        "get", f"workflowruns.openchoreo.dev/{run_name}",
-                        "-o", "jsonpath={range .status.tasks[*]}{.name}: {.phase} {.message}\\n{end}",
+                        kubeconfig,
+                        context,
+                        "get",
+                        f"workflowruns.openchoreo.dev/{run_name}",
+                        "-o",
+                        "jsonpath={range .status.tasks[*]}{.name}: {.phase} {.message}\\n{end}",
                     )
-                    raise RuntimeError(
-                        f"WorkflowRun {run_name} failed.\nTasks:\n{tasks}"
-                    )
+                    raise RuntimeError(f"WorkflowRun {run_name} failed.\nTasks:\n{tasks}")
             except RuntimeError as e:
                 if "failed" in str(e).lower():
                     raise
@@ -101,14 +140,18 @@ class _TriggerWorkflowRunProvider(ResourceProvider):
         )
 
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
-        return DiffResult(changes=True)
+        diff_keys = ["manifest_json", "run_name", "kubeconfig_path", "context"]
+        replaces = [k for k in diff_keys if olds.get(k) != news.get(k)]
+        return DiffResult(changes=bool(replaces), replaces=replaces)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         # Clean up the WorkflowRun on destroy
         try:
             _kubectl(
-                props["kubeconfig_path"], props["context"],
-                "delete", f"workflowruns.openchoreo.dev/{props['run_name']}",
+                props["kubeconfig_path"],
+                props["context"],
+                "delete",
+                f"workflowruns.openchoreo.dev/{props['run_name']}",
                 "--ignore-not-found=true",
             )
         except Exception:
@@ -168,7 +211,25 @@ class _MergeGitHubPRProvider(ResourceProvider):
             "User-Agent": "pulumi-openchoreo",
         }
 
-        # Poll for the PR to appear
+        # ── Idempotency: check if a PR was already merged ──
+        try:
+            req = urllib.request.Request(
+                f"https://api.github.com/repos/{repo}/pulls?state=closed&sort=updated&direction=desc&per_page=30",
+                headers=headers,
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                closed_prs = json.loads(resp.read())
+
+            for pr in closed_prs:
+                if pr["head"]["ref"].startswith(branch_prefix) and pr.get("merged_at"):
+                    pulumi.log.info(f"PR #{pr['number']} already merged for {branch_prefix} — skipping")
+                    return CreateResult(
+                        id_=f"pr/{repo}/{pr['number']}",
+                        outs={**inputs, "pr_number": pr["number"], "pr_url": pr["html_url"], "merged": True},
+                    )
+        except Exception:
+            pass
+
         pr_number = None
         pr_url = None
         deadline = time.time() + timeout
@@ -189,15 +250,15 @@ class _MergeGitHubPRProvider(ResourceProvider):
                 break
             time.sleep(poll_interval)
         else:
-            raise TimeoutError(
-                f"No PR found with branch prefix '{branch_prefix}' in {repo} within {timeout}s"
-            )
+            raise TimeoutError(f"No PR found with branch prefix '{branch_prefix}' in {repo} within {timeout}s")
 
         # Merge the PR
-        merge_data = json.dumps({
-            "merge_method": "merge",
-            "commit_title": f"Auto-merge: {branch_prefix.rstrip('-')}",
-        }).encode()
+        merge_data = json.dumps(
+            {
+                "merge_method": "merge",
+                "commit_title": f"Auto-merge: {branch_prefix.rstrip('-')}",
+            }
+        ).encode()
         merge_req = urllib.request.Request(
             f"https://api.github.com/repos/{repo}/pulls/{pr_number}/merge",
             data=merge_data,
@@ -208,9 +269,7 @@ class _MergeGitHubPRProvider(ResourceProvider):
             merge_result = json.loads(resp.read())
 
         if not merge_result.get("merged"):
-            raise RuntimeError(
-                f"Failed to merge PR #{pr_number}: {merge_result.get('message', 'unknown error')}"
-            )
+            raise RuntimeError(f"Failed to merge PR #{pr_number}: {merge_result.get('message', 'unknown error')}")
 
         return CreateResult(
             id_=f"pr/{repo}/{pr_number}",
@@ -218,7 +277,9 @@ class _MergeGitHubPRProvider(ResourceProvider):
         )
 
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
-        return DiffResult(changes=True)
+        diff_keys = ["repo", "branch_prefix", "github_token"]
+        replaces = [k for k in diff_keys if olds.get(k) != news.get(k)]
+        return DiffResult(changes=bool(replaces), replaces=replaces)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         pass
@@ -270,9 +331,13 @@ class _ForceFluxReconcileProvider(ResourceProvider):
 
         # Annotate the GitRepository to force reconciliation
         _kubectl(
-            kubeconfig, context,
-            "annotate", "gitrepository", git_repo_name,
-            "-n", namespace,
+            kubeconfig,
+            context,
+            "annotate",
+            "gitrepository",
+            git_repo_name,
+            "-n",
+            namespace,
             f"reconcile.fluxcd.io/requestedAt={int(time.time())}",
             "--overwrite",
         )
@@ -284,9 +349,14 @@ class _ForceFluxReconcileProvider(ResourceProvider):
         while time.time() < deadline:
             try:
                 ready = _kubectl(
-                    kubeconfig, context,
-                    "get", "kustomizations", "-n", namespace,
-                    "-o", "jsonpath={range .items[*]}{.metadata.name}={.status.conditions[0].status} {end}",
+                    kubeconfig,
+                    context,
+                    "get",
+                    "kustomizations",
+                    "-n",
+                    namespace,
+                    "-o",
+                    "jsonpath={range .items[*]}{.metadata.name}={.status.conditions[0].status} {end}",
                 )
                 # Check all kustomizations are True
                 parts = ready.split()
@@ -299,7 +369,9 @@ class _ForceFluxReconcileProvider(ResourceProvider):
         return CreateResult(id_=f"flux-reconcile/{git_repo_name}", outs=inputs)
 
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
-        return DiffResult(changes=True)
+        diff_keys = ["kubeconfig_path", "context", "git_repo_name", "namespace"]
+        replaces = [k for k in diff_keys if olds.get(k) != news.get(k)]
+        return DiffResult(changes=bool(replaces), replaces=replaces)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         pass
@@ -350,17 +422,18 @@ class _WaitReleaseBindingReadyProvider(ResourceProvider):
         while time.time() < deadline:
             try:
                 raw = _kubectl(
-                    kubeconfig, context,
-                    "get", f"releasebindings.openchoreo.dev/{binding_name}",
-                    "-n", namespace,
-                    "-o", "json",
+                    kubeconfig,
+                    context,
+                    "get",
+                    f"releasebindings.openchoreo.dev/{binding_name}",
+                    "-n",
+                    namespace,
+                    "-o",
+                    "json",
                 )
                 rb = json.loads(raw)
                 conditions = rb.get("status", {}).get("conditions", [])
-                ready = any(
-                    c.get("type") == "Ready" and c.get("status") == "True"
-                    for c in conditions
-                )
+                ready = any(c.get("type") == "Ready" and c.get("status") == "True" for c in conditions)
                 if ready:
                     return CreateResult(
                         id_=f"releasebinding/{namespace}/{binding_name}",
@@ -370,12 +443,12 @@ class _WaitReleaseBindingReadyProvider(ResourceProvider):
                 pass
             time.sleep(poll_interval)
 
-        raise TimeoutError(
-            f"ReleaseBinding {binding_name} did not reach Ready=True within {timeout}s"
-        )
+        raise TimeoutError(f"ReleaseBinding {binding_name} did not reach Ready=True within {timeout}s")
 
     def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
-        return DiffResult(changes=True)
+        diff_keys = ["kubeconfig_path", "context", "binding_name", "namespace"]
+        replaces = [k for k in diff_keys if olds.get(k) != news.get(k)]
+        return DiffResult(changes=bool(replaces), replaces=replaces)
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         pass

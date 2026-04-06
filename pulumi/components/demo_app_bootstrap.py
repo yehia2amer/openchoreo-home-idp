@@ -35,38 +35,40 @@ def _workflowrun_manifest(
     branch: str = "main",
 ) -> str:
     """Generate a WorkflowRun manifest as YAML string."""
-    return json.dumps({
-        "apiVersion": "openchoreo.dev/v1alpha1",
-        "kind": "WorkflowRun",
-        "metadata": {
-            "name": run_name,
-            "namespace": "default",
-            "labels": {
-                "openchoreo.dev/project": project,
-                "openchoreo.dev/component": component,
-            },
-        },
-        "spec": {
-            "workflow": {
-                "kind": "Workflow",
-                "name": "docker-gitops-release",
-                "parameters": {
-                    "componentName": component,
-                    "projectName": project,
-                    "docker": {
-                        "context": docker_context,
-                        "filePath": dockerfile_path,
-                    },
-                    "repository": {
-                        "appPath": app_path,
-                        "revision": {"branch": branch, "commit": ""},
-                        "url": source_repo,
-                    },
-                    "workloadDescriptorPath": "workload.yaml",
+    return json.dumps(
+        {
+            "apiVersion": "openchoreo.dev/v1alpha1",
+            "kind": "WorkflowRun",
+            "metadata": {
+                "name": run_name,
+                "namespace": "default",
+                "labels": {
+                    "openchoreo.dev/project": project,
+                    "openchoreo.dev/component": component,
                 },
             },
-        },
-    })
+            "spec": {
+                "workflow": {
+                    "kind": "Workflow",
+                    "name": "docker-gitops-release",
+                    "parameters": {
+                        "componentName": component,
+                        "projectName": project,
+                        "docker": {
+                            "context": docker_context,
+                            "filePath": dockerfile_path,
+                        },
+                        "repository": {
+                            "appPath": app_path,
+                            "revision": {"branch": branch, "commit": ""},
+                            "url": source_repo,
+                        },
+                        "workloadDescriptorPath": "workload.yaml",
+                    },
+                },
+            },
+        }
+    )
 
 
 def _extract_github_repo(url: str) -> str:
@@ -95,10 +97,10 @@ class DemoAppBootstrap(pulumi.ComponentResource):
         super().__init__("openchoreo:components:DemoAppBootstrap", name, {}, opts)
 
         gitops_repo = _extract_github_repo(cfg.gitops_repo_url)
-        build_timeout = 900  # 15 min per build
-        pr_timeout = 120     # 2 min to find PR after build
-        flux_timeout = 180   # 3 min for Flux sync
-        rb_timeout = 300     # 5 min for ReleaseBindings to be Ready
+        build_timeout = 1200  # 20 min per build (baremetal builds take ~11 min)
+        pr_timeout = 120  # 2 min to find PR after build
+        flux_timeout = 180  # 3 min for Flux sync
+        rb_timeout = 300  # 5 min for ReleaseBindings to be Ready
 
         # ─── Phase 1: Trigger backend builds (parallel) ───────────
 

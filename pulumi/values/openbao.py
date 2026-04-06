@@ -59,6 +59,22 @@ def _post_start_script(token: str, os_user: str, os_pass: str, *, is_dev_stack: 
             'bao kv put secret/rca-llm-api-key value="REPLACE_WITH_YOUR_LLM_API_KEY"\n'
             f'bao kv put secret/opensearch-username value="{os_user}"\n'
             f'bao kv put secret/opensearch-password value="{os_pass}"\n'
+            "\n"
+            "# ── DNS / Gateway secrets (sf8.5) ──\n"
+            "# Cloudflare DNS API token\n"
+            'bao kv put secret/apps/external-dns/cloudflare api-token="cfut_uaRooKcWkb77Ygz9CNr7KXwsNnJCiNUALAe5RULDcfd4b1b7"\n'
+            "# AdGuard Home on TrueNAS\n"
+            "bao kv put secret/apps/external-dns/adguard-truenas"
+            " url='http://192.168.0.129:3000'"
+            " user='yehia'"
+            " password='t9QVO!wg$C7$1dAHZ@%j6HH'\n"
+            "# AdGuard Home on K8s — deployed by sf8.10\n"
+            "bao kv put secret/apps/external-dns/adguard-k8s"
+            ' url="http://adguard-home-k8s.external-dns.svc.cluster.local:3000"'
+            ' user="admin"'
+            ' password="pI03loPa6Nhlele"\n'
+            "# Keepalived VRRP auth password\n"
+            'bao kv put secret/apps/external-dns/keepalived auth-pass="HHsiI0T7"\n'
         )
 
     return tpl.substitute(token=token, dev_secrets_block=dev_secrets_block)

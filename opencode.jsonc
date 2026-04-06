@@ -1,0 +1,21 @@
+{
+	"$schema": "https://opencode.ai/config.json",
+	"mcp": {
+		"openchoreo-control-plane": {
+			"type": "remote",
+			"url": "https://api.openchoreo.local:8443/mcp",
+			"headers": {
+				"Authorization": "Bearer ${OPENCHOREO_MCP_TOKEN}"
+			},
+			"timeout": 30000
+		},
+		"openchoreo-observability": {
+			"type": "remote",
+			"url": "https://observer.openchoreo.local:11085/mcp",
+			"headers": {
+				"Authorization": "Bearer ${OPENCHOREO_MCP_TOKEN}"
+			},
+			"timeout": 30000
+		}
+	}
+}

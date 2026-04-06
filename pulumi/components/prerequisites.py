@@ -19,6 +19,7 @@ from config import (
     SA_ESO_OPENBAO,
     SLEEP_AFTER_GATEWAY_API,
     SLEEP_AFTER_OPENBAO,
+    THUNDER_INTERNAL_BASE,
     TIMEOUT_DEFAULT,
     TIMEOUT_TLS_WAIT,
     TIMEOUT_WAIT,
@@ -296,7 +297,31 @@ class Prerequisites(pulumi.ComponentResource):
             )
             pat_depends.append(pat_store)
 
-        # ─── 7a. Store OpenObserve credentials (conditional) ───
+        # ─── 7a. Store Backstage Fork secrets (conditional on Flux/GitOps) ───
+        if cfg.enable_flux or cfg.gitops_repo_url:
+            backstage_fork_store = OpenBaoSecrets(
+                "store-backstage-fork-secrets",
+                kubeconfig_path=cfg.kubeconfig_path,
+                context=cfg.kubeconfig_context,
+                namespace=NS_OPENBAO,
+                root_token=cfg.openbao_root_token,
+                secrets=[
+                    {
+                        "path": "backstage-fork-secrets",
+                        "data": {
+                            "backend-secret": "backstage-fork-backend-secret",
+                            "client-id": "backstage-fork",
+                            "client-secret": "backstage-fork-client-secret",
+                            "auth-authorization-url": f"{THUNDER_INTERNAL_BASE}/oauth2/authorize",
+                            "auth-token-url": f"{THUNDER_INTERNAL_BASE}/oauth2/token",
+                        },
+                    },
+                ],
+                opts=self._child_opts(depends_on=[wait_poststart]),
+            )
+            pat_depends.append(backstage_fork_store)
+
+        # ─── 7b. Store OpenObserve credentials (conditional) ───
         if cfg.enable_openobserve and cfg.openobserve_admin_password:
             oo_store = OpenBaoSecrets(
                 "store-openobserve-creds",
@@ -324,7 +349,7 @@ class Prerequisites(pulumi.ComponentResource):
                 resource=None,
             )
 
-        # ─── 7b. Validate OpenBao secrets ───
+        # ─── 7c. Validate OpenBao secrets ───
         _is_dev_stack = pulumi.get_stack() in (
             "dev",
             "rancher-desktop",
@@ -341,6 +366,19 @@ class Prerequisites(pulumi.ComponentResource):
         if cfg.enable_openobserve:
             _expected_paths.append(
                 {"path": "openobserve-admin-credentials", "fields": ["ZO_ROOT_USER_EMAIL", "ZO_ROOT_USER_PASSWORD"]}
+            )
+        if cfg.enable_flux or cfg.gitops_repo_url:
+            _expected_paths.append(
+                {
+                    "path": "backstage-fork-secrets",
+                    "fields": [
+                        "backend-secret",
+                        "client-id",
+                        "client-secret",
+                        "auth-authorization-url",
+                        "auth-token-url",
+                    ],
+                }
             )
 
         openbao_validated = ValidateOpenBaoSecrets(

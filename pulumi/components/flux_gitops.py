@@ -119,6 +119,20 @@ class FluxGitOps(pulumi.ComponentResource):
             opts=self._child_opts(provider=k8s_provider, depends_on=[git_repo]),
         )
 
+        k8s.apiextensions.CustomResource(
+            "kustomization-infrastructure",
+            api_version="kustomize.toolkit.fluxcd.io/v1",
+            kind="Kustomization",
+            metadata=k8s.meta.v1.ObjectMetaArgs(name="oc-infrastructure", namespace=NS_FLUX_SYSTEM),
+            spec={
+                "interval": "5m",
+                "path": "./infrastructure",
+                "prune": True,
+                "sourceRef": {"kind": "GitRepository", "name": "sample-gitops"},
+            },
+            opts=self._child_opts(provider=k8s_provider, depends_on=[git_repo]),
+        )
+
         kust_platform = k8s.apiextensions.CustomResource(
             "kustomization-platform",
             api_version="kustomize.toolkit.fluxcd.io/v1",
