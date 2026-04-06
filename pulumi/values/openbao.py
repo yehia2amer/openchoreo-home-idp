@@ -65,7 +65,7 @@ def _post_start_script(token: str, os_user: str, os_pass: str, *, is_dev_stack: 
             'bao kv put secret/apps/external-dns/cloudflare api-token="cfut_uaRooKcWkb77Ygz9CNr7KXwsNnJCiNUALAe5RULDcfd4b1b7"\n'
             "# AdGuard Home on TrueNAS\n"
             "bao kv put secret/apps/external-dns/adguard-truenas"
-            " url='http://192.168.0.129:3000'"
+            " url='http://192.168.0.129:30004'"
             " user='yehia'"
             " password='t9QVO!wg$C7$1dAHZ@%j6HH'\n"
             "# AdGuard Home on K8s — deployed by sf8.10\n"
