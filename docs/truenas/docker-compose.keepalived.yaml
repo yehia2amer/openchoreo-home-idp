@@ -1,0 +1,20 @@
+services:
+  keepalived:
+    image: osixia/keepalived:2.0.20
+    container_name: keepalived
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_BROADCAST
+      - NET_RAW
+    entrypoint:
+      - /usr/local/sbin/keepalived
+      - --dont-fork
+      - --log-console
+      - --log-detail
+      - --dump-conf
+      - -f
+      - /etc/keepalived/keepalived.conf
+    volumes:
+      - /mnt/AmerData/appdata/keepalived/keepalived.conf:/etc/keepalived/keepalived.conf:ro
