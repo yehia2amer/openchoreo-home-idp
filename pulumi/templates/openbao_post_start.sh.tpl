@@ -25,5 +25,3 @@ bao write auth/kubernetes/role/openchoreo-secret-writer-role \
   bound_service_account_names="*" \
   bound_service_account_namespaces="openbao,openchoreo-workflow-plane" \
   policies=openchoreo-secret-writer-policy ttl=20m
-
-$dev_secrets_block

@@ -26,8 +26,6 @@ from config import (
     OpenChoreoConfig,
 )
 from helpers.dynamic_providers import (
-    OpenBaoSecrets,
-    ValidateOpenBaoSecrets,
     WaitCustomResourceCondition,
     WaitPodReady,
 )
@@ -42,15 +40,13 @@ class PrerequisitesResult:
         self,
         openbao_ready: WaitPodReady,
         cluster_secret_store: k8s.apiextensions.CustomResource,
-        cluster_secret_store_ready: WaitCustomResourceCondition,
-        openbao_validated: ValidateOpenBaoSecrets,
+        cluster_secret_store_ready: pulumi.Resource,
         control_plane_ns: k8s.core.v1.Namespace,
         data_plane_ns: k8s.core.v1.Namespace,
     ):
         self.openbao_ready = openbao_ready
         self.cluster_secret_store = cluster_secret_store
         self.cluster_secret_store_ready = cluster_secret_store_ready
-        self.openbao_validated = openbao_validated
         self.control_plane_ns = control_plane_ns
         self.data_plane_ns = data_plane_ns
 
@@ -249,13 +245,7 @@ class Prerequisites(pulumi.ComponentResource):
                 chart=f"{OPENBAO_CHART_REPO}/openbao",
                 version=cfg.openbao_version,
                 namespace=NS_OPENBAO,
-                values=openbao_values(
-                    cfg.openbao_root_token,
-                    cfg.opensearch_username,
-                    cfg.opensearch_password,
-                    is_dev_stack=pulumi.get_stack()
-                    in ("dev", "rancher-desktop", "local", "test", "talos", "talos-baremetal"),
-                ),
+                values=openbao_values(cfg.openbao_root_token),
             ),
             opts=pulumi.ResourceOptions.merge(
                 self._child_opts(provider=k8s_provider, depends_on=[openbao_ns]),
@@ -281,75 +271,54 @@ class Prerequisites(pulumi.ComponentResource):
         )
 
         # ─── 7. Store GitHub PAT (conditional) ───
-        pat_depends: list[pulumi.Resource] = [wait_poststart]
+        push_secret_git: k8s.core.v1.Secret | None = None
         if cfg.github_pat:
-            pat_store = OpenBaoSecrets(
-                "store-github-pat",
-                kubeconfig_path=cfg.kubeconfig_path,
-                context=cfg.kubeconfig_context,
-                namespace=NS_OPENBAO,
-                root_token=cfg.openbao_root_token,
-                secrets=[
-                    {"path": "git-token", "data": {"git-token": cfg.github_pat}},
-                    {"path": "gitops-token", "data": {"git-token": cfg.github_pat}},
-                ],
-                opts=self._child_opts(depends_on=[wait_poststart]),
+            push_secret_git = k8s.core.v1.Secret(
+                "push-git-secrets",
+                metadata=k8s.meta.v1.ObjectMetaArgs(name="push-git-secrets", namespace=NS_OPENBAO),
+                string_data={
+                    "git-token": cfg.github_pat,
+                    "gitops-token": cfg.github_pat,
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
-            pat_depends.append(pat_store)
 
         # ─── 7a. Store Backstage Fork secrets (conditional on Flux/GitOps) ───
+        push_secret_backstage_fork: k8s.core.v1.Secret | None = None
         if cfg.enable_flux or cfg.gitops_repo_url:
-            backstage_fork_store = OpenBaoSecrets(
-                "store-backstage-fork-secrets",
-                kubeconfig_path=cfg.kubeconfig_path,
-                context=cfg.kubeconfig_context,
-                namespace=NS_OPENBAO,
-                root_token=cfg.openbao_root_token,
-                secrets=[
-                    {
-                        "path": "backstage-fork-secrets",
-                        "data": {
-                            "backend-secret": "backstage-fork-backend-secret",
-                            "client-id": "backstage-fork",
-                            "client-secret": "backstage-fork-client-secret",
-                            "auth-authorization-url": f"{THUNDER_INTERNAL_BASE}/oauth2/authorize",
-                            "auth-token-url": f"{THUNDER_INTERNAL_BASE}/oauth2/token",
-                        },
-                    },
-                ],
-                opts=self._child_opts(depends_on=[wait_poststart]),
+            push_secret_backstage_fork = k8s.core.v1.Secret(
+                "push-backstage-fork-secrets",
+                metadata=k8s.meta.v1.ObjectMetaArgs(name="push-backstage-fork-secrets", namespace=NS_OPENBAO),
+                string_data={
+                    "backend-secret": "backstage-fork-backend-secret",
+                    "client-id": "backstage-fork",
+                    "client-secret": "backstage-fork-client-secret",
+                    "auth-authorization-url": f"{THUNDER_INTERNAL_BASE}/oauth2/authorize",
+                    "auth-token-url": f"{THUNDER_INTERNAL_BASE}/oauth2/token",
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
-            pat_depends.append(backstage_fork_store)
 
         # ─── 7b. Store OpenObserve credentials (conditional) ───
+        push_secret_openobserve: k8s.core.v1.Secret | None = None
         if cfg.enable_openobserve and cfg.openobserve_admin_password:
-            oo_store = OpenBaoSecrets(
-                "store-openobserve-creds",
-                kubeconfig_path=cfg.kubeconfig_path,
-                context=cfg.kubeconfig_context,
-                namespace=NS_OPENBAO,
-                root_token=cfg.openbao_root_token,
-                secrets=[
-                    {
-                        "path": "openobserve-admin-credentials",
-                        "data": {
-                            "ZO_ROOT_USER_EMAIL": cfg.openobserve_admin_email,
-                            "ZO_ROOT_USER_PASSWORD": cfg.openobserve_admin_password,
-                        },
-                    },
-                ],
-                opts=self._child_opts(depends_on=[wait_poststart]),
+            push_secret_openobserve = k8s.core.v1.Secret(
+                "push-openobserve-creds",
+                metadata=k8s.meta.v1.ObjectMetaArgs(name="push-openobserve-creds", namespace=NS_OPENBAO),
+                string_data={
+                    "ZO_ROOT_USER_EMAIL": cfg.openobserve_admin_email,
+                    "ZO_ROOT_USER_PASSWORD": cfg.openobserve_admin_password,
+                },
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
-            pat_depends.append(oo_store)
 
-        elif cfg.enable_flux or cfg.gitops_repo_url:
+        if not cfg.github_pat and (cfg.enable_flux or cfg.gitops_repo_url):
             pulumi.log.warn(
                 "github_pat is not set but Flux/GitOps features are enabled. "
                 "Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.",
                 resource=None,
             )
 
-        # ─── 7c. Validate OpenBao secrets ───
         _is_dev_stack = pulumi.get_stack() in (
             "dev",
             "rancher-desktop",
@@ -358,38 +327,36 @@ class Prerequisites(pulumi.ComponentResource):
             "talos",
             "talos-baremetal",
         )
-        _validate_git_secrets = bool(cfg.github_pat) or _is_dev_stack
-        _expected_paths: list[dict[str, object]] = []
-        if _validate_git_secrets:
-            _expected_paths.append({"path": "git-token", "fields": ["git-token"]})
-            _expected_paths.append({"path": "gitops-token", "fields": ["git-token"]})
-        if cfg.enable_openobserve:
-            _expected_paths.append(
-                {"path": "openobserve-admin-credentials", "fields": ["ZO_ROOT_USER_EMAIL", "ZO_ROOT_USER_PASSWORD"]}
+        push_secret_dev: k8s.core.v1.Secret | None = None
+        if _is_dev_stack:
+            dev_secret_data = {
+                "backstage-backend-secret": "local-dev-backend-secret",
+                "backstage-client-secret": "backstage-portal-secret",
+                "backstage-jenkins-api-key": "placeholder-not-in-use",
+                "observer-oauth-client-secret": "openchoreo-observer-resource-reader-client-secret",
+                "rca-oauth-client-secret": "openchoreo-rca-agent-secret",
+                "rca-llm-api-key": "REPLACE_WITH_YOUR_LLM_API_KEY",
+                "opensearch-username": cfg.opensearch_username,
+                "opensearch-password": cfg.opensearch_password,
+                "npm-token": "fake-npm-token-for-development",
+                "docker-username": "dev-user",
+                "docker-password": "dev-password",
+                "github-pat": "fake-github-token-for-development",
+                "cloudflare-api-token": "cfut_uaRooKcWkb77Ygz9CNr7KXwsNnJCiNUALAe5RULDcfd4b1b7",
+                "adguard-truenas-url": "http://192.168.0.129:30004",
+                "adguard-truenas-user": "yehia",
+                "adguard-truenas-password": "t9QVO!wg$C7$1dAHZ@%j6HH",
+                "adguard-k8s-url": "http://adguard-home-k8s.keepalived.svc.cluster.local:3000",
+                "adguard-k8s-user": "admin",
+                "adguard-k8s-password": "pI03loPa6Nhlele",
+                "keepalived-auth-pass": "HHsiI0T7",
+            }
+            push_secret_dev = k8s.core.v1.Secret(
+                "push-dev-secrets",
+                metadata=k8s.meta.v1.ObjectMetaArgs(name="push-dev-secrets", namespace=NS_OPENBAO),
+                string_data=dev_secret_data,
+                opts=self._child_opts(provider=k8s_provider, depends_on=[openbao_ns]),
             )
-        if cfg.enable_flux or cfg.gitops_repo_url:
-            _expected_paths.append(
-                {
-                    "path": "backstage-fork-secrets",
-                    "fields": [
-                        "backend-secret",
-                        "client-id",
-                        "client-secret",
-                        "auth-authorization-url",
-                        "auth-token-url",
-                    ],
-                }
-            )
-
-        openbao_validated = ValidateOpenBaoSecrets(
-            "validate-openbao-secrets",
-            kubeconfig_path=cfg.kubeconfig_path,
-            context=cfg.kubeconfig_context,
-            namespace=NS_OPENBAO,
-            root_token=cfg.openbao_root_token,
-            expected_paths=_expected_paths,
-            opts=self._child_opts(depends_on=pat_depends),
-        )
 
         # ─── 8. ServiceAccount + ClusterSecretStore ───
         eso_sa = k8s.core.v1.ServiceAccount(
@@ -443,7 +410,344 @@ class Prerequisites(pulumi.ComponentResource):
             namespace=None,
             condition_type="Ready",
             timeout=TIMEOUT_WAIT,
-            opts=self._child_opts(depends_on=[cluster_secret_store, openbao_validated]),
+            opts=self._child_opts(depends_on=[cluster_secret_store]),
+        )
+
+        push_secrets: list[pulumi.Resource] = []
+
+        if cfg.github_pat and push_secret_git is not None:
+            push_secrets.append(
+                k8s.apiextensions.CustomResource(
+                    "pushsecret-git-secrets",
+                    api_version="external-secrets.io/v1alpha1",
+                    kind="PushSecret",
+                    metadata=k8s.meta.v1.ObjectMetaArgs(name="git-secrets", namespace=NS_OPENBAO),
+                    spec={
+                        "refreshInterval": "5m",
+                        "updatePolicy": "Replace",
+                        "deletionPolicy": "None",
+                        "secretStoreRefs": [{"name": CLUSTER_SECRET_STORE_NAME, "kind": "ClusterSecretStore"}],
+                        "selector": {"secret": {"name": "push-git-secrets"}},
+                        "data": [
+                            {
+                                "match": {
+                                    "secretKey": "git-token",
+                                    "remoteRef": {"remoteKey": "git-token", "property": "git-token"},
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "gitops-token",
+                                    "remoteRef": {"remoteKey": "gitops-token", "property": "git-token"},
+                                }
+                            },
+                        ],
+                    },
+                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_git]),
+                )
+            )
+
+        if (cfg.enable_flux or cfg.gitops_repo_url) and push_secret_backstage_fork is not None:
+            push_secrets.append(
+                k8s.apiextensions.CustomResource(
+                    "pushsecret-backstage-fork-secrets",
+                    api_version="external-secrets.io/v1alpha1",
+                    kind="PushSecret",
+                    metadata=k8s.meta.v1.ObjectMetaArgs(name="backstage-fork-secrets", namespace=NS_OPENBAO),
+                    spec={
+                        "refreshInterval": "5m",
+                        "updatePolicy": "Replace",
+                        "deletionPolicy": "None",
+                        "secretStoreRefs": [{"name": CLUSTER_SECRET_STORE_NAME, "kind": "ClusterSecretStore"}],
+                        "selector": {"secret": {"name": "push-backstage-fork-secrets"}},
+                        "data": [
+                            {
+                                "match": {
+                                    "secretKey": "backend-secret",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-fork-secrets",
+                                        "property": "backend-secret",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "client-id",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-fork-secrets",
+                                        "property": "client-id",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "client-secret",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-fork-secrets",
+                                        "property": "client-secret",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "auth-authorization-url",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-fork-secrets",
+                                        "property": "auth-authorization-url",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "auth-token-url",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-fork-secrets",
+                                        "property": "auth-token-url",
+                                    },
+                                }
+                            },
+                        ],
+                    },
+                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_backstage_fork]),
+                )
+            )
+
+        if cfg.enable_openobserve and cfg.openobserve_admin_password and push_secret_openobserve is not None:
+            push_secrets.append(
+                k8s.apiextensions.CustomResource(
+                    "pushsecret-openobserve-creds",
+                    api_version="external-secrets.io/v1alpha1",
+                    kind="PushSecret",
+                    metadata=k8s.meta.v1.ObjectMetaArgs(name="openobserve-creds", namespace=NS_OPENBAO),
+                    spec={
+                        "refreshInterval": "5m",
+                        "updatePolicy": "Replace",
+                        "deletionPolicy": "None",
+                        "secretStoreRefs": [{"name": CLUSTER_SECRET_STORE_NAME, "kind": "ClusterSecretStore"}],
+                        "selector": {"secret": {"name": "push-openobserve-creds"}},
+                        "data": [
+                            {
+                                "match": {
+                                    "secretKey": "ZO_ROOT_USER_EMAIL",
+                                    "remoteRef": {
+                                        "remoteKey": "openobserve-admin-credentials",
+                                        "property": "ZO_ROOT_USER_EMAIL",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "ZO_ROOT_USER_PASSWORD",
+                                    "remoteRef": {
+                                        "remoteKey": "openobserve-admin-credentials",
+                                        "property": "ZO_ROOT_USER_PASSWORD",
+                                    },
+                                }
+                            },
+                        ],
+                    },
+                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_openobserve]),
+                )
+            )
+
+        if _is_dev_stack and push_secret_dev is not None:
+            push_secrets.append(
+                k8s.apiextensions.CustomResource(
+                    "pushsecret-dev-secrets",
+                    api_version="external-secrets.io/v1alpha1",
+                    kind="PushSecret",
+                    metadata=k8s.meta.v1.ObjectMetaArgs(name="dev-secrets", namespace=NS_OPENBAO),
+                    spec={
+                        "refreshInterval": "5m",
+                        "updatePolicy": "Replace",
+                        "deletionPolicy": "None",
+                        "secretStoreRefs": [{"name": CLUSTER_SECRET_STORE_NAME, "kind": "ClusterSecretStore"}],
+                        "selector": {"secret": {"name": "push-dev-secrets"}},
+                        "data": [
+                            {
+                                "match": {
+                                    "secretKey": "backstage-backend-secret",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-backend-secret",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "backstage-client-secret",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-client-secret",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "backstage-jenkins-api-key",
+                                    "remoteRef": {
+                                        "remoteKey": "backstage-jenkins-api-key",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "observer-oauth-client-secret",
+                                    "remoteRef": {
+                                        "remoteKey": "observer-oauth-client-secret",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "rca-oauth-client-secret",
+                                    "remoteRef": {
+                                        "remoteKey": "rca-oauth-client-secret",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "rca-llm-api-key",
+                                    "remoteRef": {
+                                        "remoteKey": "rca-llm-api-key",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "opensearch-username",
+                                    "remoteRef": {
+                                        "remoteKey": "opensearch-username",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "opensearch-password",
+                                    "remoteRef": {
+                                        "remoteKey": "opensearch-password",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "npm-token",
+                                    "remoteRef": {"remoteKey": "npm-token", "property": "value"},
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "docker-username",
+                                    "remoteRef": {
+                                        "remoteKey": "docker-username",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "docker-password",
+                                    "remoteRef": {
+                                        "remoteKey": "docker-password",
+                                        "property": "value",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "github-pat",
+                                    "remoteRef": {"remoteKey": "github-pat", "property": "value"},
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "cloudflare-api-token",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/cloudflare",
+                                        "property": "api-token",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-truenas-url",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/adguard-truenas",
+                                        "property": "url",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-truenas-user",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/adguard-truenas",
+                                        "property": "user",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-truenas-password",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/adguard-truenas",
+                                        "property": "password",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-k8s-url",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/adguard-k8s",
+                                        "property": "url",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-k8s-user",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/adguard-k8s",
+                                        "property": "user",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-k8s-password",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/adguard-k8s",
+                                        "property": "password",
+                                    },
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "keepalived-auth-pass",
+                                    "remoteRef": {
+                                        "remoteKey": "apps/external-dns/keepalived",
+                                        "property": "auth-pass",
+                                    },
+                                }
+                            },
+                        ],
+                    },
+                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_dev]),
+                )
+            )
+
+        push_sync_wait = sleep(
+            "pushsecret-sync",
+            15,
+            opts=self._child_opts(depends_on=push_secrets + [css_ready]),
         )
 
         # ─── 9. Workflow namespace (pre-create with PodSecurity labels) ───
@@ -475,8 +779,7 @@ class Prerequisites(pulumi.ComponentResource):
         self.result = PrerequisitesResult(
             openbao_ready=openbao_ready,
             cluster_secret_store=cluster_secret_store,
-            cluster_secret_store_ready=css_ready,
-            openbao_validated=openbao_validated,
+            cluster_secret_store_ready=push_sync_wait,
             control_plane_ns=control_plane_ns,
             data_plane_ns=data_plane_ns,
         )
