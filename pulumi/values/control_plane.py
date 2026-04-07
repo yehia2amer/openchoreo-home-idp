@@ -49,7 +49,7 @@ def get_values(
             "secretName": SECRET_BACKSTAGE,
             "baseUrl": backstage_base_url,
             "http": {
-                "hostnames": [domain_base],
+                "hostnames": [f"backstage.{domain_base}"],
             },
             "auth": {
                 "redirectUrls": [backstage_redirect_url],

@@ -35,8 +35,8 @@ def get_corefile(
     # Hostnames routed to control-plane gateway
     cp_hosts = "|".join(
         [
-            domain_re,  # bare domain (backstage)
-            rf"talos\.{domain_re}",  # backstage alias
+            rf"backstage\.{domain_re}",
+            rf"portal\.{domain_re}",
             rf"api\.{domain_re}",
             rf"thunder\.{domain_re}",
             rf"hubble\.{domain_re}",

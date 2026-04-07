@@ -87,10 +87,12 @@ class ControlPlane(pulumi.ComponentResource):
         gate["scheme"] = cfg.scheme
         thunder_config.setdefault("cors", {})["allowedOrigins"] = [
             cfg.backstage_url,
+            cfg.backstage_fork_url,
             cfg.thunder_url,
         ]
         thunder_config.setdefault("passkey", {})["allowedOrigins"] = [
             cfg.backstage_url,
+            cfg.backstage_fork_url,
         ]
 
         thunder_bootstrap_scripts = thunder_values.get("bootstrap", {}).get("scripts", {})
@@ -129,6 +131,110 @@ if [ -n "$DEFAULT_THEME_ID" ]; then
   log_info "Assigned theme $DEFAULT_THEME_ID to all applications without a theme"
 else
   log_info "WARNING: No themes found in database, skipping theme assignment"
+fi
+"""
+        # Register backstage-fork as an OIDC application in Thunder.
+        # Client credentials match the OpenBao seeds in prerequisites.py § 7a.
+        if cfg.enable_flux or cfg.gitops_repo_url:
+            thunder_bootstrap_scripts["61-backstage-fork-app.sh"] = f"""#!/bin/bash
+set -e
+
+THUNDER_URL="http://localhost:8090"
+
+log_info "Checking if application 'Backstage Fork' already exists..."
+existing_apps=$(curl -s --max-time 10 "${{THUNDER_URL}}/applications")
+
+app_id=$(echo "$existing_apps" | tr '\\n' ' ' | sed 's/" *: *"/":"/g' \\
+  | grep -o '"name":"Backstage Fork"[^}}]*"id":"[^"]*"\\|"id":"[^"]*"[^}}]*"name":"Backstage Fork"' \\
+  | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+APP_PAYLOAD='{{
+  "name": "Backstage Fork",
+  "description": "OpenChoreo Portal (Company Fork)",
+  "logo_url": "https://cdn.statically.io/gh/openchoreo/openchoreo.github.io@main/static/img/openchoreo-logo.png",
+  "allowed_user_types": ["openchoreo-user"],
+  "assertion": {{
+    "validity_period": 3600
+  }},
+  "inbound_auth_config": [
+    {{
+      "type": "oauth2",
+      "config": {{
+        "client_id": "backstage-fork",
+        "client_secret": "backstage-fork-client-secret",
+        "redirect_uris": [
+          "{cfg.backstage_fork_url}/api/auth/openchoreo-auth/handler/frame"
+        ],
+        "grant_types": [
+          "authorization_code",
+          "client_credentials",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "token_endpoint_auth_method": "client_secret_post",
+        "pkce_required": false,
+        "public_client": false,
+        "token": {{
+          "access_token": {{
+            "validity_period": 86400,
+            "user_attributes": [
+              "given_name",
+              "family_name",
+              "username",
+              "groups"
+            ]
+          }},
+          "id_token": {{
+            "validity_period": 86400,
+            "user_attributes": [
+              "given_name",
+              "family_name",
+              "username",
+              "groups"
+            ]
+          }}
+        }},
+        "scope_claims": {{
+          "email": [
+            "email"
+          ],
+          "groups": [
+            "groups"
+          ],
+          "profile": [
+            "username",
+            "given_name",
+            "family_name",
+            "picture"
+          ]
+        }}
+      }}
+    }}
+  ]
+}}'
+
+if [ -n "$app_id" ]; then
+  log_info "Application 'Backstage Fork' already exists (id: $app_id), updating..."
+  curl --location -X PUT "${{THUNDER_URL}}/applications/$app_id" \\
+    --header 'Content-Type: application/json' \\
+    --data "$APP_PAYLOAD" \\
+    --fail-with-body \\
+    --max-time 30 \\
+    --retry 3 \\
+    --retry-delay 5
+  log_info "Application updated successfully"
+else
+  log_info "Application 'Backstage Fork' does not exist, creating..."
+  curl --location "${{THUNDER_URL}}/applications" \\
+    --header 'Content-Type: application/json' \\
+    --data "$APP_PAYLOAD" \\
+    --fail-with-body \\
+    --max-time 30 \\
+    --retry 3 \\
+    --retry-delay 5
+  log_info "Application created successfully"
 fi
 """
         thunder_bootstrap_files = sorted(thunder_bootstrap_scripts)

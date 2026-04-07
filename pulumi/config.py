@@ -171,6 +171,7 @@ class OpenChoreoConfig:
     dp_port: int
     op_port: int
     backstage_url: str
+    backstage_fork_url: str
     api_url: str
     thunder_url: str
     observer_url: str
@@ -329,7 +330,8 @@ def load_config() -> OpenChoreoConfig:
             return ""
         return f":{port}"
 
-    backstage_url = f"{scheme}://{domain_base}{_port_suffix(cp_port, scheme)}"
+    backstage_url = f"{scheme}://backstage.{domain_base}{_port_suffix(cp_port, scheme)}"
+    backstage_fork_url = f"{scheme}://portal.{domain_base}{_port_suffix(cp_port, scheme)}"
     api_url = f"{scheme}://api.{domain_base}{_port_suffix(cp_port, scheme)}"
     thunder_url = f"{scheme}://thunder.{domain_base}{_port_suffix(cp_port, scheme)}"
     observer_url = f"{scheme}://observer.{domain_base}{_port_suffix(op_port, scheme)}"
@@ -416,6 +418,7 @@ def load_config() -> OpenChoreoConfig:
         dp_port=dp_port,
         op_port=op_port,
         backstage_url=backstage_url,
+        backstage_fork_url=backstage_fork_url,
         api_url=api_url,
         thunder_url=thunder_url,
         observer_url=observer_url,

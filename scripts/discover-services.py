@@ -32,19 +32,21 @@ KUBECONFIG = "pulumi/talos-cluster-baremetal/outputs/kubeconfig"
 CONTEXT = "admin@openchoreo"
 
 GATEWAY_IPS: dict[str, str] = {
-    "openchoreo-control-plane": "192.168.0.10",
-    "openchoreo-data-plane": "192.168.0.11",
-    "openchoreo-observability-plane": "192.168.0.12",
+    "openchoreo-control-plane": "192.168.0.14",
+    "openchoreo-data-plane": "192.168.0.14",
+    "openchoreo-observability-plane": "192.168.0.14",
+    "openchoreo-gateway": "192.168.0.14",
 }
 
 GATEWAY_PORTS: dict[str, dict[str, int]] = {
-    "openchoreo-control-plane": {"http": 8080, "https": 8443},
-    "openchoreo-data-plane": {"http": 19080, "https": 19443},
-    "openchoreo-observability-plane": {"http": 11080, "https": 11085},
+    "openchoreo-control-plane": {"http": 80, "https": 443},
+    "openchoreo-data-plane": {"http": 80, "https": 443},
+    "openchoreo-observability-plane": {"http": 80, "https": 443},
+    "openchoreo-gateway": {"http": 80, "https": 443},
 }
 
 # Services we skip (not user-facing)
-SKIP_HOSTNAMES = {"*.openchoreo.local"}
+SKIP_HOSTNAMES = {"*.openchoreo.local", "*.amernas.work"}
 
 
 @dataclass
@@ -101,7 +103,9 @@ def discover_httproutes(api: client.CustomObjectsApi) -> list[ServiceInfo]:
             backends = []
             for rule in spec.get("rules", []):
                 for br in rule.get("backendRefs", []):
-                    backends.append(f"{br.get('namespace', meta['namespace'])}/{br['name']}:{br.get('port', '?')}")
+                    backends.append(
+                        f"{br.get('namespace', meta['namespace'])}/{br['name']}:{br.get('port', '?')}"
+                    )
 
             svc = ServiceInfo(
                 name=meta["name"],
@@ -117,7 +121,11 @@ def discover_httproutes(api: client.CustomObjectsApi) -> list[ServiceInfo]:
             services.append(svc)
 
     # Sort: control plane first, then data, then observability
-    order = {"openchoreo-control-plane": 0, "openchoreo-data-plane": 1, "openchoreo-observability-plane": 2}
+    order = {
+        "openchoreo-control-plane": 0,
+        "openchoreo-data-plane": 1,
+        "openchoreo-observability-plane": 2,
+    }
     services.sort(key=lambda s: (order.get(s.gateway_ns, 9), s.hostname))
     return services
 
@@ -126,9 +134,20 @@ def probe(url: str, timeout: int = 5) -> int:
     """Curl a URL and return HTTP status code. 0 = unreachable."""
     try:
         r = subprocess.run(
-            ["curl", "-sk", "-o", "/dev/null", "-w", "%{http_code}",
-             "--connect-timeout", str(timeout), url],
-            capture_output=True, text=True, timeout=timeout + 2,
+            [
+                "curl",
+                "-sk",
+                "-o",
+                "/dev/null",
+                "-w",
+                "%{http_code}",
+                "--connect-timeout",
+                str(timeout),
+                url,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout + 2,
         )
         return int(r.stdout.strip())
     except Exception:
