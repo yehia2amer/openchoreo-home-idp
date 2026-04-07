@@ -68,9 +68,9 @@ def _post_start_script(token: str, os_user: str, os_pass: str, *, is_dev_stack: 
             " url='http://192.168.0.129:30004'"
             " user='yehia'"
             " password='t9QVO!wg$C7$1dAHZ@%j6HH'\n"
-            "# AdGuard Home on K8s — deployed by sf8.10\n"
+            "# AdGuard Home on K8s — deployed by sf8.10 (runs in keepalived ns with hostNetwork)\n"
             "bao kv put secret/apps/external-dns/adguard-k8s"
-            ' url="http://adguard-home-k8s.external-dns.svc.cluster.local:3000"'
+            ' url="http://adguard-home-k8s.keepalived.svc.cluster.local:3000"'
             ' user="admin"'
             ' password="pI03loPa6Nhlele"\n'
             "# Keepalived VRRP auth password\n"
