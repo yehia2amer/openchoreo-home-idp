@@ -293,7 +293,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "client-id": "backstage-fork",
                     "client-secret": "backstage-fork-client-secret",
                     "auth-authorization-url": f"{cfg.thunder_url}/oauth2/authorize",
-                    "auth-token-url": f"{cfg.thunder_url}/oauth2/token",
+                    "jenkins-api-key": "placeholder-not-in-use",
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
@@ -498,10 +498,10 @@ class Prerequisites(pulumi.ComponentResource):
                             },
                             {
                                 "match": {
-                                    "secretKey": "auth-token-url",
+                                    "secretKey": "jenkins-api-key",
                                     "remoteRef": {
                                         "remoteKey": "backstage-fork-secrets",
-                                        "property": "auth-token-url",
+                                        "property": "jenkins-api-key",
                                     },
                                 }
                             },

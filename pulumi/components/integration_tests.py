@@ -300,7 +300,7 @@ class IntegrationTests(pulumi.ComponentResource):
                     "client-id",
                     "client-secret",
                     "auth-authorization-url",
-                    "auth-token-url",
+                    "jenkins-api-key",
                 ],
             )
 
