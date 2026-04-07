@@ -19,7 +19,6 @@ from config import (
     SA_ESO_OPENBAO,
     SLEEP_AFTER_GATEWAY_API,
     SLEEP_AFTER_OPENBAO,
-    THUNDER_INTERNAL_BASE,
     TIMEOUT_DEFAULT,
     TIMEOUT_TLS_WAIT,
     TIMEOUT_WAIT,
@@ -293,8 +292,8 @@ class Prerequisites(pulumi.ComponentResource):
                     "backend-secret": "backstage-fork-backend-secret",
                     "client-id": "backstage-fork",
                     "client-secret": "backstage-fork-client-secret",
-                    "auth-authorization-url": f"{THUNDER_INTERNAL_BASE}/oauth2/authorize",
-                    "auth-token-url": f"{THUNDER_INTERNAL_BASE}/oauth2/token",
+                    "auth-authorization-url": f"{cfg.thunder_url}/oauth2/authorize",
+                    "auth-token-url": f"{cfg.thunder_url}/oauth2/token",
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
