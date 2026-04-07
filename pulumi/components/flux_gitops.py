@@ -129,6 +129,14 @@ class FluxGitOps(pulumi.ComponentResource):
                 "path": "./infrastructure",
                 "prune": True,
                 "sourceRef": {"kind": "GitRepository", "name": "sample-gitops"},
+                "healthChecks": [
+                    {
+                        "apiVersion": "apps/v1",
+                        "kind": "Deployment",
+                        "name": "backstage-fork",
+                        "namespace": "backstage-fork",
+                    },
+                ],
             },
             opts=self._child_opts(provider=k8s_provider, depends_on=[git_repo]),
         )
