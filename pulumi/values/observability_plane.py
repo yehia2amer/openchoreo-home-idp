@@ -78,6 +78,7 @@ def get_values(
         },
         "rca": {
             "enabled": enable_rca,
+            "replicas": 0,
             "http": {
                 "hostnames": [f"rca-agent.{domain_base}"],
             },
