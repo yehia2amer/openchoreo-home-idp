@@ -105,8 +105,8 @@ class DataPlane(pulumi.ComponentResource):
             "gateway": {
                 "ingress": {
                     "external": {
-                        "name": "gateway-default",
-                        "namespace": NS_DATA_PLANE,
+                        "name": "gateway-shared",
+                        "namespace": "openchoreo-gateway",
                         "http": {
                             "host": cfg.domain_base,
                             "listenerName": "http",

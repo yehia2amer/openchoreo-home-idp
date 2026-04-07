@@ -15,9 +15,6 @@ config:
   openchoreo:op_http_port: "80"
   openchoreo:op_https_port: "443"
   openchoreo:gateway_pin_ip: "192.168.0.14"
-  openchoreo:gateway_pin_ip_dp: "192.168.0.14"
-  openchoreo:gateway_pin_ip_op: "192.168.0.14"
-  openchoreo:coredns_bind_ip: "192.168.0.100"
   openchoreo:enable_observability: "true"
   openchoreo:enable_demo_app_bootstrap: "true"
   openchoreo:github_pat:

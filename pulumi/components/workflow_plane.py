@@ -10,7 +10,6 @@ import pulumi_kubernetes as k8s
 
 from config import (
     DOCKER_REGISTRY_HELM_REPO,
-    NS_CONTROL_PLANE,
     NS_WORKFLOW_PLANE,
     TIMEOUT_DEFAULT,
     OpenChoreoConfig,
@@ -109,9 +108,9 @@ class WorkflowPlane(pulumi.ComponentResource):
         # before the CRDs exist.
         registry_endpoint = f"registry.{NS_WORKFLOW_PLANE}.svc.cluster.local:{cfg.wp_registry_port}"
         if cfg.platform.gateway_mode == "cilium":
-            gateway_endpoint = f"cilium-gateway-gateway-default.{NS_CONTROL_PLANE}.svc.cluster.local:{cfg.cp_http_port}"
+            gateway_endpoint = f"cilium-gateway-gateway-shared.openchoreo-gateway.svc.cluster.local:{cfg.cp_http_port}"
         else:
-            gateway_endpoint = f"gateway-default.{NS_CONTROL_PLANE}.svc.cluster.local:{cfg.cp_http_port}"
+            gateway_endpoint = f"gateway-shared.openchoreo-gateway.svc.cluster.local:{cfg.cp_http_port}"
         # Patching: download → sed replace k3d-specific endpoints → apply.
         # Templates with k3d hostnames are patched inline before apply so the
         # resource never contains host.k3d.internal references.
