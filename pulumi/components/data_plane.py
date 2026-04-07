@@ -87,12 +87,7 @@ class DataPlane(pulumi.ComponentResource):
                 chart=cfg.dp_chart,
                 version=cfg.openchoreo_version,
                 namespace=NS_DATA_PLANE,
-                values=dp_values(
-                    dp_http_port=cfg.dp_http_port,
-                    dp_https_port=cfg.dp_https_port,
-                    tls_enabled=cfg.tls_enabled,
-                    domain_base=cfg.domain_base,
-                ),
+                values=dp_values(),
                 timeout=TIMEOUT_DEFAULT,
             ),
             opts=pulumi.ResourceOptions.merge(

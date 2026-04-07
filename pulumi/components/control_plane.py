@@ -452,8 +452,6 @@ fi
                     domain_base=cfg.domain_base,
                     scheme=cfg.scheme,
                     cp_port=cfg.cp_port,
-                    cp_http_port=cfg.cp_http_port,
-                    cp_https_port=cfg.cp_https_port,
                     tls_enabled=cfg.tls_enabled,
                     thunder_url=cfg.thunder_url,
                     backstage_url=cfg.backstage_url,

@@ -107,7 +107,6 @@ class OpenChoreoConfig:
     wp_argo_port: int
     wp_registry_port: int
     registry_node_port: int
-    gateway_pin_ip: str
     op_http_port: int
     op_https_port: int
     opensearch_dashboards_port: int
@@ -127,7 +126,6 @@ class OpenChoreoConfig:
     metrics_prometheus_version: str
     logs_openobserve_version: str
     tracing_openobserve_version: str
-    otel_operator_version: str
     odigos_version: str
 
     # Credentials
@@ -240,7 +238,6 @@ def load_config() -> OpenChoreoConfig:
     wp_argo_port = cfg.get_int("wp_argo_port") or 10081
     wp_registry_port = cfg.get_int("wp_registry_port") or 10082
     registry_node_port = cfg.get_int("registry_node_port") or 0
-    gateway_pin_ip = cfg.get("gateway_pin_ip") or ""
     op_http_port = cfg.get_int("op_http_port") or 11080
     op_https_port = cfg.get_int("op_https_port") or 11085
     opensearch_dashboards_port = cfg.get_int("opensearch_dashboards_port") or 11081
@@ -260,7 +257,6 @@ def load_config() -> OpenChoreoConfig:
     metrics_prometheus_version = cfg.get("metrics_prometheus_version") or "0.2.5"
     logs_openobserve_version = cfg.get("logs_openobserve_version") or "0.4.2"
     tracing_openobserve_version = cfg.get("tracing_openobserve_version") or "0.2.1"
-    otel_operator_version = cfg.get("otel_operator_version") or "0.109.0"
     odigos_version = cfg.get("odigos_version") or "1.23.0"
 
     # Credentials — warn on non-dev stacks when using insecure defaults.
@@ -364,7 +360,6 @@ def load_config() -> OpenChoreoConfig:
         wp_argo_port=wp_argo_port,
         wp_registry_port=wp_registry_port,
         registry_node_port=registry_node_port,
-        gateway_pin_ip=gateway_pin_ip,
         op_http_port=op_http_port,
         op_https_port=op_https_port,
         opensearch_dashboards_port=opensearch_dashboards_port,
@@ -382,7 +377,6 @@ def load_config() -> OpenChoreoConfig:
         metrics_prometheus_version=metrics_prometheus_version,
         logs_openobserve_version=logs_openobserve_version,
         tracing_openobserve_version=tracing_openobserve_version,
-        otel_operator_version=otel_operator_version,
         odigos_version=odigos_version,
         openbao_root_token=openbao_root_token,
         opensearch_username=opensearch_username,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from config import CERT_OP_GATEWAY_TLS, SECRET_OBSERVER, SECRET_OPENSEARCH_ADMIN, THUNDER_INTERNAL_BASE
+from config import SECRET_OBSERVER, SECRET_OPENSEARCH_ADMIN, THUNDER_INTERNAL_BASE
 
 
 def get_values(
@@ -78,7 +78,7 @@ def get_values(
         },
         "rca": {
             "enabled": enable_rca,
-            "replicas": 0,
+            "replicas": 1 if enable_rca else 0,
             "http": {
                 "hostnames": [f"rca-agent.{domain_base}"],
             },
@@ -104,20 +104,5 @@ def get_values(
                 if enable_rca and rca_llm_model
                 else {}
             ),
-        },
-        "gateway": {
-            "httpPort": op_http_port,
-            "httpsPort": op_https_port,
-            "tls": {
-                "enabled": tls_enabled,
-                **(
-                    {
-                        "hostname": f"*.{domain_base}",
-                        "certificateRefs": [{"name": CERT_OP_GATEWAY_TLS}],
-                    }
-                    if tls_enabled
-                    else {}
-                ),
-            },
         },
     }

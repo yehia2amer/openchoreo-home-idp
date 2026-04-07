@@ -4,15 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from config import CERT_CP_GATEWAY_TLS, SECRET_BACKSTAGE, THUNDER_INTERNAL_BASE
+from config import SECRET_BACKSTAGE, THUNDER_INTERNAL_BASE
 
 
 def get_values(
     domain_base: str,
     scheme: str,
     cp_port: int,
-    cp_http_port: int,
-    cp_https_port: int,
     tls_enabled: bool,
     thunder_url: str,
     backstage_url: str = "",
@@ -68,21 +66,6 @@ def get_values(
                 "jwksUrl": f"{THUNDER_INTERNAL_BASE}/oauth2/jwks",
                 "authorizationUrl": f"{thunder_url}/oauth2/authorize",
                 "tokenUrl": f"{THUNDER_INTERNAL_BASE}/oauth2/token",
-            },
-        },
-        "gateway": {
-            "httpPort": cp_http_port,
-            "httpsPort": cp_https_port,
-            "tls": {
-                "enabled": tls_enabled,
-                **(
-                    {
-                        "hostname": f"*.{domain_base}",
-                        "certificateRefs": [{"name": CERT_CP_GATEWAY_TLS}],
-                    }
-                    if tls_enabled
-                    else {}
-                ),
             },
         },
     }

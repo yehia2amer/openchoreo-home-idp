@@ -508,7 +508,7 @@ LONGHORN_VALUES: dict[str, Any] = {
     },
     "persistence": {
         "defaultFsType": "ext4",
-        "reclaimPolicy": "Retain",
+        "reclaimPolicy": "Delete",
         "defaultClassReplicaCount": 1,
     },
 }
