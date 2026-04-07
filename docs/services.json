@@ -1,155 +1,290 @@
 [
   {
     "name": "openchoreo-api",
-    "hostname": "api.openchoreo.local",
-    "http_url": "http://api.openchoreo.local:8080",
-    "https_url": "https://api.openchoreo.local:8443",
+    "hostname": "api.amernas.work",
+    "http_url": "http://api.amernas.work:80",
+    "https_url": "https://api.amernas.work:443",
     "http_status": 404,
     "https_status": 404,
-    "gateway_ip": "192.168.0.10"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "argo-server",
-    "hostname": "argo.openchoreo.local",
-    "http_url": "http://argo.openchoreo.local:8080",
-    "https_url": "https://argo.openchoreo.local:8443",
+    "hostname": "argo.amernas.work",
+    "http_url": "http://argo.amernas.work:80",
+    "https_url": "https://argo.amernas.work:443",
     "http_status": 200,
     "https_status": 200,
-    "gateway_ip": "192.168.0.10"
-  },
-  {
-    "name": "hubble-ui",
-    "hostname": "hubble.openchoreo.local",
-    "http_url": "http://hubble.openchoreo.local:8080",
-    "https_url": "https://hubble.openchoreo.local:8443",
-    "http_status": 200,
-    "https_status": 200,
-    "gateway_ip": "192.168.0.10"
-  },
-  {
-    "name": "longhorn-ui",
-    "hostname": "longhorn.openchoreo.local",
-    "http_url": "http://longhorn.openchoreo.local:8080",
-    "https_url": "https://longhorn.openchoreo.local:8443",
-    "http_status": 200,
-    "https_status": 200,
-    "gateway_ip": "192.168.0.10"
-  },
-  {
-    "name": "openbao-ui",
-    "hostname": "openbao.openchoreo.local",
-    "http_url": "http://openbao.openchoreo.local:8080",
-    "https_url": "https://openbao.openchoreo.local:8443",
-    "http_status": 307,
-    "https_status": 307,
-    "gateway_ip": "192.168.0.10"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "backstage",
-    "hostname": "openchoreo.local",
-    "http_url": "http://openchoreo.local:8080",
-    "https_url": "https://openchoreo.local:8443",
-    "http_status": 0,
-    "https_status": 0,
-    "gateway_ip": "192.168.0.10"
+    "hostname": "backstage.amernas.work",
+    "http_url": "http://backstage.amernas.work:80",
+    "https_url": "https://backstage.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "hubble-ui",
+    "hostname": "hubble.amernas.work",
+    "http_url": "http://hubble.amernas.work:80",
+    "https_url": "https://hubble.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "longhorn-ui",
+    "hostname": "longhorn.amernas.work",
+    "http_url": "http://longhorn.amernas.work:80",
+    "https_url": "https://longhorn.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "openbao-ui",
+    "hostname": "openbao.amernas.work",
+    "http_url": "http://openbao.amernas.work:80",
+    "https_url": "https://openbao.amernas.work:443",
+    "http_status": 307,
+    "https_status": 307,
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "thunder-httproute",
-    "hostname": "thunder.openchoreo.local",
-    "http_url": "http://thunder.openchoreo.local:8080",
-    "https_url": "https://thunder.openchoreo.local:8443",
+    "hostname": "thunder.amernas.work",
+    "http_url": "http://thunder.amernas.work:80",
+    "https_url": "https://thunder.amernas.work:443",
     "http_status": 401,
     "https_status": 401,
-    "gateway_ip": "192.168.0.10"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "document-svc-http-ce97f2c8",
     "hostname": "development-default.openchoreo.local",
-    "http_url": "http://development-default.openchoreo.local:19080",
-    "https_url": "https://development-default.openchoreo.local:19443",
-    "http_status": 404,
-    "https_status": 404,
-    "gateway_ip": "192.168.0.11"
+    "http_url": "http://development-default.openchoreo.local:80",
+    "https_url": "https://development-default.openchoreo.local:443",
+    "http_status": 0,
+    "https_status": 0,
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "sonarr-endpoint-1-27b6008e",
     "hostname": "endpoint-1-sonarr-development-default-36191239.openchoreo.local",
-    "http_url": "http://endpoint-1-sonarr-development-default-36191239.openchoreo.local:19080",
-    "https_url": "https://endpoint-1-sonarr-development-default-36191239.openchoreo.local:19443",
-    "http_status": 200,
-    "https_status": 200,
-    "gateway_ip": "192.168.0.11"
+    "http_url": "http://endpoint-1-sonarr-development-default-36191239.openchoreo.local:80",
+    "https_url": "https://endpoint-1-sonarr-development-default-36191239.openchoreo.local:443",
+    "http_status": 0,
+    "https_status": 0,
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "frontend-http-80454fc2",
     "hostname": "http-frontend-development-default-4cc7110c.openchoreo.local",
-    "http_url": "http://http-frontend-development-default-4cc7110c.openchoreo.local:19080",
-    "https_url": "https://http-frontend-development-default-4cc7110c.openchoreo.local:19443",
-    "http_status": 200,
-    "https_status": 200,
-    "gateway_ip": "192.168.0.11"
+    "http_url": "http://http-frontend-development-default-4cc7110c.openchoreo.local:80",
+    "https_url": "https://http-frontend-development-default-4cc7110c.openchoreo.local:443",
+    "http_status": 0,
+    "https_status": 0,
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "registry",
-    "hostname": "registry.openchoreo.local",
-    "http_url": "http://registry.openchoreo.local:19080",
-    "https_url": "https://registry.openchoreo.local:19443",
+    "hostname": "registry.amernas.work",
+    "http_url": "http://registry.amernas.work:80",
+    "https_url": "https://registry.amernas.work:443",
     "http_status": 200,
-    "https_status": 404,
-    "gateway_ip": "192.168.0.11"
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "alertmanager",
-    "hostname": "alertmanager.openchoreo.local",
-    "http_url": "http://alertmanager.openchoreo.local:11080",
-    "https_url": "https://alertmanager.openchoreo.local:11085",
+    "hostname": "alertmanager.amernas.work",
+    "http_url": "http://alertmanager.amernas.work:80",
+    "https_url": "https://alertmanager.amernas.work:443",
     "http_status": 200,
     "https_status": 200,
-    "gateway_ip": "192.168.0.12"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "observer",
-    "hostname": "observer.openchoreo.local",
-    "http_url": "http://observer.openchoreo.local:11080",
-    "https_url": "https://observer.openchoreo.local:11085",
+    "hostname": "observer.amernas.work",
+    "http_url": "http://observer.amernas.work:80",
+    "https_url": "https://observer.amernas.work:443",
     "http_status": 404,
     "https_status": 404,
-    "gateway_ip": "192.168.0.12"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "openobserve-ui",
-    "hostname": "openobserve.openchoreo.local",
-    "http_url": "http://openobserve.openchoreo.local:11080",
-    "https_url": "https://openobserve.openchoreo.local:11085",
+    "hostname": "openobserve.amernas.work",
+    "http_url": "http://openobserve.amernas.work:80",
+    "https_url": "https://openobserve.amernas.work:443",
     "http_status": 308,
     "https_status": 308,
-    "gateway_ip": "192.168.0.12"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "opensearch",
-    "hostname": "opensearch.openchoreo.local",
-    "http_url": "http://opensearch.openchoreo.local:11080",
-    "https_url": "https://opensearch.openchoreo.local:11085",
+    "hostname": "opensearch.amernas.work",
+    "http_url": "http://opensearch.amernas.work:80",
+    "https_url": "https://opensearch.amernas.work:443",
     "http_status": 401,
     "https_status": 401,
-    "gateway_ip": "192.168.0.12"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "prometheus",
-    "hostname": "prometheus.openchoreo.local",
-    "http_url": "http://prometheus.openchoreo.local:11080",
-    "https_url": "https://prometheus.openchoreo.local:11085",
+    "hostname": "prometheus.amernas.work",
+    "http_url": "http://prometheus.amernas.work:80",
+    "https_url": "https://prometheus.amernas.work:443",
     "http_status": 302,
     "https_status": 302,
-    "gateway_ip": "192.168.0.12"
+    "gateway_ip": "192.168.0.14"
   },
   {
     "name": "ai-rca-agent",
-    "hostname": "rca-agent.openchoreo.local",
-    "http_url": "http://rca-agent.openchoreo.local:11080",
-    "https_url": "https://rca-agent.openchoreo.local:11085",
+    "hostname": "rca-agent.amernas.work",
+    "http_url": "http://rca-agent.amernas.work:80",
+    "https_url": "https://rca-agent.amernas.work:443",
+    "http_status": 503,
+    "https_status": 503,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "alertmanager",
+    "hostname": "alertmanager.amernas.work",
+    "http_url": "http://alertmanager.amernas.work:80",
+    "https_url": "https://alertmanager.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "api",
+    "hostname": "api.amernas.work",
+    "http_url": "http://api.amernas.work:80",
+    "https_url": "https://api.amernas.work:443",
     "http_status": 404,
     "https_status": 404,
-    "gateway_ip": "192.168.0.12"
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "argo-server",
+    "hostname": "argo.amernas.work",
+    "http_url": "http://argo.amernas.work:80",
+    "https_url": "https://argo.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "backstage",
+    "hostname": "backstage.amernas.work",
+    "http_url": "http://backstage.amernas.work:80",
+    "https_url": "https://backstage.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "hubble-ui",
+    "hostname": "hubble.amernas.work",
+    "http_url": "http://hubble.amernas.work:80",
+    "https_url": "https://hubble.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "longhorn-ui",
+    "hostname": "longhorn.amernas.work",
+    "http_url": "http://longhorn.amernas.work:80",
+    "https_url": "https://longhorn.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "observer",
+    "hostname": "observer.amernas.work",
+    "http_url": "http://observer.amernas.work:80",
+    "https_url": "https://observer.amernas.work:443",
+    "http_status": 404,
+    "https_status": 404,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "openbao-ui",
+    "hostname": "openbao.amernas.work",
+    "http_url": "http://openbao.amernas.work:80",
+    "https_url": "https://openbao.amernas.work:443",
+    "http_status": 307,
+    "https_status": 307,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "openobserve-ui",
+    "hostname": "openobserve.amernas.work",
+    "http_url": "http://openobserve.amernas.work:80",
+    "https_url": "https://openobserve.amernas.work:443",
+    "http_status": 308,
+    "https_status": 308,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "opensearch",
+    "hostname": "opensearch.amernas.work",
+    "http_url": "http://opensearch.amernas.work:80",
+    "https_url": "https://opensearch.amernas.work:443",
+    "http_status": 401,
+    "https_status": 401,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "backstage-fork",
+    "hostname": "portal.amernas.work",
+    "http_url": "http://portal.amernas.work:80",
+    "https_url": "https://portal.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "prometheus",
+    "hostname": "prometheus.amernas.work",
+    "http_url": "http://prometheus.amernas.work:80",
+    "https_url": "https://prometheus.amernas.work:443",
+    "http_status": 302,
+    "https_status": 302,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "rca-agent",
+    "hostname": "rca-agent.amernas.work",
+    "http_url": "http://rca-agent.amernas.work:80",
+    "https_url": "https://rca-agent.amernas.work:443",
+    "http_status": 503,
+    "https_status": 503,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "registry",
+    "hostname": "registry.amernas.work",
+    "http_url": "http://registry.amernas.work:80",
+    "https_url": "https://registry.amernas.work:443",
+    "http_status": 200,
+    "https_status": 200,
+    "gateway_ip": "192.168.0.14"
+  },
+  {
+    "name": "thunder",
+    "hostname": "thunder.amernas.work",
+    "http_url": "http://thunder.amernas.work:80",
+    "https_url": "https://thunder.amernas.work:443",
+    "http_status": 401,
+    "https_status": 401,
+    "gateway_ip": "192.168.0.14"
   }
 ]

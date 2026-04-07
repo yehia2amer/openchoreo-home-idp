@@ -6,6 +6,4 @@
 # macOS treats .local as mDNS, so /etc/resolver won't work.
 # /etc/hosts is the reliable approach.
 
-192.168.0.10  api.openchoreo.local argo.openchoreo.local hubble.openchoreo.local longhorn.openchoreo.local openbao.openchoreo.local openchoreo.local thunder.openchoreo.local
-192.168.0.11  development-default.openchoreo.local endpoint-1-sonarr-development-default-36191239.openchoreo.local http-frontend-development-default-4cc7110c.openchoreo.local registry.openchoreo.local
-192.168.0.12  alertmanager.openchoreo.local observer.openchoreo.local openobserve.openchoreo.local opensearch.openchoreo.local prometheus.openchoreo.local rca-agent.openchoreo.local
+192.168.0.14  alertmanager.amernas.work alertmanager.amernas.work api.amernas.work api.amernas.work argo.amernas.work argo.amernas.work backstage.amernas.work backstage.amernas.work development-default.openchoreo.local endpoint-1-sonarr-development-default-36191239.openchoreo.local http-frontend-development-default-4cc7110c.openchoreo.local hubble.amernas.work hubble.amernas.work longhorn.amernas.work longhorn.amernas.work observer.amernas.work observer.amernas.work openbao.amernas.work openbao.amernas.work openobserve.amernas.work openobserve.amernas.work opensearch.amernas.work opensearch.amernas.work portal.amernas.work prometheus.amernas.work prometheus.amernas.work rca-agent.amernas.work rca-agent.amernas.work registry.amernas.work registry.amernas.work thunder.amernas.work thunder.amernas.work

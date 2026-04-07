@@ -8,9 +8,7 @@ Add to `/etc/hosts` (macOS `.local` TLD needs this):
 
 ```bash
 sudo tee -a /etc/hosts << 'HOSTS'
-192.168.0.10  api.openchoreo.local argo.openchoreo.local hubble.openchoreo.local longhorn.openchoreo.local openbao.openchoreo.local openchoreo.local thunder.openchoreo.local
-192.168.0.11  development-default.openchoreo.local endpoint-1-sonarr-development-default-36191239.openchoreo.local http-frontend-development-default-4cc7110c.openchoreo.local registry.openchoreo.local
-192.168.0.12  alertmanager.openchoreo.local observer.openchoreo.local openobserve.openchoreo.local opensearch.openchoreo.local prometheus.openchoreo.local rca-agent.openchoreo.local
+192.168.0.14  alertmanager.amernas.work alertmanager.amernas.work api.amernas.work api.amernas.work argo.amernas.work argo.amernas.work backstage.amernas.work backstage.amernas.work development-default.openchoreo.local endpoint-1-sonarr-development-default-36191239.openchoreo.local http-frontend-development-default-4cc7110c.openchoreo.local hubble.amernas.work hubble.amernas.work longhorn.amernas.work longhorn.amernas.work observer.amernas.work observer.amernas.work openbao.amernas.work openbao.amernas.work openobserve.amernas.work openobserve.amernas.work opensearch.amernas.work opensearch.amernas.work portal.amernas.work prometheus.amernas.work prometheus.amernas.work rca-agent.amernas.work rca-agent.amernas.work registry.amernas.work registry.amernas.work thunder.amernas.work thunder.amernas.work
 HOSTS
 ```
 
@@ -18,23 +16,38 @@ HOSTS
 
 | Service | HTTP URL | HTTPS URL | Status | Backend |
 |---------|----------|-----------|--------|---------|
-| **openchoreo-api** | http://api.openchoreo.local:8080 | https://api.openchoreo.local:8443 | ⚠️  404 | `openchoreo-control-plane/openchoreo-api:8080` |
-| **argo-server** | http://argo.openchoreo.local:8080 | https://argo.openchoreo.local:8443 | ✅ 200 | `openchoreo-workflow-plane/argo-server:10081` |
-| **hubble-ui** | http://hubble.openchoreo.local:8080 | https://hubble.openchoreo.local:8443 | ✅ 200 | `kube-system/hubble-ui:80` |
-| **longhorn-ui** | http://longhorn.openchoreo.local:8080 | https://longhorn.openchoreo.local:8443 | ✅ 200 | `longhorn-system/longhorn-frontend:80` |
-| **openbao-ui** | http://openbao.openchoreo.local:8080 | https://openbao.openchoreo.local:8443 | ✅ 307 | `openbao/openbao:8200` |
-| **backstage** | http://openchoreo.local:8080 | https://openchoreo.local:8443 | ❌ down | `openchoreo-control-plane/backstage:7007, openchoreo-control-plane/backstage:7007` |
-| **thunder-httproute** | http://thunder.openchoreo.local:8080 | https://thunder.openchoreo.local:8443 | 🔒 401 | `thunder/thunder-service:8090` |
-| **document-svc-http-ce97f2c8** | http://development-default.openchoreo.local:19080 | https://development-default.openchoreo.local:19443 | ⚠️  404 | `dp-default-doclet-development-50ce4d9b/document-svc:8080` |
-| **sonarr-endpoint-1-27b6008e** | http://endpoint-1-sonarr-development-default-36191239.openchoreo.local:19080 | https://endpoint-1-sonarr-development-default-36191239.openchoreo.local:19443 | ✅ 200 | `dp-default-arr-stack-development-8dda33b1/sonarr:8989` |
-| **frontend-http-80454fc2** | http://http-frontend-development-default-4cc7110c.openchoreo.local:19080 | https://http-frontend-development-default-4cc7110c.openchoreo.local:19443 | ✅ 200 | `dp-default-doclet-development-50ce4d9b/frontend:80` |
-| **registry** | http://registry.openchoreo.local:19080 | https://registry.openchoreo.local:19443 | ✅ 200 | `openchoreo-workflow-plane/registry:10082` |
-| **alertmanager** | http://alertmanager.openchoreo.local:11080 | https://alertmanager.openchoreo.local:11085 | ✅ 200 | `openchoreo-observability-plane/openchoreo-observability-alertmanager:9093` |
-| **observer** | http://observer.openchoreo.local:11080 | https://observer.openchoreo.local:11085 | ⚠️  404 | `openchoreo-observability-plane/observer:8080` |
-| **openobserve-ui** | http://openobserve.openchoreo.local:11080 | https://openobserve.openchoreo.local:11085 | ✅ 308 | `openchoreo-observability-plane/openobserve:5080` |
-| **opensearch** | http://opensearch.openchoreo.local:11080 | https://opensearch.openchoreo.local:11085 | 🔒 401 | `openchoreo-observability-plane/opensearch:9200` |
-| **prometheus** | http://prometheus.openchoreo.local:11080 | https://prometheus.openchoreo.local:11085 | ✅ 302 | `openchoreo-observability-plane/openchoreo-observability-prometheus:9091` |
-| **ai-rca-agent** | http://rca-agent.openchoreo.local:11080 | https://rca-agent.openchoreo.local:11085 | ⚠️  404 | `openchoreo-observability-plane/ai-rca-agent:8080, openchoreo-observability-plane/ai-rca-agent:8080` |
+| **openchoreo-api** | http://api.amernas.work:80 | https://api.amernas.work:443 | ⚠️  404 | `openchoreo-control-plane/openchoreo-api:8080` |
+| **argo-server** | http://argo.amernas.work:80 | https://argo.amernas.work:443 | ✅ 200 | `openchoreo-workflow-plane/argo-server:10081` |
+| **backstage** | http://backstage.amernas.work:80 | https://backstage.amernas.work:443 | ✅ 200 | `openchoreo-control-plane/backstage:7007, openchoreo-control-plane/backstage:7007` |
+| **hubble-ui** | http://hubble.amernas.work:80 | https://hubble.amernas.work:443 | ✅ 200 | `kube-system/hubble-ui:80` |
+| **longhorn-ui** | http://longhorn.amernas.work:80 | https://longhorn.amernas.work:443 | ✅ 200 | `longhorn-system/longhorn-frontend:80` |
+| **openbao-ui** | http://openbao.amernas.work:80 | https://openbao.amernas.work:443 | ✅ 307 | `openbao/openbao:8200` |
+| **thunder-httproute** | http://thunder.amernas.work:80 | https://thunder.amernas.work:443 | 🔒 401 | `thunder/thunder-service:8090` |
+| **document-svc-http-ce97f2c8** | http://development-default.openchoreo.local:80 | https://development-default.openchoreo.local:443 | ❌ down | `dp-default-doclet-development-50ce4d9b/document-svc:8080` |
+| **sonarr-endpoint-1-27b6008e** | http://endpoint-1-sonarr-development-default-36191239.openchoreo.local:80 | https://endpoint-1-sonarr-development-default-36191239.openchoreo.local:443 | ❌ down | `dp-default-arr-stack-development-8dda33b1/sonarr:8989` |
+| **frontend-http-80454fc2** | http://http-frontend-development-default-4cc7110c.openchoreo.local:80 | https://http-frontend-development-default-4cc7110c.openchoreo.local:443 | ❌ down | `dp-default-doclet-development-50ce4d9b/frontend:80` |
+| **registry** | http://registry.amernas.work:80 | https://registry.amernas.work:443 | ✅ 200 | `openchoreo-workflow-plane/registry:10082` |
+| **alertmanager** | http://alertmanager.amernas.work:80 | https://alertmanager.amernas.work:443 | ✅ 200 | `openchoreo-observability-plane/openchoreo-observability-alertmanager:9093` |
+| **observer** | http://observer.amernas.work:80 | https://observer.amernas.work:443 | ⚠️  404 | `openchoreo-observability-plane/observer:8080` |
+| **openobserve-ui** | http://openobserve.amernas.work:80 | https://openobserve.amernas.work:443 | ✅ 308 | `openchoreo-observability-plane/openobserve:5080` |
+| **opensearch** | http://opensearch.amernas.work:80 | https://opensearch.amernas.work:443 | 🔒 401 | `openchoreo-observability-plane/opensearch:9200` |
+| **prometheus** | http://prometheus.amernas.work:80 | https://prometheus.amernas.work:443 | ✅ 302 | `openchoreo-observability-plane/openchoreo-observability-prometheus:9091` |
+| **ai-rca-agent** | http://rca-agent.amernas.work:80 | https://rca-agent.amernas.work:443 | ⚠️  503 | `openchoreo-observability-plane/ai-rca-agent:8080, openchoreo-observability-plane/ai-rca-agent:8080, openchoreo-observability-plane/ai-rca-agent:8080, openchoreo-observability-plane/ai-rca-agent:8080` |
+| **alertmanager** | http://alertmanager.amernas.work:80 | https://alertmanager.amernas.work:443 | ✅ 200 | `openchoreo-observability-plane/openchoreo-observability-alertmanager:9093` |
+| **api** | http://api.amernas.work:80 | https://api.amernas.work:443 | ⚠️  404 | `openchoreo-control-plane/openchoreo-api:8080` |
+| **argo-server** | http://argo.amernas.work:80 | https://argo.amernas.work:443 | ✅ 200 | `openchoreo-workflow-plane/argo-server:10081` |
+| **backstage** | http://backstage.amernas.work:80 | https://backstage.amernas.work:443 | ✅ 200 | `openchoreo-control-plane/backstage:7007` |
+| **hubble-ui** | http://hubble.amernas.work:80 | https://hubble.amernas.work:443 | ✅ 200 | `kube-system/hubble-ui:80` |
+| **longhorn-ui** | http://longhorn.amernas.work:80 | https://longhorn.amernas.work:443 | ✅ 200 | `longhorn-system/longhorn-frontend:80` |
+| **observer** | http://observer.amernas.work:80 | https://observer.amernas.work:443 | ⚠️  404 | `openchoreo-observability-plane/observer:8080` |
+| **openbao-ui** | http://openbao.amernas.work:80 | https://openbao.amernas.work:443 | ✅ 307 | `openbao/openbao:8200` |
+| **openobserve-ui** | http://openobserve.amernas.work:80 | https://openobserve.amernas.work:443 | ✅ 308 | `openchoreo-observability-plane/openobserve:5080` |
+| **opensearch** | http://opensearch.amernas.work:80 | https://opensearch.amernas.work:443 | 🔒 401 | `openchoreo-observability-plane/opensearch:9200` |
+| **backstage-fork** | http://portal.amernas.work:80 | https://portal.amernas.work:443 | ✅ 200 | `backstage-fork/backstage-fork:7007` |
+| **prometheus** | http://prometheus.amernas.work:80 | https://prometheus.amernas.work:443 | ✅ 302 | `openchoreo-observability-plane/openchoreo-observability-prometheus:9091` |
+| **rca-agent** | http://rca-agent.amernas.work:80 | https://rca-agent.amernas.work:443 | ⚠️  503 | `openchoreo-observability-plane/ai-rca-agent:8080` |
+| **registry** | http://registry.amernas.work:80 | https://registry.amernas.work:443 | ✅ 200 | `openchoreo-workflow-plane/registry:10082` |
+| **thunder** | http://thunder.amernas.work:80 | https://thunder.amernas.work:443 | 🔒 401 | `thunder/thunder-service:8090` |
 
 ## Gateway Map
 
@@ -43,73 +56,6 @@ HOSTS
 | Control Plane | 192.168.0.10 | 8080 | 8443 |
 | Data Plane | 192.168.0.11 | 19080 | 19443 |
 | Observability | 192.168.0.12 | 11080 | 11085 |
-
-## AI & MCP Services
-
-OpenChoreo exposes two MCP (Model Context Protocol) servers and an AI-powered RCA agent.
-All three are accessible from the LAN via HTTPRoute.
-
-### Get an Access Token
-
-```bash
-# Service-account token (valid 24h) — works for MCP and RCA
-curl -sk -X POST https://thunder.openchoreo.local:8443/oauth2/token \
-  -u "service_mcp_client:service_mcp_client_secret" \
-  -d "grant_type=client_credentials" -d "scope=openid" \
-  | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])"
-
-# Or use the helper script
-./scripts/get-mcp-token.sh
-```
-
-### Control Plane MCP — `api.openchoreo.local:8443/mcp`
-
-Manage projects, components, builds, deployments, and namespaces via AI assistants.
-
-| Toolset | Description |
-|---------|-------------|
-| `namespace` | List / get namespaces |
-| `project` | List / get / create projects |
-| `component` | Components, bindings, workloads, releases |
-| `build` | Trigger builds, list builds, workflow planes |
-| `deployment` | Deployment pipelines, observer URLs |
-| `pe` | Platform engineering operations |
-
-```bash
-# Test MCP (SSE transport)
-curl -sk -X POST https://api.openchoreo.local:8443/mcp \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}},"id":1}'
-```
-
-### Observer MCP — `observer.openchoreo.local:11085/mcp`
-
-Query logs, traces, and metrics through AI assistants.
-
-```bash
-curl -sk -X POST https://observer.openchoreo.local:11085/mcp \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}},"id":1}'
-```
-
-### RCA Agent — `rca-agent.openchoreo.local:11085`
-
-AI-powered Root Cause Analysis with auto-remediation.  
-Uses `openai:bedrock.anthropic.claude-sonnet-4-5` via PwC GenAI proxy.  
-Loads 99 tools from both MCP servers.
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1alpha1/rca-agent/analyze` | POST | Trigger RCA for an alert |
-| `/api/v1alpha1/rca-agent/chat` | POST | Follow-up chat on a report |
-| `/api/v1alpha1/rca-reports/projects/{project}` | GET | List reports by project |
-| `/api/v1alpha1/rca-reports/alerts/{fingerprint}` | GET | Get report by alert |
-
-### AI Assistant Configuration
-
-See [`.mcp.json`](../.mcp.json) for MCP client config and [`docs/ai-features-setup.md`](ai-features-setup.md) for full setup guide.
 
 ## Quick Test
 
@@ -128,9 +74,6 @@ open http://hubble.openchoreo.local:8080
 
 # Argo workflows
 open http://argo.openchoreo.local:8080
-
-# OpenObserve (logs + traces UI)
-open https://openobserve.openchoreo.local:11085
 
 # Prometheus metrics
 open http://prometheus.openchoreo.local:11080
