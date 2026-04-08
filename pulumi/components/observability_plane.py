@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import textwrap
 from typing import TYPE_CHECKING
 
 import pulumi
@@ -13,13 +12,10 @@ from config import (
     CLUSTER_SECRET_STORE_NAME,
     NS_OBSERVABILITY_PLANE,
     SECRET_OBSERVER,
-    SECRET_OBSERVER_OPENSEARCH,
     SECRET_OPENOBSERVE_ADMIN,
-    SECRET_OPENSEARCH_ADMIN,
     SECRET_RCA_AGENT,
     TIMEOUT_DEFAULT,
     TIMEOUT_OBS_PLANE,
-    TIMEOUT_OPENSEARCH,
     OpenChoreoConfig,
 )
 from helpers.copy_ca import copy_ca
@@ -28,86 +24,6 @@ from values.observability_plane import get_values as op_values
 
 if TYPE_CHECKING:
     from helpers.dynamic_providers import RegisterPlane
-
-# ── Fluent Bit dual-ship config (OpenSearch + OpenObserve) ──────────────
-# Env vars referenced: OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD,
-#                      OPENOBSERVE_USER, OPENOBSERVE_PASSWORD
-_FLUENT_BIT_DUAL_SHIP_CONF = textwrap.dedent("""\
-    [SERVICE]
-        Flush         1
-        Daemon        Off
-        Log_Level     info
-        Parsers_File  parsers.conf
-        Plugins_File  plugins.conf
-        HTTP_Server   On
-        HTTP_Listen   0.0.0.0
-        HTTP_Port     2020
-
-    [INPUT]
-        Name tail
-        Buffer_Chunk_Size 32KB
-        Buffer_Max_Size 2MB
-        DB /var/lib/fluent-bit/db/tail-container-logs.db
-        Exclude_Path /var/log/containers/fluent-bit-*.log
-        Inotify_Watcher false
-        Mem_Buf_Limit 100MB
-        Path /var/log/containers/*.log
-        multiline.parser docker, cri
-        Read_from_Head On
-        Refresh_Interval 5
-        Skip_Long_Lines On
-        Tag kube.*
-
-    [FILTER]
-        Name kubernetes
-        Buffer_Size 15MB
-        K8S-Logging.Parser On
-        K8S-Logging.Exclude On
-        Keep_Log On
-        Match kube.*
-        Merge_Log Off
-        tls.verify Off
-        Use_Kubelet true
-
-    [OUTPUT]
-        Name opensearch
-        Host opensearch
-        Port 9200
-        Generate_ID On
-        HTTP_Passwd ${OPENSEARCH_PASSWORD}
-        HTTP_User ${OPENSEARCH_USERNAME}
-        Logstash_Format On
-        Logstash_DateFormat %Y-%m-%d
-        Logstash_Prefix container-logs
-        Match kube.*
-        Replace_Dots On
-        Suppress_Type_Name On
-        tls On
-        tls.verify Off
-        tls.vhost opensearch
-
-    [OUTPUT]
-        Name http
-        Match kube.*
-        Host openobserve
-        Port 5080
-        URI /api/default/default/_json
-        Format json
-        HTTP_User ${OPENOBSERVE_USER}
-        HTTP_Passwd ${OPENOBSERVE_PASSWORD}
-        Json_Date_Key _timestamp
-        Json_Date_Format iso8601
-        compress gzip
-""")
-
-_FLUENT_BIT_PARSERS_CONF = textwrap.dedent("""\
-    [PARSER]
-        Name docker_no_time
-        Format json
-        Time_Keep Off
-        Time_Key time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L
-""")
 
 
 class ObservabilityPlaneResult:
@@ -144,40 +60,6 @@ class ObservabilityPlane(pulumi.ComponentResource):
         )
 
         # ─── 3. ExternalSecrets ───
-        opensearch_admin = k8s.apiextensions.CustomResource(
-            "opensearch-admin-creds",
-            api_version="external-secrets.io/v1",
-            kind="ExternalSecret",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=SECRET_OPENSEARCH_ADMIN, namespace=NS_OBSERVABILITY_PLANE),
-            spec={
-                "refreshInterval": "1h",
-                "secretStoreRef": {"kind": "ClusterSecretStore", "name": CLUSTER_SECRET_STORE_NAME},
-                "target": {"name": SECRET_OPENSEARCH_ADMIN},
-                "data": [
-                    {"secretKey": "username", "remoteRef": {"key": "opensearch-username", "property": "value"}},
-                    {"secretKey": "password", "remoteRef": {"key": "opensearch-password", "property": "value"}},
-                ],
-            },
-            opts=self._child_opts(provider=k8s_provider, depends_on=[ns]),
-        )
-
-        observer_opensearch = k8s.apiextensions.CustomResource(
-            "observer-opensearch-creds",
-            api_version="external-secrets.io/v1",
-            kind="ExternalSecret",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=SECRET_OBSERVER_OPENSEARCH, namespace=NS_OBSERVABILITY_PLANE),
-            spec={
-                "refreshInterval": "1h",
-                "secretStoreRef": {"kind": "ClusterSecretStore", "name": CLUSTER_SECRET_STORE_NAME},
-                "target": {"name": SECRET_OBSERVER_OPENSEARCH},
-                "data": [
-                    {"secretKey": "username", "remoteRef": {"key": "opensearch-username", "property": "value"}},
-                    {"secretKey": "password", "remoteRef": {"key": "opensearch-password", "property": "value"}},
-                ],
-            },
-            opts=self._child_opts(provider=k8s_provider, depends_on=[ns]),
-        )
-
         observer_secret = k8s.apiextensions.CustomResource(
             "observer-secret",
             api_version="external-secrets.io/v1",
@@ -191,14 +73,6 @@ class ObservabilityPlane(pulumi.ComponentResource):
                     {
                         "secretKey": "OBSERVER_OAUTH_CLIENT_SECRET",
                         "remoteRef": {"key": "observer-oauth-client-secret", "property": "value"},
-                    },
-                    {
-                        "secretKey": "OPENSEARCH_USERNAME",
-                        "remoteRef": {"key": "opensearch-username", "property": "value"},
-                    },
-                    {
-                        "secretKey": "OPENSEARCH_PASSWORD",
-                        "remoteRef": {"key": "opensearch-password", "property": "value"},
                     },
                 ],
             },
@@ -276,8 +150,6 @@ class ObservabilityPlane(pulumi.ComponentResource):
                     provider=k8s_provider,
                     depends_on=[
                         ca,
-                        opensearch_admin,
-                        observer_opensearch,
                         observer_secret,
                         *rca_secret_deps,
                     ],
@@ -321,8 +193,6 @@ class ObservabilityPlane(pulumi.ComponentResource):
             )
 
             # ── 6b. Logging module (OpenObserve + logs-adapter) ──
-            # Fluent Bit disabled: the OpenSearch logging module already runs one.
-            # We'll disable OpenSearch's fluent-bit in Phase 4 when removing OpenSearch.
             logs_oo = k8s.helm.v3.Release(
                 "observability-logs-openobserve",
                 k8s.helm.v3.ReleaseArgs(
@@ -331,7 +201,7 @@ class ObservabilityPlane(pulumi.ComponentResource):
                     name="observability-logs-openobserve",
                     namespace=NS_OBSERVABILITY_PLANE,
                     values={
-                        "fluent-bit": {"enabled": False},
+                        "fluent-bit": {"enabled": True},
                         "openobserve-standalone": {
                             "persistence": {"size": "10Gi"},
                             "resources": {
@@ -408,104 +278,6 @@ class ObservabilityPlane(pulumi.ComponentResource):
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[logs_oo]),
             )
-
-        # ── 6e. OpenSearch modules (always installed; Phase 4 will disable) ──
-        # Fluent Bit env: always include OpenSearch creds.  When OpenObserve is
-        # enabled we also inject its credentials so the dual-ship OUTPUT section
-        # can reference them via ${OPENOBSERVE_USER} / ${OPENOBSERVE_PASSWORD}.
-        fluent_bit_env = [
-            {
-                "name": "OPENSEARCH_USERNAME",
-                "valueFrom": {"secretKeyRef": {"name": SECRET_OPENSEARCH_ADMIN, "key": "username"}},
-            },
-            {
-                "name": "OPENSEARCH_PASSWORD",
-                "valueFrom": {"secretKeyRef": {"name": SECRET_OPENSEARCH_ADMIN, "key": "password"}},
-            },
-        ]
-        if cfg.enable_openobserve:
-            fluent_bit_env += [
-                {
-                    "name": "OPENOBSERVE_USER",
-                    "valueFrom": {"secretKeyRef": {"name": SECRET_OPENOBSERVE_ADMIN, "key": "ZO_ROOT_USER_EMAIL"}},
-                },
-                {
-                    "name": "OPENOBSERVE_PASSWORD",
-                    "valueFrom": {"secretKeyRef": {"name": SECRET_OPENOBSERVE_ADMIN, "key": "ZO_ROOT_USER_PASSWORD"}},
-                },
-            ]
-
-        logs_opensearch = k8s.helm.v3.Release(
-            "observability-logs-opensearch",
-            k8s.helm.v3.ReleaseArgs(
-                chart=cfg.logs_chart,
-                version=cfg.logs_opensearch_version,
-                namespace=NS_OBSERVABILITY_PLANE,
-                values={
-                    "openSearchSetup": {"openSearchSecretName": SECRET_OPENSEARCH_ADMIN},
-                    "fluent-bit": {
-                        "enabled": True,
-                        "env": fluent_bit_env,
-                    },
-                },
-                timeout=TIMEOUT_OPENSEARCH,
-            ),
-            opts=pulumi.ResourceOptions.merge(
-                self._child_opts(provider=k8s_provider, depends_on=[obs_chart]),
-                pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_OPENSEARCH}s")),
-            ),
-        )
-
-        # ── 6f. Fluent Bit dual-ship ConfigMap (OpenSearch + OpenObserve) ──
-        # The observability-logs-opensearch chart renders a fluent-bit ConfigMap
-        # with only an OpenSearch OUTPUT.  When OpenObserve is enabled we overwrite
-        # that ConfigMap with a version containing both outputs.  Credentials are
-        # injected via env vars (see fluent_bit_env above).
-        # Phase 4: remove the OpenSearch OUTPUT block and this overwrite; switch
-        # to the OpenObserve logging module's own Fluent Bit instance instead.
-        if cfg.enable_openobserve:
-            assert openobserve_creds is not None
-            k8s.core.v1.ConfigMap(
-                "fluent-bit-dual-ship-config",
-                metadata=k8s.meta.v1.ObjectMetaArgs(
-                    name="fluent-bit",
-                    namespace=NS_OBSERVABILITY_PLANE,
-                    # Preserve Helm ownership so the chart can still manage the
-                    # resource on upgrade; Pulumi will reconcile on next `up`.
-                    annotations={
-                        "meta.helm.sh/release-name": "observability-logs-opensearch-ea4e6fa1",
-                        "meta.helm.sh/release-namespace": NS_OBSERVABILITY_PLANE,
-                        "pulumi.com/patchForce": "true",
-                    },
-                    labels={"app.kubernetes.io/managed-by": "Helm"},
-                ),
-                data={
-                    "fluent-bit.conf": _FLUENT_BIT_DUAL_SHIP_CONF,
-                    "parsers.conf": _FLUENT_BIT_PARSERS_CONF,
-                },
-                opts=self._child_opts(
-                    provider=k8s_provider,
-                    depends_on=[logs_opensearch, openobserve_creds],
-                ),
-            )
-
-        k8s.helm.v3.Release(
-            "observability-traces-opensearch",
-            k8s.helm.v3.ReleaseArgs(
-                chart=cfg.traces_chart,
-                version=cfg.traces_opensearch_version,
-                namespace=NS_OBSERVABILITY_PLANE,
-                values={
-                    "openSearch": {"enabled": False},
-                    "openSearchSetup": {"openSearchSecretName": SECRET_OPENSEARCH_ADMIN},
-                },
-                timeout=TIMEOUT_OPENSEARCH,
-            ),
-            opts=pulumi.ResourceOptions.merge(
-                self._child_opts(provider=k8s_provider, depends_on=[obs_chart]),
-                pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_OPENSEARCH}s")),
-            ),
-        )
 
         # Use helm.v3.Release because this chart relies on Helm hooks (Jobs to
         # create TLS secrets) that k8s.helm.v4.Chart does not execute.

@@ -44,7 +44,7 @@ class Odigos(pulumi.ComponentResource):
         super().__init__("openchoreo:components:Odigos", name, {}, opts)
 
         effective_endpoint = otel_collector_endpoint or (
-            "opentelemetry-collector.openchoreo-observability-plane.svc.cluster.local:4317"
+            "openobserve.openchoreo-observability-plane.svc.cluster.local:5081"
         )
 
         # ─── 1. Namespace with privileged PodSecurity ───
@@ -136,7 +136,7 @@ class Odigos(pulumi.ComponentResource):
             ),
             spec={
                 "type": "otlp",
-                "destinationName": "OpenObserve (via OTel Collector)",
+                "destinationName": "OpenObserve (direct OTLP)",
                 "signals": ["TRACES"],
                 "data": {
                     "OTLP_GRPC_ENDPOINT": effective_endpoint,

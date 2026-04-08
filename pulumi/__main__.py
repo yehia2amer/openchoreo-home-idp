@@ -177,13 +177,10 @@ def main() -> None:
     pulumi.export("thunder_url", cfg.thunder_url)
     pulumi.export("argo_workflows_url", f"http://localhost:{cfg.wp_argo_port}")
     pulumi.export("observer_url", cfg.observer_url)
-    pulumi.export("opensearch_dashboards_url", f"http://localhost:{cfg.opensearch_dashboards_port}")
     pulumi.export("data_plane_gateway_http", cfg.dp_http_url)
     pulumi.export("data_plane_gateway_https", cfg.dp_https_url)
 
     # ─── Outputs: Credentials (masked — use `pulumi stack output --show-secrets`) ───
-    pulumi.export("opensearch_username", cfg.opensearch_username)
-    pulumi.export("opensearch_password", pulumi.Output.secret(cfg.opensearch_password))
     pulumi.export("openbao_root_token", pulumi.Output.secret(cfg.openbao_root_token))
 
     # ─── Outputs: Cluster Info ───
@@ -219,11 +216,8 @@ def main() -> None:
         "THUNDER_URL": cfg.thunder_url,
         "ARGO_WORKFLOWS_URL": f"http://localhost:{cfg.wp_argo_port}",
         "OBSERVER_URL": cfg.observer_url,
-        "OPENSEARCH_DASHBOARDS_URL": f"http://localhost:{cfg.opensearch_dashboards_port}",
         "DATA_PLANE_GATEWAY_HTTP": cfg.dp_http_url,
         "DATA_PLANE_GATEWAY_HTTPS": cfg.dp_https_url,
-        "OPENSEARCH_USERNAME": cfg.opensearch_username,
-        "OPENSEARCH_PASSWORD": cfg.opensearch_password,
         "OPENBAO_ROOT_TOKEN": cfg.openbao_root_token,
         "KUBECONFIG_CONTEXT": cfg.kubeconfig_context,
         "DOMAIN_BASE": cfg.domain_base,

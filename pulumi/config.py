@@ -22,7 +22,6 @@ CERT_MANAGER_CHART_REPO = "oci://quay.io/jetstack/charts"
 EXTERNAL_SECRETS_CHART_REPO = "oci://ghcr.io/external-secrets/charts"
 KGATEWAY_CHART_REPO = "oci://cr.kgateway.dev/kgateway-dev/charts"
 OPENBAO_CHART_REPO = "oci://ghcr.io/openbao/charts"
-OTEL_OPERATOR_CHART_REPO = "oci://ghcr.io/open-telemetry/opentelemetry-helm-charts"
 THUNDER_CHART_REPO = "oci://ghcr.io/asgardeo/helm-charts"
 
 # Helm chart HTTP repositories
@@ -38,14 +37,10 @@ NS_CERT_MANAGER = "cert-manager"
 NS_EXTERNAL_SECRETS = "external-secrets"
 NS_THUNDER = "thunder"
 NS_FLUX_SYSTEM = "flux-system"
-NS_OTEL_OPERATOR = "opentelemetry-operator-system"
-
 # Well-known Kubernetes resource names
 SECRET_GATEWAY_CA = "cluster-gateway-ca"
 SECRET_AGENT_TLS = "cluster-agent-tls"
 SECRET_BACKSTAGE = "backstage-secrets"
-SECRET_OPENSEARCH_ADMIN = "opensearch-admin-credentials"
-SECRET_OBSERVER_OPENSEARCH = "observer-opensearch-credentials"
 SECRET_OBSERVER = "observer-secret"
 SECRET_RCA_AGENT = "rca-agent-secret"
 SECRET_OPENOBSERVE_ADMIN = "openobserve-admin-credentials"
@@ -73,7 +68,6 @@ OPENCHOREO_API_VERSION = "openchoreo.dev/v1alpha1"
 
 # Timeouts (seconds) — generous for slow internet / laptop
 TIMEOUT_DEFAULT = 1200
-TIMEOUT_OPENSEARCH = 1800
 TIMEOUT_OBS_PLANE = 2400
 TIMEOUT_WAIT = 600
 TIMEOUT_TLS_WAIT = 240
@@ -109,8 +103,6 @@ class OpenChoreoConfig:
     registry_node_port: int
     op_http_port: int
     op_https_port: int
-    opensearch_dashboards_port: int
-
     # Versions
     openchoreo_ref: str
     openchoreo_version: str
@@ -121,8 +113,6 @@ class OpenChoreoConfig:
     kgateway_version: str
     openbao_version: str
     docker_registry_version: str
-    logs_opensearch_version: str
-    traces_opensearch_version: str
     metrics_prometheus_version: str
     logs_openobserve_version: str
     tracing_openobserve_version: str
@@ -130,8 +120,6 @@ class OpenChoreoConfig:
 
     # Credentials
     openbao_root_token: str
-    opensearch_username: str
-    opensearch_password: str
     github_pat: str
 
     # GitOps
@@ -200,14 +188,6 @@ class OpenChoreoConfig:
         return f"{OPENCHOREO_CHART_REPO}/openchoreo-observability-plane"
 
     @property
-    def logs_chart(self) -> str:
-        return f"{OPENCHOREO_CHART_REPO}/observability-logs-opensearch"
-
-    @property
-    def traces_chart(self) -> str:
-        return f"{OPENCHOREO_CHART_REPO}/observability-tracing-opensearch"
-
-    @property
     def logs_openobserve_chart(self) -> str:
         return f"{OPENCHOREO_CHART_REPO}/observability-logs-openobserve"
 
@@ -240,7 +220,6 @@ def load_config() -> OpenChoreoConfig:
     registry_node_port = cfg.get_int("registry_node_port") or 0
     op_http_port = cfg.get_int("op_http_port") or 11080
     op_https_port = cfg.get_int("op_https_port") or 11085
-    opensearch_dashboards_port = cfg.get_int("opensearch_dashboards_port") or 11081
 
     # Versions
     openchoreo_ref = cfg.get("openchoreo_ref") or "release-v1.0"
@@ -252,8 +231,6 @@ def load_config() -> OpenChoreoConfig:
     kgateway_version = cfg.get("kgateway_version") or "v2.2.1"
     openbao_version = cfg.get("openbao_version") or "0.25.6"
     docker_registry_version = cfg.get("docker_registry_version") or "3.0.0"
-    logs_opensearch_version = cfg.get("logs_opensearch_version") or "0.3.11"
-    traces_opensearch_version = cfg.get("traces_opensearch_version") or "0.3.10"
     metrics_prometheus_version = cfg.get("metrics_prometheus_version") or "0.2.5"
     logs_openobserve_version = cfg.get("logs_openobserve_version") or "0.4.2"
     tracing_openobserve_version = cfg.get("tracing_openobserve_version") or "0.2.1"
@@ -269,14 +246,6 @@ def load_config() -> OpenChoreoConfig:
         if not is_dev_stack:
             raise pulumi.ConfigMissingError("openchoreo:openbao_root_token", secret=True)
         openbao_root_token = "root"
-
-    opensearch_username = cfg.get("opensearch_username") or "admin"
-
-    opensearch_password = cfg.get("opensearch_password")
-    if not opensearch_password:
-        if not is_dev_stack:
-            raise pulumi.ConfigMissingError("openchoreo:opensearch_password", secret=True)
-        opensearch_password = "ThisIsTheOpenSearchPassword1"
 
     github_pat = cfg.get("github_pat") or ""
 
@@ -362,7 +331,6 @@ def load_config() -> OpenChoreoConfig:
         registry_node_port=registry_node_port,
         op_http_port=op_http_port,
         op_https_port=op_https_port,
-        opensearch_dashboards_port=opensearch_dashboards_port,
         openchoreo_ref=openchoreo_ref,
         openchoreo_version=openchoreo_version,
         thunder_version=thunder_version,
@@ -372,15 +340,11 @@ def load_config() -> OpenChoreoConfig:
         kgateway_version=kgateway_version,
         openbao_version=openbao_version,
         docker_registry_version=docker_registry_version,
-        logs_opensearch_version=logs_opensearch_version,
-        traces_opensearch_version=traces_opensearch_version,
         metrics_prometheus_version=metrics_prometheus_version,
         logs_openobserve_version=logs_openobserve_version,
         tracing_openobserve_version=tracing_openobserve_version,
         odigos_version=odigos_version,
         openbao_root_token=openbao_root_token,
-        opensearch_username=opensearch_username,
-        opensearch_password=opensearch_password,
         github_pat=github_pat,
         gitops_repo_url=gitops_repo_url,
         gitops_repo_branch=gitops_repo_branch,

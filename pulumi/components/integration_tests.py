@@ -464,7 +464,7 @@ class IntegrationTests(pulumi.ComponentResource):
         # ─── Observability Secrets E2E (optional) ─────────────────
 
         if cfg.enable_observability:
-            for es_name in ("opensearch-admin-credentials", "observer-opensearch-credentials", "observer-secret"):
+            for es_name in ("observer-secret",):
                 _test(
                     test_name=f"e2e-obs-externalsecret-{es_name}",
                     test_type=TEST_CR_CONDITION,

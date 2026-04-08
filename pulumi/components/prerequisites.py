@@ -335,8 +335,6 @@ class Prerequisites(pulumi.ComponentResource):
                 "observer-oauth-client-secret": "openchoreo-observer-resource-reader-client-secret",
                 "rca-oauth-client-secret": "openchoreo-rca-agent-secret",
                 "rca-llm-api-key": "REPLACE_WITH_YOUR_LLM_API_KEY",
-                "opensearch-username": cfg.opensearch_username,
-                "opensearch-password": cfg.opensearch_password,
                 "npm-token": "fake-npm-token-for-development",
                 "docker-username": "dev-user",
                 "docker-password": "dev-password",
@@ -613,24 +611,6 @@ class Prerequisites(pulumi.ComponentResource):
                                     "secretKey": "rca-llm-api-key",
                                     "remoteRef": {
                                         "remoteKey": "rca-llm-api-key",
-                                        "property": "value",
-                                    },
-                                }
-                            },
-                            {
-                                "match": {
-                                    "secretKey": "opensearch-username",
-                                    "remoteRef": {
-                                        "remoteKey": "opensearch-username",
-                                        "property": "value",
-                                    },
-                                }
-                            },
-                            {
-                                "match": {
-                                    "secretKey": "opensearch-password",
-                                    "remoteRef": {
-                                        "remoteKey": "opensearch-password",
                                         "property": "value",
                                     },
                                 }

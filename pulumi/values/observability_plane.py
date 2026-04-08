@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from config import CERT_OP_GATEWAY_TLS, SECRET_OBSERVER, SECRET_OPENSEARCH_ADMIN, THUNDER_INTERNAL_BASE
+from config import CERT_OP_GATEWAY_TLS, SECRET_OBSERVER, THUNDER_INTERNAL_BASE
 
 
 def get_values(
@@ -32,7 +32,6 @@ def get_values(
     )
     return {
         "observer": {
-            "openSearchSecretName": SECRET_OPENSEARCH_ADMIN,
             "secretName": SECRET_OBSERVER,
             "controlPlaneApiUrl": effective_cp_api_url,
             "authzTlsInsecureSkipVerify": tls_enabled,  # self-signed certs
@@ -44,11 +43,10 @@ def get_values(
             },
             "extraEnvs": [
                 # IMPORTANT: extraEnvs REPLACES (not appends) the chart's default
-                # env block, which includes OPENSEARCH_ADDRESS, PROMETHEUS_ADDRESS,
+                # env block, which includes PROMETHEUS_ADDRESS,
                 # PROMETHEUS_TIMEOUT, and AUTHZ_TIMEOUT. We must include all of them
                 # here alongside any custom env vars.
                 {"name": "OBSERVER_BASE_URL", "value": effective_observer_url},
-                {"name": "OPENSEARCH_ADDRESS", "value": "https://opensearch:9200"},
                 {"name": "PROMETHEUS_ADDRESS", "value": "http://openchoreo-observability-prometheus:9091"},
                 {"name": "PROMETHEUS_TIMEOUT", "value": "30s"},
                 {"name": "AUTHZ_TIMEOUT", "value": "30s"},
@@ -106,6 +104,7 @@ def get_values(
             ),
         },
         "gateway": {
+            "enabled": False,
             "tls": {
                 "enabled": tls_enabled,
                 **(

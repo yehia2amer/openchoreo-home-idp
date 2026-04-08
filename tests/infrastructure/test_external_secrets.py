@@ -110,7 +110,6 @@ class TestExternalSecrets:
         "secret_name,namespace_key",
         [
             ("backstage-secrets", "control_plane"),
-            ("opensearch-admin-credentials", "observability_plane"),
         ],
     )
     def test_external_secret_synced(

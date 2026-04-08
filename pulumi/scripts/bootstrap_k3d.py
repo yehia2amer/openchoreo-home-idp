@@ -176,15 +176,12 @@ def main():
         (" Thunder (IdP)", " http://thunder.openchoreo.localhost:8080"),
         (" Argo Workflows", " http://localhost:10081"),
         (" Observer API", " http://observer.openchoreo.localhost:11080"),
-        (" OpenSearch Dashboards", " http://localhost:11081"),
         (" Data Plane Gateway", " http://openchoreo.localhost:19080"),
     ]:
         print(row.format(label, value))
     print("\u2560" + "\u2550" * L + "\u256c" + "\u2550" * R + "\u2563")
     secret_hint = " (pulumi stack output --show-secrets)"
     for label, value in [
-        (" OpenSearch User", " admin"),
-        (" OpenSearch Pass", secret_hint),
         (" OpenBao Token", secret_hint),
         (" Default Login", " admin@openchoreo.dev / Admin@123"),
     ]:

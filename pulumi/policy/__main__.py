@@ -39,7 +39,6 @@ _DEV_STACKS = ("dev", "rancher-desktop", "local", "test")
 #: Mirrors the fail-fast logic in ``config.py:212-227``.
 _INSECURE_DEFAULTS: dict[str, str] = {
     "openbao_root_token": "root",
-    "opensearch_password": "ThisIsTheOpenSearchPassword1",
 }
 
 #: Dev-only seed command patterns (OpenBao ``bao kv put`` seed operations).
@@ -116,10 +115,7 @@ def _require_secrets_on_prod_validator(
 
 require_secrets_on_prod = StackValidationPolicy(
     name="require-secrets-on-prod",
-    description=(
-        "Non-dev stacks must not use insecure default credentials "
-        "(e.g. openbao_root_token='root', opensearch_password='ThisIsTheOpenSearchPassword1')."
-    ),
+    description=("Non-dev stacks must not use insecure default credentials (e.g. openbao_root_token='root')."),
     enforcement_level=EnforcementLevel.MANDATORY,
     validate=_require_secrets_on_prod_validator,
 )
