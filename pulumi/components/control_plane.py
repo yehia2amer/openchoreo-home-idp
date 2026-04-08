@@ -103,7 +103,7 @@ class ControlPlane(pulumi.ComponentResource):
             ).replace("http://thunder.openchoreo.localhost:8080", cfg.thunder_url)
         # Assign a default theme to Backstage and Console apps.
         # Thunder Gate UI returns DSR-1005 if APPLICATION.THEME_ID is NULL.
-        thunder_bootstrap_scripts["60-assign-themes.sh"] = """#!/bin/bash
+        thunder_bootstrap_scripts["99-assign-themes.sh"] = """#!/bin/bash
 set -e
 
 DB="/opt/thunder/repository/database/configdb.db"
