@@ -113,7 +113,7 @@ class TestGatewayAPI:
             group="gateway.networking.k8s.io",
             version="v1",
             plural="gateways",
-            name="gateway-default",
+            name="gateway-shared",
             namespace=namespaces["control_plane"],
         )
 
@@ -138,7 +138,7 @@ class TestGatewayAPI:
             group="gateway.networking.k8s.io",
             version="v1",
             plural="gateways",
-            name="gateway-default",
+            name="gateway-shared",
             namespace=namespaces["data_plane"],
         )
 

@@ -69,6 +69,7 @@ def get_values(
             },
         },
         "gateway": {
+            "enabled": False,
             "tls": {
                 "enabled": tls_enabled,
                 **(

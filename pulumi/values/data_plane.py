@@ -21,6 +21,7 @@ def get_values(
     """
     return {
         "gateway": {
+            "enabled": False,
             "tls": {
                 "enabled": tls_enabled,
                 **(
