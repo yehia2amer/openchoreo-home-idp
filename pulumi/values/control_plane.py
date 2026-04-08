@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from config import SECRET_BACKSTAGE, THUNDER_INTERNAL_BASE
+from config import CERT_CP_GATEWAY_TLS, SECRET_BACKSTAGE, THUNDER_INTERNAL_BASE
 
 
 def get_values(
@@ -66,6 +66,19 @@ def get_values(
                 "jwksUrl": f"{THUNDER_INTERNAL_BASE}/oauth2/jwks",
                 "authorizationUrl": f"{thunder_url}/oauth2/authorize",
                 "tokenUrl": f"{THUNDER_INTERNAL_BASE}/oauth2/token",
+            },
+        },
+        "gateway": {
+            "tls": {
+                "enabled": tls_enabled,
+                **(
+                    {
+                        "hostname": f"*.{domain_base}",
+                        "certificateRefs": [{"name": CERT_CP_GATEWAY_TLS}],
+                    }
+                    if tls_enabled
+                    else {}
+                ),
             },
         },
     }
