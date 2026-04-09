@@ -1,12 +1,13 @@
 """OpenChoreo CRD helper functions for E2E tests."""
 
 from typing import Any
+from typing import cast
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 
-OPENCHOREO_GROUP = "core.openchoreo.dev"
+OPENCHOREO_GROUP = "openchoreo.dev"
 OPENCHOREO_VERSION = "v1alpha1"
 
 
@@ -25,19 +26,22 @@ def get_openchoreo_resource(
         plural: Resource plural name (e.g., 'components', 'releasebindings')
         name: Resource name
         namespace: Namespace (default: 'default')
-        group: API group (default: core.openchoreo.dev)
+        group: API group (default: openchoreo.dev)
         version: API version (default: v1alpha1)
 
     Returns:
         Resource dict or None if not found
     """
     try:
-        return custom_api.get_namespaced_custom_object(
-            group=group,
-            version=version,
-            namespace=namespace,
-            plural=plural,
-            name=name,
+        return cast(
+            dict[str, Any],
+            custom_api.get_namespaced_custom_object(
+                group=group,
+                version=version,
+                namespace=namespace,
+                plural=plural,
+                name=name,
+            ),
         )
     except ApiException as e:
         if e.status == 404:

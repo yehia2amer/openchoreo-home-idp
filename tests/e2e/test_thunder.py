@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 
-import pytest
+pytest = __import__("pytest")
 
 pytestmark = pytest.mark.thunder
 
 NS_THUNDER = "thunder"
+NS_GATEWAY = "openchoreo-gateway"
 
 
 def test_thunder_deployment(kubectl_json):
@@ -31,9 +33,9 @@ def test_thunder_httproute_status(kubectl_json):
     data = kubectl_json(
         "get",
         "httproute",
-        "thunder-httproute",
+        "thunder",
         "-n",
-        NS_THUNDER,
+        NS_GATEWAY,
     )
     parents = data.get("status", {}).get("parents", [])
     assert len(parents) > 0, "HTTPRoute has no parent status"
@@ -61,16 +63,27 @@ def test_thunder_jwks_http(kubectl, kubeconfig, kube_context):
     ]
     pf = subprocess.Popen(pf_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
-        time.sleep(3)
-        # Read the assigned local port from stderr
-        import select
+        local_port = None
+        deadline = time.time() + 12
+        pattern = re.compile(r"Forwarding from 127\.0\.0\.1:(\d+)")
+        while time.time() < deadline and local_port is None:
+            for stream in (pf.stdout, pf.stderr):
+                if stream is None:
+                    continue
+                line = stream.readline()
+                if not line:
+                    continue
+                match = pattern.search(line)
+                if match:
+                    local_port = int(match.group(1))
+                    break
+            if local_port is None:
+                time.sleep(0.2)
 
-        local_port = 8090  # fallback
-        if pf.stderr and select.select([pf.stderr], [], [], 2)[0]:
-            line = pf.stderr.readline()
-            if "Forwarding from" in line:
-                # "Forwarding from 127.0.0.1:XXXXX -> 8090"
-                local_port = int(line.split(":")[1].split(" ")[0])
+        assert local_port is not None, (
+            "Could not detect local port from kubectl port-forward output"
+        )
+        time.sleep(2)
 
         result = subprocess.run(
             ["curl", "-sf", "--max-time", "10", f"http://127.0.0.1:{local_port}/oauth2/jwks"],

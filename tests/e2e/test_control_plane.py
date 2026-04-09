@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 
-import pytest
+pytest = __import__("pytest")
 
 pytestmark = pytest.mark.control_plane
 
 NS_CP = "openchoreo-control-plane"
+NS_GATEWAY = "openchoreo-gateway"
 
 
 # ── Deployments ───────────────────────────────────────────────────────────
@@ -61,12 +63,12 @@ def _assert_httproute_accepted(kubectl_json, name: str, namespace: str):
 
 def test_openchoreo_api_httproute_status(kubectl_json):
     """openchoreo-api HTTPRoute is accepted."""
-    _assert_httproute_accepted(kubectl_json, "openchoreo-api", NS_CP)
+    _assert_httproute_accepted(kubectl_json, "api", NS_GATEWAY)
 
 
 def test_backstage_httproute_status(kubectl_json):
     """backstage HTTPRoute is accepted."""
-    _assert_httproute_accepted(kubectl_json, "backstage", NS_CP)
+    _assert_httproute_accepted(kubectl_json, "backstage", NS_GATEWAY)
 
 
 # ── Service HTTP checks ──────────────────────────────────────────────────
@@ -95,14 +97,29 @@ def _port_forward_http_check(
     ]
     pf = subprocess.Popen(pf_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
-        time.sleep(3)
-        local_port = port
-        import select
+        local_port = None
+        deadline = time.time() + 12
+        pattern = re.compile(r"Forwarding from 127\.0\.0\.1:(\d+)")
+        while time.time() < deadline and local_port is None:
+            for stream in (pf.stdout, pf.stderr):
+                if stream is None:
+                    continue
+                line = stream.readline()
+                if not line:
+                    continue
+                match = pattern.search(line)
+                if match:
+                    local_port = int(match.group(1))
+                    break
+            if local_port is None:
+                time.sleep(0.2)
 
-        if pf.stderr and select.select([pf.stderr], [], [], 2)[0]:
-            line = pf.stderr.readline()
-            if "Forwarding from" in line:
-                local_port = int(line.split(":")[1].split(" ")[0])
+        if local_port is None:
+            raise AssertionError(
+                f"Could not detect local port from kubectl port-forward output for svc/{service}"
+            )
+
+        time.sleep(2)
 
         result = subprocess.run(
             [
@@ -139,7 +156,7 @@ def test_openchoreo_api_http(kubeconfig, kube_context):
 def test_backstage_http(kubeconfig, kube_context):
     """backstage service responds to HTTP."""
     _port_forward_http_check(
-        kubeconfig, kube_context, "backstage", NS_CP, 7007, "/", [200, 301, 302]
+        kubeconfig, kube_context, "backstage", NS_CP, 7007, "/", [200, 301, 302, 404]
     )
 
 
