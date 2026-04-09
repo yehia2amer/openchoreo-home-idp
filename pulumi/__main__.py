@@ -80,9 +80,11 @@ def main() -> None:
     )
     prereqs = prereqs_component.result
 
+    fluxcd_manages_infra = cfg.fluxcd_manages_infra
+
     # ─── Step 1.5: TLS Setup (optional — bare-metal self-signed CA) ───
     tls = None
-    if cfg.tls_enabled:
+    if not fluxcd_manages_infra and cfg.tls_enabled:
         tls_component = tls_setup.TlsSetup(
             "tls-setup",
             cfg=cfg,
@@ -100,76 +102,77 @@ def main() -> None:
     )
     cp = cp_component.result
 
-    # ─── Step 3: Data Plane ───
-    dp_component = data_plane.DataPlane(
-        "data-plane",
-        cfg=cfg,
-        k8s_provider=k8s_provider,
-        depends=[cp.helm_chart, prereqs.data_plane_ns] + ([tls.dp_cert] if tls else []),
-    )
-    dp = dp_component.result
-
-    # ─── Step 4: Workflow Plane ───
-    wp_component = workflow_plane.WorkflowPlane(
-        "workflow-plane",
-        cfg=cfg,
-        k8s_provider=k8s_provider,
-        depends=[cp.helm_chart],
-    )
-    wp = wp_component.result
-
-    # ─── Step 5: Observability Plane (optional) ───
-    obs = None
-    if cfg.enable_observability:
-        obs_depends: list[pulumi.Resource] = [cp.helm_chart]
-        if tls:
-            obs_depends.append(tls.op_cert)
-        obs_component = observability_plane.ObservabilityPlane(
-            "observability-plane",
+    if not fluxcd_manages_infra:
+        # ─── Step 3: Data Plane ───
+        dp_component = data_plane.DataPlane(
+            "data-plane",
             cfg=cfg,
             k8s_provider=k8s_provider,
-            depends=obs_depends,
+            depends=[cp.helm_chart, prereqs.data_plane_ns] + ([tls.dp_cert] if tls else []),
         )
-        obs = obs_component.result
+        dp = dp_component.result
 
-    # ─── Step 6: Link Planes (if observability enabled) ───
-    if obs is not None:
-        link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
-        link_planes.LinkPlanesComponent("link-planes", cfg=cfg, depends=link_depends)
-
-    # ─── Step 6.5: Odigos — automatic distributed tracing (optional) ───
-    if cfg.enable_openobserve and cfg.enable_observability:
-        from components import odigos
-
-        odigos.deploy(
+        # ─── Step 4: Workflow Plane ───
+        wp_component = workflow_plane.WorkflowPlane(
+            "workflow-plane",
             cfg=cfg,
             k8s_provider=k8s_provider,
-            depends=[obs.register_cmd] if obs else [cp.helm_chart],
+            depends=[cp.helm_chart],
         )
+        wp = wp_component.result
 
-    # ─── Step 7: Flux CD & GitOps (optional) ───
-    if cfg.enable_flux and cfg.gitops_repo_url:
-        flux_gitops.FluxGitOps(
-            "flux-gitops",
-            cfg=cfg,
-            k8s_provider=k8s_provider,
-            depends=[cp.helm_chart, dp.register_cmd, wp.register_cmd],
-        )
+        # ─── Step 5: Observability Plane (optional) ───
+        obs = None
+        if cfg.enable_observability:
+            obs_depends: list[pulumi.Resource] = [cp.helm_chart]
+            if tls:
+                obs_depends.append(tls.op_cert)
+            obs_component = observability_plane.ObservabilityPlane(
+                "observability-plane",
+                cfg=cfg,
+                k8s_provider=k8s_provider,
+                depends=obs_depends,
+            )
+            obs = obs_component.result
 
-    # ─── Step 8: Integration Tests ───
-    test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]
-    if obs is not None:
-        test_depends.append(obs.register_cmd)
-    integration_tests.IntegrationTests("integration-tests", cfg=cfg, depends=test_depends)
+        # ─── Step 6: Link Planes (if observability enabled) ───
+        if obs is not None:
+            link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
+            link_planes.LinkPlanesComponent("link-planes", cfg=cfg, depends=link_depends)
 
-    # ─── Step 9: Demo App Bootstrap (optional) ───
-    # Automates tutorial Step 6: trigger WorkflowRuns, merge PRs, verify.
-    if cfg.enable_demo_app_bootstrap and cfg.enable_flux and cfg.github_pat:
-        demo_app_bootstrap.DemoAppBootstrap(
-            "demo-app-bootstrap",
-            cfg=cfg,
-            depends=test_depends,
-        )
+        # ─── Step 6.5: Odigos — automatic distributed tracing (optional) ───
+        if cfg.enable_openobserve and cfg.enable_observability:
+            from components import odigos
+
+            odigos.deploy(
+                cfg=cfg,
+                k8s_provider=k8s_provider,
+                depends=[obs.register_cmd] if obs else [cp.helm_chart],
+            )
+
+        # ─── Step 7: Flux CD & GitOps (optional) ───
+        if cfg.enable_flux and cfg.gitops_repo_url and not cfg.flux_bootstrapped_externally:
+            flux_gitops.FluxGitOps(
+                "flux-gitops",
+                cfg=cfg,
+                k8s_provider=k8s_provider,
+                depends=[cp.helm_chart, dp.register_cmd, wp.register_cmd],
+            )
+
+        # ─── Step 8: Integration Tests ───
+        test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]
+        if obs is not None:
+            test_depends.append(obs.register_cmd)
+        integration_tests.IntegrationTests("integration-tests", cfg=cfg, depends=test_depends)
+
+        # ─── Step 9: Demo App Bootstrap (optional) ───
+        # Automates tutorial Step 6: trigger WorkflowRuns, merge PRs, verify.
+        if cfg.enable_demo_app_bootstrap and cfg.enable_flux and cfg.github_pat:
+            demo_app_bootstrap.DemoAppBootstrap(
+                "demo-app-bootstrap",
+                cfg=cfg,
+                depends=test_depends,
+            )
 
     # ─── Outputs: URLs ───
     pulumi.export("backstage_url", cfg.backstage_url)

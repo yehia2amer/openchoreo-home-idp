@@ -1,77 +1,47 @@
 {
-  "active_plan": "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/.sisyphus/plans/stage3-flux-fix.md",
-  "started_at": "2026-04-04T20:27:51.063Z",
+  "active_plan": "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/.sisyphus/plans/fluxcd-full-control.md",
+  "started_at": "2026-04-09T10:19:55.619Z",
   "session_ids": [
-    "ses_2a6017250ffekFBMeNMgh8HQPh",
-    "ses_2a5ce631bffemeWhopueUgCZ1S",
-    "ses_2a5bbbe60ffe7Jbas0ZS1bxqbh",
-    "ses_2a59c6e94ffex7KlCOVfqyNrdp",
-    "ses_2a58aa278ffeOvNqOFB1FBV4OR",
-    "ses_2a58032d1ffeK9ZAIFUp1zgm6w",
-    "ses_2a5732e57ffe65Pn01Byg8HPV5",
-    "ses_2a5690a1bffeXLa239N2ZCFyZh",
-    "ses_2a5605becffebStTm48YMKW8tw",
-    "ses_2a555fd84ffe0ChAL4xvVFR4VK",
-    "ses_2a5566759ffeiC4cVX5BZpNwlL",
-    "ses_2a54e1dd8ffeaS0LX64a7OqjXh",
-    "ses_2a549bc56ffePTdV5p5c85YvqH",
-    "ses_2a54446d1ffe3otTMdcpC7iqc8",
-    "ses_2a543d932ffeBmzcbXKfa2ipLJ",
-    "ses_2a53ae0d0ffeWUgB9ZAh9JVcYi",
-    "ses_2a5271e42ffeFs7JUieRD353lh",
-    "ses_2a4e97d5cffePi2gfSvjdoCqd6",
-    "ses_2a4e95d31ffeZYZExSZvW1xOtf",
-    "ses_2a4c21705ffehjmWNeQSgYpjSs",
-    "ses_2a4c2170affeI9lm52cPBhpnBq",
-    "ses_2a4c2160affeFCVHI9k3vlDViF",
-    "ses_2a4aef655ffeT2JPlH4W5t4uHt",
-    "ses_2a4af1ba0ffe0qBpJ7Zyn9KUaJ",
-    "ses_2a4af3be7ffezEEhtpSokSYRUO",
-    "ses_2a4a815a4ffeQ7Pn4vJdZTvGAR",
-    "ses_2a4a7e8baffemJPsFTLNEZ5YFP",
-    "ses_2a4a7b538ffeEUOchWK0TtDx6n",
-    "ses_2a49e6d93ffeMkmRdhJa2aSUMi",
-    "ses_2a49e8f4cffeJt73TGXn0vnr5l",
-    "ses_2a49ec012ffejCSCSt8BbbGDS1"
+    "ses_2915bed00ffe1rpQlorXlbAzzg",
+    "ses_28e3ba7d0ffeqAUkeregQnZh6S",
+    "ses_28e3b8d1bffeUOCDGxNfwuvaWP",
+    "ses_28e3b7a34ffes80dkGxYn4aH0b"
   ],
-  "plan_name": "stage3-flux-fix",
+  "plan_name": "fluxcd-full-control",
   "agent": "atlas",
+  "session_origins": {
+    "ses_2915bed00ffe1rpQlorXlbAzzg": "direct",
+    "ses_28e3ba7d0ffeqAUkeregQnZh6S": "appended",
+    "ses_28e3b8d1bffeUOCDGxNfwuvaWP": "appended",
+    "ses_28e3b7a34ffes80dkGxYn4aH0b": "appended"
+  },
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Fix `FLUX_INSTALL_URL` in `config.py` to use local file",
-      "session_id": "ses_2a58032d1ffeK9ZAIFUp1zgm6w",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-04T22:07:38.885Z"
-    },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "Verify Flux deployment and GitOps reconciliation via kubectl",
-      "session_id": "ses_2a5690a1bffeXLa239N2ZCFyZh",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-04T22:27:41.564Z"
-    },
-    "final-wave:f1": {
-      "task_key": "final-wave:f1",
-      "task_label": "F1",
-      "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_2a54446d1ffe3otTMdcpC7iqc8",
+      "task_title": "Create gitops repo infrastructure layer directories",
+      "session_id": "ses_28e344d9effe5X8GFE3u7ZwPLQ",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
-      "updated_at": "2026-04-04T23:04:15.665Z"
+      "updated_at": "2026-04-09T10:36:06.155Z"
     },
-    "final-wave:f4": {
-      "task_key": "final-wave:f4",
-      "task_label": "F4",
-      "task_title": "**Scope Fidelity Check** — `deep`",
-      "session_id": "ses_2a5271e42ffeFs7JUieRD353lh",
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "Move FluxCD bootstrap to Pulumi Phase 1",
+      "session_id": "ses_28e25341cffegIY7yjtjKMHx51",
       "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-04T23:36:18.310Z"
+      "category": "deep",
+      "updated_at": "2026-04-09T10:56:37.965Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Consolidate Pulumi Phase 1 (Talos+Cilium+OpenBao+Thunder+secrets)",
+      "session_id": "ses_28e1a4989ffeyZhjE990sggHoH",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-09T11:04:23.802Z"
     }
   }
 }

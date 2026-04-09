@@ -55,12 +55,18 @@ cilium_version = cfg.get("cilium_version") or "1.17.6"
 gateway_api_version = cfg.get("gateway_api_version") or "v1.3.0"
 longhorn_version = cfg.get("longhorn_version") or "1.9.1"
 
+gitops_repo_url = cfg.get("gitops_repo_url") or ""
+gitops_repo_branch = cfg.get("gitops_repo_branch") or "main"
+github_pat = cfg.get("github_pat") or ""
+platform_name = cfg.get("platform_name") or "talos-baremetal"
+
 # ---------------------------------------------------------------------------
 # Derived values
 # ---------------------------------------------------------------------------
 kubernetes_endpoint = cluster_endpoint_override or f"https://{kubernetes_api_host}:{kubernetes_api_port}"
 
 outputs_dir = str(Path(__file__).resolve().parent / "outputs")
+flux_install_manifest_path = Path(__file__).resolve().parent.parent / "flux-install.yaml"
 
 # ---------------------------------------------------------------------------
 # Build machine config patches via PatchConfig dataclass
@@ -552,6 +558,133 @@ longhorn_snapshot_class = k8s.yaml.v2.ConfigGroup(
     ),
 )
 
+install_flux = k8s.yaml.v2.ConfigGroup(
+    "install-flux",
+    files=[str(flux_install_manifest_path)],
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[longhorn_snapshot_class],
+    ),
+)
+
+wait_flux_source_controller = k8s.apps.v1.DeploymentPatch(
+    "wait-flux-source-controller",
+    metadata=k8s.meta.v1.ObjectMetaPatchArgs(
+        name="source-controller",
+        namespace="flux-system",
+    ),
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[install_flux],
+    ),
+)
+
+wait_flux_kustomize_controller = k8s.apps.v1.DeploymentPatch(
+    "wait-flux-kustomize-controller",
+    metadata=k8s.meta.v1.ObjectMetaPatchArgs(
+        name="kustomize-controller",
+        namespace="flux-system",
+    ),
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[wait_flux_source_controller],
+    ),
+)
+
+wait_flux_helm_controller = k8s.apps.v1.DeploymentPatch(
+    "wait-flux-helm-controller",
+    metadata=k8s.meta.v1.ObjectMetaPatchArgs(
+        name="helm-controller",
+        namespace="flux-system",
+    ),
+    opts=pulumi.ResourceOptions(
+        provider=k8s_provider,
+        depends_on=[wait_flux_kustomize_controller],
+    ),
+)
+
+git_credentials_secret: k8s.core.v1.Secret | None = None
+if github_pat:
+    git_credentials_secret = k8s.core.v1.Secret(
+        "flux-git-credentials",
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            name="flux-git-credentials",
+            namespace="flux-system",
+        ),
+        string_data={
+            "username": "git",
+            "password": github_pat,
+        },
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[wait_flux_helm_controller],
+        ),
+    )
+
+if gitops_repo_url:
+    git_repo_spec: dict[str, Any] = {
+        "interval": "5m",
+        "timeout": "90s",
+        "url": gitops_repo_url,
+        "ref": {"branch": gitops_repo_branch},
+    }
+    if github_pat:
+        git_repo_spec["secretRef"] = {"name": "flux-git-credentials"}
+
+    git_repo_depends: list[pulumi.Resource] = [wait_flux_helm_controller]
+    if git_credentials_secret is not None:
+        git_repo_depends.append(git_credentials_secret)
+
+    sample_gitops_repo = k8s.apiextensions.CustomResource(
+        "sample-gitops-repository",
+        api_version="source.toolkit.fluxcd.io/v1",
+        kind="GitRepository",
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            name="sample-gitops",
+            namespace="flux-system",
+        ),
+        spec=git_repo_spec,
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=git_repo_depends,
+        ),
+    )
+
+    flux_system_repo = k8s.apiextensions.CustomResource(
+        "flux-system-repository",
+        api_version="source.toolkit.fluxcd.io/v1",
+        kind="GitRepository",
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            name="flux-system",
+            namespace="flux-system",
+        ),
+        spec=git_repo_spec,
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=git_repo_depends,
+        ),
+    )
+
+    k8s.apiextensions.CustomResource(
+        "root-kustomization",
+        api_version="kustomize.toolkit.fluxcd.io/v1",
+        kind="Kustomization",
+        metadata=k8s.meta.v1.ObjectMetaArgs(
+            name="root-sync",
+            namespace="flux-system",
+        ),
+        spec={
+            "interval": "5m",
+            "path": f"./clusters/{platform_name}/",
+            "prune": True,
+            "sourceRef": {"kind": "GitRepository", "name": "sample-gitops"},
+        },
+        opts=pulumi.ResourceOptions(
+            provider=k8s_provider,
+            depends_on=[sample_gitops_repo, flux_system_repo],
+        ),
+    )
+
 # ===================================================================
 # Exports
 # ===================================================================
@@ -562,6 +695,7 @@ pulumi.export("talosconfig_raw", pulumi.Output.secret(talosconfig_raw))
 pulumi.export("talos_version", talos_version)
 pulumi.export("kubernetes_version", kubernetes_version)
 pulumi.export("kubernetes_endpoint", kubernetes_endpoint)
+pulumi.export("flux_installed", True)
 pulumi.export(
     "written_files",
     {
