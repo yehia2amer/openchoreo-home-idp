@@ -64,6 +64,13 @@ markers = [
     "gitops_consistency: GitOps repo to cluster sync",
     "app_health: Application pod-level health",
     "user_journey: End-to-end user scenarios",
+    "prerequisites: Prerequisite infrastructure (cert-manager, ESO, OpenBao)",
+    "cilium: Cilium CNI and gateway (conditional on ENABLE_CILIUM)",
+    "thunder: Thunder IdP deployment and endpoints",
+    "gateway_api: Gateway API CRDs",
+    "flux: FluxCD controllers, Kustomizations, HelmReleases (conditional on ENABLE_FLUX)",
+    "secrets: PushSecrets, ClusterSecretStore, ExternalSecrets",
+    "gateway_e2e: Gateway Programmed condition and plane registration",
 ]
 asyncio_mode = "auto"
 timeout = 120
