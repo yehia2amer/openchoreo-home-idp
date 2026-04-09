@@ -29,6 +29,8 @@
 
 ## 1. Architecture Overview
 
+> **Infrastructure Deployment**: The platform uses a 2-phase deployment model. Phase 1 (Pulumi) bootstraps the cluster with Talos, Cilium, OpenBao, and Thunder. Phase 2 (FluxCD) manages all remaining infrastructure — cert-manager, external-secrets, kgateway, TLS, and the OpenChoreo platform planes. See [Deployment Guide](deployment-guide.md) for full details.
+
 ### End-to-End Flow
 
 ```
@@ -147,6 +149,8 @@ GitRepository(sample-gitops)
 ```
 
 This ensures: namespaces exist before platform resources, and platform resources (ComponentTypes, Environments, Pipelines) exist before projects reference them.
+
+> **Note**: In addition to the app-layer Kustomizations above, the platform infrastructure is managed by a separate set of numbered FluxCD Kustomizations (00-crds through 05-network) in the `clusters/` directory. These handle cert-manager, external-secrets, kgateway, TLS, platform planes, registration, and network configuration. See [Deployment Guide](deployment-guide.md) for details.
 
 ---
 

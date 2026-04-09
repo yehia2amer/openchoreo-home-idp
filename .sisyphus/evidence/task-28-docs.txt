@@ -1,0 +1,26 @@
+Task 28: Documentation update for 2-phase FluxCD architecture
+==============================================================
+
+Date: 2026-04-09
+
+Files Created:
+- docs/deployment-guide.md (NEW) — Comprehensive deployment guide covering:
+  - Architecture overview (2-phase: Pulumi bootstrap + FluxCD GitOps)
+  - Phase 1: Pulumi bootstrap (prerequisites, run command, kubeconfig)
+  - Phase 2: FluxCD GitOps (6 numbered layers, dependency chain, variable substitution)
+  - GitOps repository structure (clusters/, infrastructure/base/, flux/, namespaces/)
+  - Rollback procedures (git revert, tagged checkpoints, Pulumi state backups)
+  - Adding a new platform overlay (6-step process)
+  - Workflow template upgrade process (version variables, Flux substitution)
+  - Troubleshooting (flux CLI commands, common issues, drift detection)
+
+Files Modified:
+- docs/project-onboarding-guide.md — 2 paragraph additions:
+  1. After "Architecture Overview" heading: blockquote about 2-phase deployment model with link to deployment guide
+  2. After FluxCD sync chain description: note about numbered infrastructure Kustomizations (00-crds through 05-network) with link to deployment guide
+
+Verification:
+- No actual secrets/passwords/tokens included in docs
+- No code files modified
+- Only docs/ and .sisyphus/evidence/ files touched
+- Cross-references between deployment guide and onboarding guide are bidirectional
