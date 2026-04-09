@@ -159,6 +159,13 @@ class Prerequisites(pulumi.ComponentResource):
                     "client-secret": "backstage-fork-client-secret",
                     "auth-authorization-url": f"{cfg.thunder_url}/oauth2/authorize",
                     "jenkins-api-key": "placeholder-not-in-use",
+                    # GitHub Actions integration secrets (PAT + GitHub App auth)
+                    # Chain: PushSecret → OpenBao vault → ExternalSecret → backstage-secrets K8s Secret
+                    # These are injected as env vars in the Backstage deployment when githubActions.enabled=true
+                    "github-token": "placeholder-not-in-use",
+                    "github-app-client-secret": "placeholder-not-in-use",
+                    "github-app-webhook-secret": "placeholder-not-in-use",
+                    "github-app-private-key": "placeholder-not-in-use",
                 },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
@@ -181,6 +188,11 @@ class Prerequisites(pulumi.ComponentResource):
                 "Workflow builds and GitOps reconciliation will fail without a real PAT in OpenBao.",
                 resource=None,
             )
+            pulumi.log.warn(
+                "GitHub Actions secrets contain placeholder values. "
+                "If Backstage githubActions.enabled=true, GitHub Actions API calls will fail until a real token or GitHub App secrets are written to OpenBao.",
+                resource=None,
+            )
 
         _is_dev_stack = pulumi.get_stack() in (
             "dev",
@@ -196,6 +208,10 @@ class Prerequisites(pulumi.ComponentResource):
                 "backstage-backend-secret": "local-dev-backend-secret",
                 "backstage-client-secret": "backstage-portal-secret",
                 "backstage-jenkins-api-key": "placeholder-not-in-use",
+                "backstage-github-token": "placeholder-github-token",
+                "backstage-github-app-client-secret": "placeholder-github-app-client-secret",
+                "backstage-github-app-webhook-secret": "placeholder-github-app-webhook-secret",
+                "backstage-github-app-private-key": "placeholder-github-app-private-key",
                 "observer-oauth-client-secret": "openchoreo-observer-resource-reader-client-secret",
                 "rca-oauth-client-secret": "openchoreo-rca-agent-secret",
                 "rca-llm-api-key": "REPLACE_WITH_YOUR_LLM_API_KEY",
