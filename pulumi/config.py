@@ -126,8 +126,6 @@ class OpenChoreoConfig:
     gitops_repo_url: str
     gitops_repo_branch: str
     enable_flux: bool
-    flux_bootstrapped_externally: bool
-    fluxcd_manages_infra: bool
     enable_observability: bool
     enable_demo_app_bootstrap: bool
 
@@ -255,8 +253,6 @@ def load_config() -> OpenChoreoConfig:
     gitops_repo_url = cfg.get("gitops_repo_url") or ""
     gitops_repo_branch = cfg.get("gitops_repo_branch") or "main"
     enable_flux = cfg.get_bool("enable_flux") or False
-    flux_bootstrapped_externally = cfg.get_bool("flux_bootstrapped_externally") or False
-    fluxcd_manages_infra = cfg.get_bool("fluxcd_manages_infra") or False
     enable_observability = cfg.get_bool("enable_observability") or False
     enable_demo_app_bootstrap = cfg.get_bool("enable_demo_app_bootstrap") or False
 
@@ -353,8 +349,6 @@ def load_config() -> OpenChoreoConfig:
         gitops_repo_url=gitops_repo_url,
         gitops_repo_branch=gitops_repo_branch,
         enable_flux=enable_flux,
-        flux_bootstrapped_externally=flux_bootstrapped_externally,
-        fluxcd_manages_infra=fluxcd_manages_infra,
         enable_observability=enable_observability,
         enable_demo_app_bootstrap=enable_demo_app_bootstrap,
         enable_openobserve=enable_openobserve,

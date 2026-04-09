@@ -1,5 +1,3 @@
-"""OpenChoreo v1.0 — Pulumi Python entry point."""
-
 # pyright: reportMissingImports=false, reportAttributeAccessIssue=false
 
 from __future__ import annotations
@@ -9,46 +7,25 @@ from pathlib import Path
 import pulumi
 import pulumi_kubernetes as k8s
 
-from components import (
-    control_plane,
-    data_plane,
-    demo_app_bootstrap,
-    flux_gitops,
-    integration_tests,
-    link_planes,
-    observability_plane,
-    prerequisites,
-    tls_setup,
-    workflow_plane,
-)
-from config import (
-    NS_CONTROL_PLANE,
-    NS_DATA_PLANE,
-    NS_OBSERVABILITY_PLANE,
-    NS_WORKFLOW_PLANE,
-    load_config,
-)
+from components import prerequisites, thunder
+from config import NS_CONTROL_PLANE, NS_DATA_PLANE, NS_OBSERVABILITY_PLANE, NS_WORKFLOW_PLANE, load_config
 
 
 def main() -> None:
     cfg = load_config()
 
-    # ─── Kubernetes Provider ───
     k8s_provider = k8s.Provider(
         "k8s",
         kubeconfig=cfg.kubeconfig_path,
         context=cfg.kubeconfig_context,
     )
 
-    # ─── Step 0: Cilium CNI + Gateway API (optional) ───
     cilium_install = None
     if (
         cfg.platform.cni_mode == "cilium" or cfg.platform.gateway_mode == "cilium"
     ) and not cfg.platform.cilium_pre_installed:
         from components import cilium
 
-        # Gateway API CRDs must exist before Cilium starts so it can
-        # register its Gateway API controller on first boot.
         gateway_api_crds = k8s.yaml.v2.ConfigGroup(
             "gateway-api-crds",
             files=[cfg.gateway_api_crds_url],
@@ -61,120 +38,22 @@ def main() -> None:
             depends=[gateway_api_crds],
         ).result
 
-    # ─── Step 0.5: Cilium L2 (standalone — for pre-installed Cilium) ───
-    if cfg.platform.cilium_l2_announcements_enabled and cfg.platform.cilium_pre_installed:
-        from components import cilium_l2
-
-        cilium_l2.CiliumL2(
-            "cilium-l2",
-            cfg=cfg,
-            k8s_provider=k8s_provider,
-        )
-
-    # ─── Step 1: Prerequisites ───
     prereqs_component = prerequisites.Prerequisites(
         "prerequisites",
         cfg=cfg,
         k8s_provider=k8s_provider,
         extra_depends=[cilium_install] if cilium_install else [],
     )
-    prereqs = prereqs_component.result
+    prereqs_result = prereqs_component.result
 
-    fluxcd_manages_infra = cfg.fluxcd_manages_infra
-
-    # ─── Step 1.5: TLS Setup (optional — bare-metal self-signed CA) ───
-    tls = None
-    if not fluxcd_manages_infra and cfg.tls_enabled:
-        tls_component = tls_setup.TlsSetup(
-            "tls-setup",
-            cfg=cfg,
-            k8s_provider=k8s_provider,
-            depends=[prereqs.control_plane_ns, prereqs.data_plane_ns],
-        )
-        tls = tls_component.result
-
-    # ─── Step 2: Control Plane ───
-    cp_component = control_plane.ControlPlane(
-        "control-plane",
+    thunder_component = thunder.Thunder(
+        "thunder",
         cfg=cfg,
         k8s_provider=k8s_provider,
-        depends=[prereqs.cluster_secret_store_ready, prereqs.control_plane_ns] + ([tls.cp_cert] if tls else []),
+        depends=[prereqs_result.cluster_secret_store_ready],
     )
-    cp = cp_component.result
+    thunder_component.result
 
-    if not fluxcd_manages_infra:
-        # ─── Step 3: Data Plane ───
-        dp_component = data_plane.DataPlane(
-            "data-plane",
-            cfg=cfg,
-            k8s_provider=k8s_provider,
-            depends=[cp.helm_chart, prereqs.data_plane_ns] + ([tls.dp_cert] if tls else []),
-        )
-        dp = dp_component.result
-
-        # ─── Step 4: Workflow Plane ───
-        wp_component = workflow_plane.WorkflowPlane(
-            "workflow-plane",
-            cfg=cfg,
-            k8s_provider=k8s_provider,
-            depends=[cp.helm_chart],
-        )
-        wp = wp_component.result
-
-        # ─── Step 5: Observability Plane (optional) ───
-        obs = None
-        if cfg.enable_observability:
-            obs_depends: list[pulumi.Resource] = [cp.helm_chart]
-            if tls:
-                obs_depends.append(tls.op_cert)
-            obs_component = observability_plane.ObservabilityPlane(
-                "observability-plane",
-                cfg=cfg,
-                k8s_provider=k8s_provider,
-                depends=obs_depends,
-            )
-            obs = obs_component.result
-
-        # ─── Step 6: Link Planes (if observability enabled) ───
-        if obs is not None:
-            link_depends: list[pulumi.Resource] = [dp.register_cmd, wp.register_cmd, obs.register_cmd]
-            link_planes.LinkPlanesComponent("link-planes", cfg=cfg, depends=link_depends)
-
-        # ─── Step 6.5: Odigos — automatic distributed tracing (optional) ───
-        if cfg.enable_openobserve and cfg.enable_observability:
-            from components import odigos
-
-            odigos.deploy(
-                cfg=cfg,
-                k8s_provider=k8s_provider,
-                depends=[obs.register_cmd] if obs else [cp.helm_chart],
-            )
-
-        # ─── Step 7: Flux CD & GitOps (optional) ───
-        if cfg.enable_flux and cfg.gitops_repo_url and not cfg.flux_bootstrapped_externally:
-            flux_gitops.FluxGitOps(
-                "flux-gitops",
-                cfg=cfg,
-                k8s_provider=k8s_provider,
-                depends=[cp.helm_chart, dp.register_cmd, wp.register_cmd],
-            )
-
-        # ─── Step 8: Integration Tests ───
-        test_depends: list[pulumi.Resource] = [cp.helm_chart, dp.register_cmd, wp.register_cmd]
-        if obs is not None:
-            test_depends.append(obs.register_cmd)
-        integration_tests.IntegrationTests("integration-tests", cfg=cfg, depends=test_depends)
-
-        # ─── Step 9: Demo App Bootstrap (optional) ───
-        # Automates tutorial Step 6: trigger WorkflowRuns, merge PRs, verify.
-        if cfg.enable_demo_app_bootstrap and cfg.enable_flux and cfg.github_pat:
-            demo_app_bootstrap.DemoAppBootstrap(
-                "demo-app-bootstrap",
-                cfg=cfg,
-                depends=test_depends,
-            )
-
-    # ─── Outputs: URLs ───
     pulumi.export("backstage_url", cfg.backstage_url)
     pulumi.export("api_url", cfg.api_url)
     pulumi.export("thunder_url", cfg.thunder_url)
@@ -183,24 +62,19 @@ def main() -> None:
     pulumi.export("data_plane_gateway_http", cfg.dp_http_url)
     pulumi.export("data_plane_gateway_https", cfg.dp_https_url)
 
-    # ─── Outputs: Credentials (masked — use `pulumi stack output --show-secrets`) ───
     pulumi.export("openbao_root_token", pulumi.Output.secret(cfg.openbao_root_token))
 
-    # ─── Outputs: Cluster Info ───
     pulumi.export("kubeconfig_context", cfg.kubeconfig_context)
     pulumi.export("domain_base", cfg.domain_base)
     pulumi.export("openchoreo_version", cfg.openchoreo_version)
     pulumi.export("platform", cfg.platform.name)
     pulumi.export("edition", "cilium" if cfg.platform.gateway_mode == "cilium" else "generic-cni")
 
-    # ─── Outputs: Feature Flags ───
-    # cilium_enabled refers to Cilium as Gateway API controller, not CNI.
     pulumi.export("cilium_enabled", cfg.platform.gateway_mode == "cilium")
     pulumi.export("flux_enabled", cfg.enable_flux)
     pulumi.export("observability_enabled", cfg.enable_observability)
     pulumi.export("demo_app_bootstrap_enabled", cfg.enable_demo_app_bootstrap)
 
-    # ─── Outputs: Namespaces ───
     pulumi.export(
         "namespaces",
         {
@@ -211,7 +85,6 @@ def main() -> None:
         },
     )
 
-    # ─── Write .env file ───
     env_path = Path(__file__).resolve().parent / ".env"
     env_lines: dict[str, str | pulumi.Output[str]] = {
         "BACKSTAGE_URL": cfg.backstage_url,
@@ -240,7 +113,6 @@ def main() -> None:
         lines = [f"{k}={v}" for k, v in sorted(pairs.items())]
         env_path.write_text("\n".join(lines) + "\n")
 
-    # Resolve any Output[str] values before writing
     plain: dict[str, str] = {}
     outputs: dict[str, pulumi.Output] = {}
     for k, v in env_lines.items():

@@ -1,4 +1,4 @@
-"""Control Plane component: Thunder, Backstage ExternalSecret, CP Helm chart."""
+# pyright: reportMissingImports=false
 
 from __future__ import annotations
 
@@ -7,34 +7,19 @@ import json
 import urllib.request
 
 import pulumi
-import pulumi_command as command
 import pulumi_kubernetes as k8s
 import yaml
 
-from config import (
-    CLUSTER_SECRET_STORE_NAME,
-    NS_CONTROL_PLANE,
-    NS_THUNDER,
-    NS_WORKFLOW_PLANE,
-    SECRET_BACKSTAGE,
-    SLEEP_AFTER_ESO_SYNC,
-    SLEEP_AFTER_THUNDER,
-    TIMEOUT_DEFAULT,
-    OpenChoreoConfig,
-)
-from helpers.dynamic_providers import LabelNamespace
+from config import NS_THUNDER, SLEEP_AFTER_THUNDER, TIMEOUT_DEFAULT, OpenChoreoConfig
 from helpers.wait import sleep
-from values.control_plane import get_values as cp_values
 
 
 def _fetch_yaml(url: str) -> dict:
-    """Fetch and parse a remote YAML file."""
     with urllib.request.urlopen(url, timeout=30) as resp:
         return yaml.safe_load(resp.read())
 
 
 def _thunder_image(values: dict, default_tag: str) -> str:
-    """Build the Thunder image reference from chart values."""
     image = values.get("deployment", {}).get("image", {})
     registry = image.get("registry", "ghcr.io/asgardeo")
     repository = image.get("repository", "thunder")
@@ -44,15 +29,13 @@ def _thunder_image(values: dict, default_tag: str) -> str:
     return f"{registry}/{repository}:{image.get('tag', default_tag)}"
 
 
-class ControlPlaneResult:
-    """Outputs from the control plane component."""
-
-    def __init__(self, helm_chart: k8s.helm.v3.Release, label_ns: LabelNamespace):
-        self.helm_chart = helm_chart
-        self.label_ns = label_ns
+class ThunderResult:
+    def __init__(self, thunder: k8s.helm.v3.Release, wait_thunder: pulumi.Resource):
+        self.thunder = thunder
+        self.wait_thunder = wait_thunder
 
 
-class ControlPlane(pulumi.ComponentResource):
+class Thunder(pulumi.ComponentResource):
     def __init__(
         self,
         name: str,
@@ -61,9 +44,8 @@ class ControlPlane(pulumi.ComponentResource):
         depends: list[pulumi.Resource] | None = None,
         opts: pulumi.ResourceOptions | None = None,
     ):
-        super().__init__("openchoreo:components:ControlPlane", name, {}, opts)
+        super().__init__("openchoreo:components:Thunder", name, {}, opts)
 
-        # ─── 1. Thunder (Identity Provider) ───
         thunder_ns = k8s.core.v1.Namespace(
             NS_THUNDER,
             metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_THUNDER),
@@ -73,13 +55,10 @@ class ControlPlane(pulumi.ComponentResource):
         thunder_values = _fetch_yaml(cfg.thunder_values_url)
         thunder_values.setdefault("thunderServer", {})["publicUrl"] = cfg.thunder_url
 
-        # Override Thunder hostnames/URLs for the target platform.
-        # The upstream values file hardcodes openchoreo.localhost.
         thunder_host = f"thunder.{cfg.domain_base}"
         thunder_values.setdefault("httproute", {})["hostnames"] = [thunder_host]
         thunder_config = thunder_values.setdefault("configuration", {})
         thunder_config.setdefault("server", {})["publicUrl"] = cfg.thunder_url
-        # Keep httpOnly=true: TLS is terminated at the Gateway, not Thunder itself
         thunder_config.setdefault("server", {})["httpOnly"] = True
         gate = thunder_config.setdefault("gateClient", {})
         gate["hostname"] = thunder_host
@@ -96,13 +75,11 @@ class ControlPlane(pulumi.ComponentResource):
         ]
 
         thunder_bootstrap_scripts = thunder_values.get("bootstrap", {}).get("scripts", {})
-        # Fix redirect URIs in bootstrap scripts to match the target platform domain.
         for script_name, script_body in thunder_bootstrap_scripts.items():
             thunder_bootstrap_scripts[script_name] = script_body.replace(
                 "http://openchoreo.localhost:8080", cfg.backstage_url
             ).replace("http://thunder.openchoreo.localhost:8080", cfg.thunder_url)
-        # Assign a default theme to Backstage and Console apps.
-        # Thunder Gate UI returns DSR-1005 if APPLICATION.THEME_ID is NULL.
+
         thunder_bootstrap_scripts["99-assign-themes.sh"] = """#!/bin/bash
 set -e
 
@@ -110,7 +87,6 @@ DB="/opt/thunder/repository/database/configdb.db"
 
 log_info "Assigning default theme to applications..."
 
-# Wait for themes to be seeded (created on first boot)
 for i in $(seq 1 30); do
   THEME_COUNT=$(sqlite3 "$DB" "SELECT COUNT(*) FROM THEME" 2>/dev/null || echo "0")
   [ "$THEME_COUNT" -gt 0 ] && break
@@ -133,8 +109,7 @@ else
   log_info "WARNING: No themes found in database, skipping theme assignment"
 fi
 """
-        # Register backstage-fork as an OIDC application in Thunder.
-        # Client credentials match the OpenBao seeds in prerequisites.py § 7a.
+
         if cfg.enable_flux or cfg.gitops_repo_url:
             thunder_bootstrap_scripts["61-backstage-fork-app.sh"] = f"""#!/bin/bash
 set -e
@@ -144,8 +119,8 @@ THUNDER_URL="http://localhost:8090"
 log_info "Checking if application 'Backstage Fork' already exists..."
 existing_apps=$(curl -s --max-time 10 "${{THUNDER_URL}}/applications")
 
-app_id=$(echo "$existing_apps" | tr '\\n' ' ' | sed 's/" *: *"/":"/g' \\
-  | grep -o '"name":"Backstage Fork"[^}}]*"id":"[^"]*"\\|"id":"[^"]*"[^}}]*"name":"Backstage Fork"' \\
+app_id=$(echo "$existing_apps" | tr '\n' ' ' | sed 's/" *: *"/":"/g' \
+  | grep -o '"name":"Backstage Fork"[^}}]*"id":"[^"]*"\\|"id":"[^"]*"[^}}]*"name":"Backstage Fork"' \
   | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
 APP_PAYLOAD='{{
@@ -217,26 +192,27 @@ APP_PAYLOAD='{{
 
 if [ -n "$app_id" ]; then
   log_info "Application 'Backstage Fork' already exists (id: $app_id), updating..."
-  curl --location -X PUT "${{THUNDER_URL}}/applications/$app_id" \\
-    --header 'Content-Type: application/json' \\
-    --data "$APP_PAYLOAD" \\
-    --fail-with-body \\
-    --max-time 30 \\
-    --retry 3 \\
+  curl --location -X PUT "${{THUNDER_URL}}/applications/$app_id" \
+    --header 'Content-Type: application/json' \
+    --data "$APP_PAYLOAD" \
+    --fail-with-body \
+    --max-time 30 \
+    --retry 3 \
     --retry-delay 5
   log_info "Application updated successfully"
 else
   log_info "Application 'Backstage Fork' does not exist, creating..."
-  curl --location "${{THUNDER_URL}}/applications" \\
-    --header 'Content-Type: application/json' \\
-    --data "$APP_PAYLOAD" \\
-    --fail-with-body \\
-    --max-time 30 \\
-    --retry 3 \\
+  curl --location "${{THUNDER_URL}}/applications" \
+    --header 'Content-Type: application/json' \
+    --data "$APP_PAYLOAD" \
+    --fail-with-body \
+    --max-time 30 \
+    --retry 3 \
     --retry-delay 5
   log_info "Application created successfully"
 fi
 """
+
         thunder_bootstrap_files = sorted(thunder_bootstrap_scripts)
         thunder_bootstrap_cm_name = "thunder-bootstrap-managed"
         thunder_values["bootstrap"] = {
@@ -253,9 +229,6 @@ fi
             opts=self._child_opts(provider=k8s_provider, depends_on=[thunder_ns]),
         )
 
-        # Use helm.v3.Release (not v4.Chart) because Thunder uses Helm lifecycle
-        # hooks (pre-install ServiceAccount/Secret/PVC, post-install Job) that
-        # k8s.helm.v4.Chart silently drops.
         thunder = k8s.helm.v3.Release(
             "thunder",
             k8s.helm.v3.ReleaseArgs(
@@ -289,7 +262,7 @@ fi
             for filename in thunder_bootstrap_files
         ]
 
-        thunder_setup_rerun = k8s.batch.v1.Job(
+        k8s.batch.v1.Job(
             "thunder-setup-rerun",
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 name="thunder-setup-rerun",
@@ -401,103 +374,7 @@ fi
             ),
         )
 
-        # ─── 2. Backstage ExternalSecret ───
-        backstage_es = k8s.apiextensions.CustomResource(
-            "backstage-external-secret",
-            api_version="external-secrets.io/v1",
-            kind="ExternalSecret",
-            metadata=k8s.meta.v1.ObjectMetaArgs(
-                name=SECRET_BACKSTAGE,
-                namespace=NS_CONTROL_PLANE,
-            ),
-            spec={
-                "refreshInterval": "1h",
-                "secretStoreRef": {"kind": "ClusterSecretStore", "name": CLUSTER_SECRET_STORE_NAME},
-                "target": {"name": SECRET_BACKSTAGE},
-                "data": [
-                    {
-                        "secretKey": "backend-secret",
-                        "remoteRef": {"key": "backstage-backend-secret", "property": "value"},
-                    },
-                    {
-                        "secretKey": "client-secret",
-                        "remoteRef": {"key": "backstage-client-secret", "property": "value"},
-                    },
-                    {
-                        "secretKey": "jenkins-api-key",
-                        "remoteRef": {"key": "backstage-jenkins-api-key", "property": "value"},
-                    },
-                ],
-            },
-            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_thunder]),
-        )
-
-        wait_eso_sync = sleep(
-            "eso-sync",
-            SLEEP_AFTER_ESO_SYNC,
-            opts=self._child_opts(depends_on=[backstage_es, thunder_setup_rerun]),
-        )
-
-        # ─── 3. OpenChoreo Control Plane Helm Chart ───
-        # Use helm.v3.Release (not v4.Chart) because the chart contains
-        # cert-manager Certificate resources; v4.Chart does client-side rendering
-        # that fails if cert-manager CRDs are not yet installed.
-        cp_chart = k8s.helm.v3.Release(
-            NS_CONTROL_PLANE,
-            k8s.helm.v3.ReleaseArgs(
-                chart=cfg.cp_chart,
-                version=cfg.openchoreo_version,
-                namespace=NS_CONTROL_PLANE,
-                values=cp_values(
-                    domain_base=cfg.domain_base,
-                    scheme=cfg.scheme,
-                    cp_port=cfg.cp_port,
-                    tls_enabled=cfg.tls_enabled,
-                    thunder_url=cfg.thunder_url,
-                    backstage_url=cfg.backstage_url,
-                    api_url=cfg.api_url,
-                ),
-                timeout=TIMEOUT_DEFAULT,
-            ),
-            opts=pulumi.ResourceOptions.merge(
-                self._child_opts(provider=k8s_provider, depends_on=[wait_eso_sync]),
-                pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_DEFAULT}s")),
-            ),
-        )
-
-        # ─── 4. Patch Workflow CRDs (k3d → internal endpoints) ───
-        # The control-plane chart creates Workflow CRDs with k3d-specific
-        # hostnames (host.k3d.internal) that don't resolve on non-k3d clusters.
-        # Patch them to use cluster-internal service DNS names.
-        # Only needed when workflow_template_mode is k3d-patch.
-        registry_endpoint = f"registry.{NS_WORKFLOW_PLANE}.svc.cluster.local:{cfg.wp_registry_port}"
-        if cfg.platform.workflow_template_mode == "k3d-patch":
-            patch_workflows = command.local.Command(
-                "patch-workflow-crds",
-                create=(
-                    f"OBJS=$(kubectl get workflow.openchoreo.dev --all-namespaces -o yaml"
-                    f" --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} 2>/dev/null);"
-                    f" if echo \"$OBJS\" | grep -q 'host.k3d.internal'; then"
-                    f" echo \"$OBJS\" | sed 's|host.k3d.internal:10082|{registry_endpoint}|g'"
-                    f" | kubectl apply --kubeconfig {cfg.kubeconfig_path} --context {cfg.kubeconfig_context} -f -;"
-                    f" else echo 'No k3d-specific workflow CRDs to patch'; fi"
-                ),
-                opts=self._child_opts(depends_on=[cp_chart]),
-            )
-        else:
-            patch_workflows = cp_chart  # no patching needed
-
-        # ─── 5. Label namespace ───
-        label_ns = LabelNamespace(
-            "label-cp-namespace",
-            kubeconfig_path=cfg.kubeconfig_path,
-            context=cfg.kubeconfig_context,
-            namespace=NS_CONTROL_PLANE,
-            labels={"openchoreo.dev/control-plane": "true"},
-            opts=self._child_opts(depends_on=[cp_chart, patch_workflows]),
-        )
-
-        self.result = ControlPlaneResult(helm_chart=cp_chart, label_ns=label_ns)
+        self.result = ThunderResult(thunder=thunder, wait_thunder=wait_thunder)
         self.register_outputs({})
 
     def _child_opts(
@@ -519,11 +396,10 @@ fi
 def deploy(
     cfg: OpenChoreoConfig,
     k8s_provider: k8s.Provider,
-    depends: list[pulumi.Resource],
-) -> ControlPlaneResult:
-    """Deploy Thunder IdP, backstage secrets, and the control plane chart."""
-    return ControlPlane(
-        "control-plane",
+    depends: list[pulumi.Resource] | None = None,
+) -> ThunderResult:
+    return Thunder(
+        "thunder",
         cfg=cfg,
         k8s_provider=k8s_provider,
         depends=depends,
