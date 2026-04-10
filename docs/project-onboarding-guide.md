@@ -152,6 +152,18 @@ This ensures: namespaces exist before platform resources, and platform resources
 
 > **Note**: In addition to the app-layer Kustomizations above, the platform infrastructure is managed by a separate set of numbered FluxCD Kustomizations (00-crds through 05-network) in the `clusters/` directory. These handle cert-manager, external-secrets, kgateway, TLS, platform planes, registration, and network configuration. See [Deployment Guide](deployment-guide.md) for details.
 
+### Platform Infrastructure Composition
+
+The platform infrastructure supports multiple deployment targets (baremetal, k3d, GCP, AWS, Azure) through **Kustomize Components** (`kind: Component`). Each FluxCD infrastructure wave points to a platform overlay that composes shared base resources with platform-specific components:
+
+```
+infrastructure/platforms/<platform>/<wave>/kustomization.yaml
+  ├── resources: base manifests (shared across all platforms)
+  └── components: platform-specific toggles (e.g., cilium-l2, registry-self-hosted)
+```
+
+For example, `baremetal` includes `cilium-l2` for L2 load balancing while `k3d` omits it (Docker networking handles that). Components live at `infrastructure/components/` — 6 active (baremetal/k3d) and 6 stubs (planned cloud platforms). See [Deployment Guide — Component-Based Platform Architecture](deployment-guide.md#4-component-based-platform-architecture) and [Component-Platform Mapping](component-platform-mapping.md) for the full details.
+
 ---
 
 ## 2. Platform Configuration
@@ -290,20 +302,34 @@ openchoreo-gitops/
 │                   └── postgres/
 │                       └── (same as nats, with staging binding too)
 │
-└── infrastructure/                                # Personal homelab infra
-    ├── kustomization.yaml                         # NOT synced by OpenChoreo Flux
+└── infrastructure/                                # Platform infrastructure
+    ├── base/                                      # Shared manifests (all platforms)
+    │   ├── 00-crds/ ... 05-network/               # 6 numbered infrastructure waves
+    ├── components/                                # Kustomize Components (platform toggles)
+    │   ├── cilium-l2/                             # Active: L2 announcements (baremetal)
+    │   ├── issuer-selfsigned/                     # Active: self-signed CA
+    │   ├── registry-self-hosted/                  # Active: in-cluster registry
+    │   ├── observability-self-hosted/             # Active: self-hosted observability
+    │   ├── network-cilium-policy/                 # Active: Cilium network policies
+    │   ├── kubernetes-replicator/                 # Active: cross-namespace secrets
+    │   └── ... (6 more stubs for cloud platforms)
+    ├── platforms/                                  # Per-platform wave overlays
+    │   ├── baremetal/                             # 6 wave subdirs (base + components)
+    │   ├── k3d/                                   # 6 wave subdirs (no cilium-l2)
+    │   ├── gcp/ aws/ azure/                       # Stubs (directory structure only)
+    ├── backstage-fork/                            # Personal homelab infra
     ├── openchoreo-gateway/                        # Shared gateway + HTTPRoutes
     ├── adguard-home/                              # DNS server
     ├── keepalived/                                # DNS HA (VIP)
     ├── external-dns/                              # Cloudflare + AdGuard sync
-    ├── cert-manager/                              # TLS certificates
-    └── backstage-fork/                            # Custom Backstage
+    └── cert-manager/                              # TLS certificates
 ```
 
 **Key points:**
 - All OpenChoreo resources go under `namespaces/default/projects/<project-name>/`
 - Flux picks up changes recursively — just add files and commit
-- The `infrastructure/` directory is personal homelab infra, not part of the OpenChoreo platform layer
+- The `infrastructure/` directory contains both platform infrastructure (`base/`, `components/`, `platforms/`) managed by FluxCD numbered waves and personal homelab infra (gateway, DNS, etc.) not managed by the platform layer
+- `infrastructure/components/` and `infrastructure/platforms/` are the component-based platform architecture — see [Deployment Guide](deployment-guide.md#4-component-based-platform-architecture)
 - Release naming: CI-produced = `<component>-<commit-hash>`, manual = `<component>-<date>-<seq>`
 
 ---
