@@ -1465,19 +1465,19 @@ Wave FINAL (After ALL tasks — 4 parallel reviews, then user okay):
 
 > 4 review agents run in PARALLEL. ALL must APPROVE. Present consolidated results to user and get explicit "okay" before completing.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists. For each "Must NOT Have": search codebase for forbidden patterns. Check evidence files. Compare deliverables against plan. Verify no resource has dual Pulumi+FluxCD ownership.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Validate all FluxCD manifests: `flux validate --path infrastructure/`. Run `pulumi preview` on stripped Pulumi. Lint all YAML. Check for hardcoded secrets, platform-specific values in base manifests, missing `dependsOn` chains.
   Output: `Flux Validate [PASS/FAIL] | Pulumi Preview [PASS/FAIL] | YAML Lint [PASS/FAIL] | VERDICT`
 
-- [ ] F3. **Real Manual QA** — `unspecified-high`
+- [x] F3. **Real Manual QA** — `unspecified-high`
   Execute full E2E: `pytest tests/e2e/ -v`. Verify every FluxCD HelmRelease is reconciled. Test drift healing (delete cert-manager deployment → verify recreation). Verify plane registration Jobs completed. Verify Link Planes Job completed. Save all output to `.sisyphus/evidence/final-qa/`.
   Output: `E2E Tests [N/N pass] | HelmReleases [N/N reconciled] | Drift Heal [PASS/FAIL] | Jobs [N/N completed] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each wave: verify git tag exists, Pulumi state backup exists. Verify no Pulumi URNs remain for migrated components. Verify no FluxCD-managed resource has Pulumi annotations. Verify all 4 platform overlays exist and are syntactically valid. Flag unaccounted changes.
   Output: `Waves [N/N clean] | State [CLEAN/N orphans] | Overlays [4/4 valid] | VERDICT`
 
