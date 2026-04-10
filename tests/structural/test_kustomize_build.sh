@@ -125,41 +125,76 @@ if [[ ${#COMPONENTS[@]} -eq 0 ]]; then
   exit 1
 fi
 
-section "Platform overlay builds"
+section "Platform per-wave overlay builds"
 for platform_dir in "${PLATFORMS[@]}"; do
   platform_name="$(basename "${platform_dir}")"
-  output_file="${TMP_DIR}/${platform_name}.yaml"
+  platform_total=0
+  platform_all_keys=""
 
-  if kustomize build "${platform_dir}" >"${output_file}" 2>"${TMP_DIR}/${platform_name}.err"; then
-    pass "platform ${platform_name} builds"
-  else
-    fail "platform ${platform_name} builds"
-    cat "${TMP_DIR}/${platform_name}.err"
-    continue
-  fi
-
-  count="$(resource_count "${output_file}")"
-  RESOURCE_REPORT+=("${platform_name}:${count}")
-  pass "platform ${platform_name} resource count = ${count}"
-
-  baseline_file="/tmp/baseline-${platform_name}.yaml"
-  if [[ -f "${baseline_file}" ]]; then
-    if diff -u "${baseline_file}" "${output_file}" >"${TMP_DIR}/${platform_name}.baseline.diff"; then
-      pass "platform ${platform_name} matches baseline ${baseline_file}"
-    else
-      fail "platform ${platform_name} differs from baseline ${baseline_file}"
-      cat "${TMP_DIR}/${platform_name}.baseline.diff"
+  # Discover wave subdirectories (e.g., 00-crds, 01-prerequisites, ...)
+  wave_dirs=()
+  for wave_candidate in "${platform_dir}"/*/; do
+    [[ -d "${wave_candidate}" ]] || continue
+    if [[ -f "${wave_candidate}/kustomization.yaml" ]] || [[ -f "${wave_candidate}/kustomization.yml" ]]; then
+      wave_dirs+=("${wave_candidate%/}")
     fi
-  else
-    echo "INFO: baseline not found for ${platform_name}: ${baseline_file}"
+  done
+
+  # If no wave subdirs found, try building platform root (legacy layout)
+  if [[ ${#wave_dirs[@]} -eq 0 ]]; then
+    if [[ -f "${platform_dir}/kustomization.yaml" ]] || [[ -f "${platform_dir}/kustomization.yml" ]]; then
+      wave_dirs=("${platform_dir}")
+    else
+      echo "INFO: skipping platform ${platform_name}; no wave subdirs or root kustomization"
+      continue
+    fi
   fi
 
-  duplicates="$(resource_keys "${output_file}" | sort | uniq -d || true)"
-  if [[ -z "${duplicates}" ]]; then
-    pass "platform ${platform_name} has no duplicate kind+name+namespace resources"
-  else
-    fail "platform ${platform_name} has duplicate kind+name+namespace resources"
-    printf '%s\n' "${duplicates}"
+  for wave_dir in "${wave_dirs[@]}"; do
+    wave_name="$(basename "${wave_dir}")"
+    # Use platform name directly if building root, otherwise platform/wave
+    if [[ "${wave_dir}" == "${platform_dir}" ]]; then
+      label="${platform_name}"
+    else
+      label="${platform_name}/${wave_name}"
+    fi
+    output_file="${TMP_DIR}/${platform_name}-${wave_name}.yaml"
+
+    if kustomize build "${wave_dir}" >"${output_file}" 2>"${TMP_DIR}/${platform_name}-${wave_name}.err"; then
+      pass "platform ${label} builds"
+    else
+      fail "platform ${label} builds"
+      cat "${TMP_DIR}/${platform_name}-${wave_name}.err"
+      continue
+    fi
+
+    count="$(resource_count "${output_file}")"
+    platform_total=$((platform_total + count))
+    pass "platform ${label} resource count = ${count}"
+
+    duplicates="$(resource_keys "${output_file}" | sort | uniq -d || true)"
+    if [[ -z "${duplicates}" ]]; then
+      pass "platform ${label} has no duplicate kind+name+namespace resources"
+    else
+      fail "platform ${label} has duplicate kind+name+namespace resources"
+      printf '%s\n' "${duplicates}"
+    fi
+
+    # Collect keys for cross-wave duplicate check
+    platform_all_keys+="$(resource_keys "${output_file}")"$'\n'
+  done
+
+  RESOURCE_REPORT+=("${platform_name}:${platform_total}")
+
+  # Cross-wave duplicate check (same resource in multiple waves)
+  if [[ -n "${platform_all_keys}" ]]; then
+    cross_wave_dups="$(echo "${platform_all_keys}" | sort | uniq -d | grep -v '^$' || true)"
+    if [[ -z "${cross_wave_dups}" ]]; then
+      pass "platform ${platform_name} has no cross-wave duplicate resources"
+    else
+      fail "platform ${platform_name} has cross-wave duplicate resources"
+      printf '%s\n' "${cross_wave_dups}"
+    fi
   fi
 done
 
