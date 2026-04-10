@@ -33,6 +33,7 @@ dependencies = [
     "pytest-asyncio>=0.23.0",
     "pytest-timeout>=2.3.0",
     "pytest-html>=4.1.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -71,6 +72,7 @@ markers = [
     "flux: FluxCD controllers, Kustomizations, HelmReleases (conditional on ENABLE_FLUX)",
     "secrets: PushSecrets, ClusterSecretStore, ExternalSecrets",
     "gateway_e2e: Gateway Programmed condition and plane registration",
+    "structural: Structural validation of Kustomize platform architecture",
 ]
 asyncio_mode = "auto"
 timeout = 120

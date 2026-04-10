@@ -691,6 +691,7 @@ dependencies = [
     { name = "pytest-asyncio" },
     { name = "pytest-html" },
     { name = "pytest-timeout" },
+    { name = "pyyaml" },
     { name = "requests" },
 ]
 
@@ -716,6 +717,7 @@ requires-dist = [
     { name = "pytest-asyncio", specifier = ">=0.23.0" },
     { name = "pytest-html", specifier = ">=4.1.0" },
     { name = "pytest-timeout", specifier = ">=2.3.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.31.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3.0" },
 ]
