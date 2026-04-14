@@ -1,0 +1,21 @@
+config:
+  openchoreo:platform: gke
+  openchoreo:kubeconfig_path: gke-cluster/outputs/kubeconfig
+  openchoreo:kubeconfig_context: gke_PROJECT_REGION_CLUSTER
+  openchoreo:domain_base: gcp.openchoreo.example.com
+  openchoreo:enable_flux: "true"
+  openchoreo:enable_observability: "false"
+  openchoreo:gcp_project_id: PROJECT_ID
+  openchoreo:gcp_region: us-central1
+  openchoreo:gcp_zone: us-central1-a
+  openchoreo:gcp_network_name: openchoreo-vpc
+  openchoreo:gcp_gke_cluster_name: openchoreo-gke
+  openchoreo:gcp_gke_node_count: "3"
+  openchoreo:gcp_gke_machine_type: e2-standard-4
+  openchoreo:gcp_cas_pool_name: openchoreo-ca-pool
+  openchoreo:gcp_cas_tier: DEVOPS
+  openchoreo:gcp_eso_service_account: openchoreo-eso
+  openchoreo:gcp_cas_service_account: openchoreo-cas
+  openchoreo:artifact_registry_repository_id: openchoreo
+  openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
+  openchoreo:gitops_repo_branch: main

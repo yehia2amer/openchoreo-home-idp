@@ -1,14 +1,17 @@
+# pyright: reportMissingImports=false
+
 """Resolve a platform name from Pulumi config into a ``PlatformProfile``."""
 
 from __future__ import annotations
 
 import pulumi
 
-from platforms.k3d import K3D
-from platforms.rancher_desktop import rancher_desktop
-from platforms.talos import talos
-from platforms.talos_baremetal import talos_baremetal
 from platforms.types import PlatformProfile
+
+
+def _clone_profile(base: PlatformProfile, **overrides: object) -> PlatformProfile:
+    payload = {**base.__dict__, **overrides}
+    return PlatformProfile(**payload)
 
 
 def resolve_platform(cfg: pulumi.Config) -> PlatformProfile:
@@ -27,30 +30,21 @@ def resolve_platform(cfg: pulumi.Config) -> PlatformProfile:
     enable_cilium = cfg.get_bool("enable_cilium") or False
 
     if is_k3d:
+        from platforms.k3d import K3D
+
         if enable_cilium:
             # k3d + Cilium: override gateway_mode to cilium but keep k3d quirks
-            return PlatformProfile(
-                name="k3d",
+            return _clone_profile(
+                K3D,
                 gateway_mode="cilium",
                 cni_mode="cilium",
-                enable_kube_proxy_replacement=False,
-                k8s_service_host="",
-                k8s_service_port=6443,
-                requires_coredns_rewrite=True,
-                requires_machine_id_fix=True,
-                requires_bpf_mount_fix=False,
-                cilium_auto_mount_bpf=False,
-                cilium_host_network_gateway=False,
-                cilium_cni_bin_path="",
-                workflow_template_mode="k3d-patch",
-                local_registry=True,
-                bootstrap_script="bootstrap_k3d.py",
-                cluster_name_config_key="k3d_cluster_name",
             )
         return K3D
 
     if enable_cilium:
         # Non-k3d + Cilium → treat as Rancher Desktop (current behaviour)
+        from platforms.rancher_desktop import rancher_desktop
+
         k8s_host = cfg.get("cilium_k8s_api_host") or ""
         return rancher_desktop(k8s_service_host=k8s_host)
 
@@ -68,10 +62,10 @@ def resolve_platform(cfg: pulumi.Config) -> PlatformProfile:
         cilium_auto_mount_bpf=False,
         cilium_host_network_gateway=False,
         cilium_cni_bin_path="",
-        workflow_template_mode="default",
-        local_registry=True,
         bootstrap_script="",
         cluster_name_config_key="",
+        workflow_template_mode="default",
+        local_registry=True,
     )
 
 
@@ -80,13 +74,27 @@ def _from_name(name: str, cfg: pulumi.Config) -> PlatformProfile:
     name = name.lower().strip()
 
     if name == "k3d":
+        from platforms.k3d import K3D
+
         return K3D
+    if name == "gke":
+        from platforms.gke import GKE_PROFILE
+
+        return GKE_PROFILE
     if name in ("rancher-desktop", "rancher_desktop"):
+        from platforms.rancher_desktop import rancher_desktop
+
         k8s_host = cfg.get("cilium_k8s_api_host") or ""
         return rancher_desktop(k8s_service_host=k8s_host)
     if name == "talos":
+        from platforms.talos import talos
+
         return talos()
     if name in ("talos-baremetal", "talos_baremetal"):
+        from platforms.talos_baremetal import talos_baremetal
+
         return talos_baremetal()
 
-    raise ValueError(f"Unknown platform '{name}'. Supported values: k3d, rancher-desktop, talos, talos-baremetal")
+    raise ValueError(
+        f"Unknown platform '{name}'. Supported values: gke, k3d, rancher-desktop, talos, talos-baremetal"
+    )

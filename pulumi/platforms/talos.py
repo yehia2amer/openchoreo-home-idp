@@ -25,6 +25,7 @@ def talos(k8s_service_host: str = "localhost") -> PlatformProfile:
     """
     return PlatformProfile(
         name="talos",
+        cloud_provider="none",
         # Networking — Cilium as both CNI and Gateway API controller
         gateway_mode="cilium",
         cni_mode="cilium",
@@ -42,6 +43,14 @@ def talos(k8s_service_host: str = "localhost") -> PlatformProfile:
         # Workflow
         workflow_template_mode="default",
         local_registry=True,
+        registry_mode="local",
+        secrets_backend="openbao",
+        tls_issuer_mode="self-signed",
+        observability_mode="self-hosted",
+        load_balancer_mode="local",
+        storage_class="local-path",
+        longhorn_enabled=False,
+        external_snapshotter_enabled=False,
         # Bootstrap
         bootstrap_script="",
         cluster_name_config_key="",

@@ -7,8 +7,12 @@ import pulumi_kubernetes as k8s
 
 from config import (
     CLUSTER_SECRET_STORE_NAME,
+    DEV_STACKS,
+    NS_CERT_MANAGER,
     NS_CONTROL_PLANE,
     NS_DATA_PLANE,
+    NS_EXTERNAL_SECRETS,
+    NS_FLUX_SYSTEM,
     NS_OPENBAO,
     SA_ESO_OPENBAO,
     SLEEP_AFTER_GATEWAY_API,
@@ -22,11 +26,23 @@ from helpers.wait import sleep
 from values.openbao import get_values as openbao_values
 
 
+class SecretBackendResult:
+    def __init__(
+        self,
+        openbao_ready: WaitPodReady | pulumi.Resource | None,
+        cluster_secret_store: k8s.apiextensions.CustomResource | None,
+        cluster_secret_store_ready: pulumi.Resource,
+    ):
+        self.openbao_ready = openbao_ready
+        self.cluster_secret_store = cluster_secret_store
+        self.cluster_secret_store_ready = cluster_secret_store_ready
+
+
 class PrerequisitesResult:
     def __init__(
         self,
-        openbao_ready: WaitPodReady,
-        cluster_secret_store: k8s.apiextensions.CustomResource,
+        openbao_ready: WaitPodReady | pulumi.Resource | None,
+        cluster_secret_store: k8s.apiextensions.CustomResource | None,
         cluster_secret_store_ready: pulumi.Resource,
         control_plane_ns: k8s.core.v1.Namespace,
         data_plane_ns: k8s.core.v1.Namespace,
@@ -93,6 +109,76 @@ class Prerequisites(pulumi.ComponentResource):
             opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
         )
 
+        platform_result = self._setup_secret_backend(
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+            base_depends=base_depends,
+        )
+
+        if p.requires_coredns_rewrite:
+            k8s.yaml.v2.ConfigGroup(
+                "coredns-rewrite",
+                files=[cfg.coredns_rewrite_url],
+                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
+            )
+
+        self.result = PrerequisitesResult(
+            openbao_ready=platform_result.openbao_ready,
+            cluster_secret_store=platform_result.cluster_secret_store,
+            cluster_secret_store_ready=platform_result.cluster_secret_store_ready,
+            control_plane_ns=control_plane_ns,
+            data_plane_ns=data_plane_ns,
+        )
+        self.register_outputs({})
+
+    def _setup_secret_backend(
+        self,
+        cfg: OpenChoreoConfig,
+        k8s_provider: k8s.Provider,
+        base_depends: list[pulumi.Resource],
+    ) -> SecretBackendResult:
+        if cfg.platform.secrets_backend == "openbao":
+            return self._setup_openbao(cfg=cfg, k8s_provider=k8s_provider, base_depends=base_depends)
+        if cfg.platform.secrets_backend == "gcp-sm":
+            return self._setup_gcp_secret_manager(cfg=cfg, k8s_provider=k8s_provider, base_depends=base_depends)
+        msg = f"Unsupported secrets backend: {cfg.platform.secrets_backend}"
+        raise ValueError(msg)
+
+    def _setup_gcp_secret_manager(
+        self,
+        cfg: OpenChoreoConfig,
+        k8s_provider: k8s.Provider,
+        base_depends: list[pulumi.Resource],
+    ) -> SecretBackendResult:
+        """GCP Secret Manager path.
+
+        Per ADR-001, Pulumi bootstraps GCP infrastructure (IAM, APIs) in the
+        gke-cluster nested project.  The in-cluster resources (ClusterSecretStore,
+        ESO ServiceAccount WI annotation) are owned by FluxCD via the
+        ``secrets-gcp-sm`` Kustomize component.
+
+        This method only creates a lightweight dependency marker so downstream
+        resources (Thunder, control-plane) can depend on prerequisites without
+        needing the actual ClusterSecretStore object.
+        """
+        gcp_sm_ready = sleep(
+            "gcp-sm-flux-marker",
+            1,
+            opts=self._child_opts(depends_on=base_depends),
+        )
+
+        return SecretBackendResult(
+            openbao_ready=None,
+            cluster_secret_store=None,
+            cluster_secret_store_ready=gcp_sm_ready,
+        )
+
+    def _setup_openbao(
+        self,
+        cfg: OpenChoreoConfig,
+        k8s_provider: k8s.Provider,
+        base_depends: list[pulumi.Resource],
+    ) -> SecretBackendResult:
         openbao_ns = k8s.core.v1.Namespace(
             NS_OPENBAO,
             metadata=k8s.meta.v1.ObjectMetaArgs(
@@ -141,10 +227,7 @@ class Prerequisites(pulumi.ComponentResource):
             push_secret_git = k8s.core.v1.Secret(
                 "push-git-secrets",
                 metadata=k8s.meta.v1.ObjectMetaArgs(name="push-git-secrets", namespace=NS_OPENBAO),
-                string_data={
-                    "git-token": cfg.github_pat,
-                    "gitops-token": cfg.github_pat,
-                },
+                string_data={"git-token": cfg.github_pat, "gitops-token": cfg.github_pat},
                 opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
             )
 
@@ -159,9 +242,6 @@ class Prerequisites(pulumi.ComponentResource):
                     "client-secret": "backstage-fork-client-secret",
                     "auth-authorization-url": f"{cfg.thunder_url}/oauth2/authorize",
                     "jenkins-api-key": "placeholder-not-in-use",
-                    # GitHub Actions integration secrets (PAT + GitHub App auth)
-                    # Chain: PushSecret → OpenBao vault → ExternalSecret → backstage-secrets K8s Secret
-                    # These are injected as env vars in the Backstage deployment when githubActions.enabled=true
                     "github-token": "placeholder-not-in-use",
                     "github-app-client-secret": "placeholder-not-in-use",
                     "github-app-webhook-secret": "placeholder-not-in-use",
@@ -194,44 +274,36 @@ class Prerequisites(pulumi.ComponentResource):
                 resource=None,
             )
 
-        _is_dev_stack = pulumi.get_stack() in (
-            "dev",
-            "rancher-desktop",
-            "local",
-            "test",
-            "talos",
-            "talos-baremetal",
-        )
+        _is_dev_stack = pulumi.get_stack() in DEV_STACKS
         push_secret_dev: k8s.core.v1.Secret | None = None
         if _is_dev_stack:
-            dev_secret_data = {
-                "backstage-backend-secret": "local-dev-backend-secret",
-                "backstage-client-secret": "backstage-portal-secret",
-                "backstage-jenkins-api-key": "placeholder-not-in-use",
-                "backstage-github-token": "placeholder-github-token",
-                "backstage-github-app-client-secret": "placeholder-github-app-client-secret",
-                "backstage-github-app-webhook-secret": "placeholder-github-app-webhook-secret",
-                "backstage-github-app-private-key": "placeholder-github-app-private-key",
-                "observer-oauth-client-secret": "openchoreo-observer-resource-reader-client-secret",
-                "rca-oauth-client-secret": "openchoreo-rca-agent-secret",
-                "rca-llm-api-key": "REPLACE_WITH_YOUR_LLM_API_KEY",
-                "npm-token": "fake-npm-token-for-development",
-                "docker-username": "dev-user",
-                "docker-password": "dev-password",
-                "github-pat": "fake-github-token-for-development",
-                "cloudflare-api-token": "cfut_uaRooKcWkb77Ygz9CNr7KXwsNnJCiNUALAe5RULDcfd4b1b7",
-                "adguard-truenas-url": "http://192.168.0.129:30004",
-                "adguard-truenas-user": "yehia",
-                "adguard-truenas-password": "t9QVO!wg$C7$1dAHZ@%j6HH",
-                "adguard-k8s-url": "http://adguard-home-k8s.keepalived.svc.cluster.local:3000",
-                "adguard-k8s-user": "admin",
-                "adguard-k8s-password": "pI03loPa6Nhlele",
-                "keepalived-auth-pass": "HHsiI0T7",
-            }
             push_secret_dev = k8s.core.v1.Secret(
                 "push-dev-secrets",
                 metadata=k8s.meta.v1.ObjectMetaArgs(name="push-dev-secrets", namespace=NS_OPENBAO),
-                string_data=dev_secret_data,
+                string_data={
+                    "backstage-backend-secret": "local-dev-backend-secret",
+                    "backstage-client-secret": "backstage-portal-secret",
+                    "backstage-jenkins-api-key": "placeholder-not-in-use",
+                    "backstage-github-token": "placeholder-github-token",
+                    "backstage-github-app-client-secret": "placeholder-github-app-client-secret",
+                    "backstage-github-app-webhook-secret": "placeholder-github-app-webhook-secret",
+                    "backstage-github-app-private-key": "placeholder-github-app-private-key",
+                    "observer-oauth-client-secret": "openchoreo-observer-resource-reader-client-secret",
+                    "rca-oauth-client-secret": "openchoreo-rca-agent-secret",
+                    "rca-llm-api-key": "REPLACE_WITH_YOUR_LLM_API_KEY",
+                    "npm-token": "fake-npm-token-for-development",
+                    "docker-username": "dev-user",
+                    "docker-password": "dev-password",
+                    "github-pat": "fake-github-token-for-development",
+                    "cloudflare-api-token": "placeholder-cloudflare-api-token",
+                    "adguard-truenas-url": "http://192.168.0.1:3000",
+                    "adguard-truenas-user": "admin",
+                    "adguard-truenas-password": "placeholder-adguard-truenas-password",
+                    "adguard-k8s-url": "http://adguard-home-k8s.keepalived.svc.cluster.local:3000",
+                    "adguard-k8s-user": "admin",
+                    "adguard-k8s-password": "placeholder-adguard-k8s-password",
+                    "keepalived-auth-pass": "placeholder-keepalived",
+                },
                 opts=self._child_opts(provider=k8s_provider, depends_on=[openbao_ns]),
             )
 
@@ -256,10 +328,7 @@ class Prerequisites(pulumi.ComponentResource):
                             "kubernetes": {
                                 "mountPath": "kubernetes",
                                 "role": "openchoreo-secret-writer-role",
-                                "serviceAccountRef": {
-                                    "name": SA_ESO_OPENBAO,
-                                    "namespace": NS_OPENBAO,
-                                },
+                                "serviceAccountRef": {"name": SA_ESO_OPENBAO, "namespace": NS_OPENBAO},
                             }
                         },
                     }
@@ -283,7 +352,6 @@ class Prerequisites(pulumi.ComponentResource):
         )
 
         push_secrets: list[pulumi.Resource] = []
-
         if cfg.github_pat and push_secret_git is not None:
             push_secrets.append(
                 k8s.apiextensions.CustomResource(
@@ -333,28 +401,19 @@ class Prerequisites(pulumi.ComponentResource):
                             {
                                 "match": {
                                     "secretKey": "backend-secret",
-                                    "remoteRef": {
-                                        "remoteKey": "backstage-fork-secrets",
-                                        "property": "backend-secret",
-                                    },
+                                    "remoteRef": {"remoteKey": "backstage-fork-secrets", "property": "backend-secret"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "client-id",
-                                    "remoteRef": {
-                                        "remoteKey": "backstage-fork-secrets",
-                                        "property": "client-id",
-                                    },
+                                    "remoteRef": {"remoteKey": "backstage-fork-secrets", "property": "client-id"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "client-secret",
-                                    "remoteRef": {
-                                        "remoteKey": "backstage-fork-secrets",
-                                        "property": "client-secret",
-                                    },
+                                    "remoteRef": {"remoteKey": "backstage-fork-secrets", "property": "client-secret"},
                                 }
                             },
                             {
@@ -369,10 +428,7 @@ class Prerequisites(pulumi.ComponentResource):
                             {
                                 "match": {
                                     "secretKey": "jenkins-api-key",
-                                    "remoteRef": {
-                                        "remoteKey": "backstage-fork-secrets",
-                                        "property": "jenkins-api-key",
-                                    },
+                                    "remoteRef": {"remoteKey": "backstage-fork-secrets", "property": "jenkins-api-key"},
                                 }
                             },
                         ],
@@ -448,28 +504,19 @@ class Prerequisites(pulumi.ComponentResource):
                             {
                                 "match": {
                                     "secretKey": "backstage-jenkins-api-key",
-                                    "remoteRef": {
-                                        "remoteKey": "backstage-jenkins-api-key",
-                                        "property": "value",
-                                    },
+                                    "remoteRef": {"remoteKey": "backstage-jenkins-api-key", "property": "value"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "observer-oauth-client-secret",
-                                    "remoteRef": {
-                                        "remoteKey": "observer-oauth-client-secret",
-                                        "property": "value",
-                                    },
+                                    "remoteRef": {"remoteKey": "observer-oauth-client-secret", "property": "value"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "rca-oauth-client-secret",
-                                    "remoteRef": {
-                                        "remoteKey": "rca-oauth-client-secret",
-                                        "property": "value",
-                                    },
+                                    "remoteRef": {"remoteKey": "rca-oauth-client-secret", "property": "value"},
                                 }
                             },
                             {
@@ -505,28 +552,19 @@ class Prerequisites(pulumi.ComponentResource):
                             {
                                 "match": {
                                     "secretKey": "cloudflare-api-token",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/cloudflare",
-                                        "property": "api-token",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/cloudflare", "property": "api-token"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "adguard-truenas-url",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/adguard-truenas",
-                                        "property": "url",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/adguard-truenas", "property": "url"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "adguard-truenas-user",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/adguard-truenas",
-                                        "property": "user",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/adguard-truenas", "property": "user"},
                                 }
                             },
                             {
@@ -541,37 +579,25 @@ class Prerequisites(pulumi.ComponentResource):
                             {
                                 "match": {
                                     "secretKey": "adguard-k8s-url",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/adguard-k8s",
-                                        "property": "url",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/adguard-k8s", "property": "url"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "adguard-k8s-user",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/adguard-k8s",
-                                        "property": "user",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/adguard-k8s", "property": "user"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "adguard-k8s-password",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/adguard-k8s",
-                                        "property": "password",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/adguard-k8s", "property": "password"},
                                 }
                             },
                             {
                                 "match": {
                                     "secretKey": "keepalived-auth-pass",
-                                    "remoteRef": {
-                                        "remoteKey": "apps/external-dns/keepalived",
-                                        "property": "auth-pass",
-                                    },
+                                    "remoteRef": {"remoteKey": "apps/external-dns/keepalived", "property": "auth-pass"},
                                 }
                             },
                         ],
@@ -586,21 +612,11 @@ class Prerequisites(pulumi.ComponentResource):
             opts=self._child_opts(depends_on=push_secrets + [css_ready]),
         )
 
-        if p.requires_coredns_rewrite:
-            k8s.yaml.v2.ConfigGroup(
-                "coredns-rewrite",
-                files=[cfg.coredns_rewrite_url],
-                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
-            )
-
-        self.result = PrerequisitesResult(
+        return SecretBackendResult(
             openbao_ready=openbao_ready,
             cluster_secret_store=cluster_secret_store,
             cluster_secret_store_ready=push_sync_wait,
-            control_plane_ns=control_plane_ns,
-            data_plane_ns=data_plane_ns,
         )
-        self.register_outputs({})
 
     def _child_opts(
         self,

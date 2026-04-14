@@ -2,6 +2,7 @@
 **/.terraform/
 **/.env
 pulumi/talos-cluster-baremetal/outputs/
+pulumi/gke-cluster/outputs/
 .sisyphus/**
 
 # Beads / Dolt files (added by bd init)
@@ -9,3 +10,5 @@ pulumi/talos-cluster-baremetal/outputs/
 *.db
 .beads-credential-key
 .env
+docs/reference-project-docs/
+.DS_Store

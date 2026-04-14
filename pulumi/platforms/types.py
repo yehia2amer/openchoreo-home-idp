@@ -19,7 +19,7 @@ class PlatformProfile:
 
     # ── Networking / CNI ──
     gateway_mode: str
-    """Which gateway controller to use: ``kgateway`` or ``cilium``."""
+    """Which gateway controller to use: ``kgateway``, ``cilium``, or ``cloud``."""
 
     cni_mode: str
     """CNI strategy: ``flannel`` (k3d default), ``cilium``, or ``cloud``."""
@@ -53,13 +53,6 @@ class PlatformProfile:
     cilium_cni_bin_path: str
     """Override path for CNI binaries (Rancher Desktop uses ``/usr/libexec/cni``)."""
 
-    # ── Workflow / registry ──
-    workflow_template_mode: str
-    """How workflow templates handle registry/gateway URLs: ``k3d-patch`` or ``default``."""
-
-    local_registry: bool
-    """Whether a local Docker registry is expected to be part of the stack."""
-
     # ── Bootstrap ──
     bootstrap_script: str
     """Name of the bootstrap helper (e.g. ``bootstrap_k3d.py``), or empty if external."""
@@ -67,6 +60,41 @@ class PlatformProfile:
     # ── Cluster ──
     cluster_name_config_key: str
     """Stack config key that carries the cluster name, or empty."""
+
+    # ── Workflow / registry ──
+    workflow_template_mode: str
+    """How workflow templates handle registry/gateway URLs: ``k3d-patch`` or ``default``."""
+
+    local_registry: bool
+    """Whether a local Docker registry is expected to be part of the stack."""
+
+    # ── Platform strategies ──
+    cloud_provider: str = "none"
+    """Infrastructure provider: ``none``, ``gcp``, ``aws``, ``azure``."""
+
+    registry_mode: str = "local"
+    """Container registry strategy: ``local`` or ``cloud``."""
+
+    secrets_backend: str = "openbao"
+    """Secrets strategy: ``openbao`` or ``gcp-sm``."""
+
+    tls_issuer_mode: str = "self-signed"
+    """TLS issuer strategy: ``self-signed``, ``gcp-cas``, etc."""
+
+    observability_mode: str = "self-hosted"
+    """Observability strategy: ``self-hosted`` or ``cloud``."""
+
+    load_balancer_mode: str = "local"
+    """Load balancer strategy: ``local``, ``cilium-l2``, or ``cloud``."""
+
+    storage_class: str = ""
+    """Default storage class expected by the platform."""
+
+    longhorn_enabled: bool = False
+    """Whether Longhorn storage is part of the platform bootstrap."""
+
+    external_snapshotter_enabled: bool = False
+    """Whether CSI external-snapshotter is expected on the cluster."""
 
     # ── Workflow template overrides ───────────────────────────────
     workflow_template_urls: tuple[str, ...] | None = None

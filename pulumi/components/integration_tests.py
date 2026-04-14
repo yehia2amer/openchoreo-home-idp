@@ -1,3 +1,5 @@
+# pyright: reportMissingImports=false
+
 """Integration tests that run as the final step of ``pulumi up``.
 
 Each test is a Pulumi dynamic resource that performs a live health check against
@@ -88,17 +90,18 @@ class IntegrationTests(pulumi.ComponentResource):
             resource_name="external-secrets",
         )
 
-        # OpenBao vault — StatefulSet readiness
-        _test(
-            test_name="openbao-statefulset",
-            test_type=TEST_STATEFULSET,
-            namespace=NS_OPENBAO,
-            resource_name="openbao",
-        )
+        if cfg.platform.secrets_backend == "openbao":
+            # OpenBao vault — StatefulSet readiness
+            _test(
+                test_name="openbao-statefulset",
+                test_type=TEST_STATEFULSET,
+                namespace=NS_OPENBAO,
+                resource_name="openbao",
+            )
 
         # ─── Cilium (optional) ────────────────────────────────────
 
-        if cfg.platform.gateway_mode == "cilium":
+        if cfg.platform.gateway_mode == "cilium" and not cfg.platform.cilium_pre_installed:
             _test(
                 test_name="cilium-operator-deployment",
                 test_type=TEST_DEPLOYMENT,
@@ -322,45 +325,46 @@ class IntegrationTests(pulumi.ComponentResource):
         # PushSecrets are created in the openbao namespace and push
         # K8s Secret data → OpenBao via the ClusterSecretStore.
 
-        _pushsecret_names: list[str] = []
-        if cfg.github_pat:
-            _pushsecret_names.append("git-secrets")
-        if cfg.enable_flux or cfg.gitops_repo_url:
-            _pushsecret_names.append("backstage-fork-secrets")
-        if cfg.enable_openobserve and cfg.openobserve_admin_password:
-            _pushsecret_names.append("openobserve-creds")
-        _is_dev = pulumi.get_stack() in (
-            "dev",
-            "rancher-desktop",
-            "local",
-            "test",
-            "talos",
-            "talos-baremetal",
-        )
-        if _is_dev:
-            _pushsecret_names.append("dev-secrets")
-
-        for ps_name in _pushsecret_names:
-            _test(
-                test_name=f"e2e-pushsecret-{ps_name}",
-                test_type=TEST_CR_CONDITION,
-                cr_group="external-secrets.io",
-                cr_version="v1alpha1",
-                cr_plural="pushsecrets",
-                resource_name=ps_name,
-                namespace=NS_OPENBAO,
-                condition_type="Ready",
+        if cfg.platform.secrets_backend == "openbao":
+            _pushsecret_names: list[str] = []
+            if cfg.github_pat:
+                _pushsecret_names.append("git-secrets")
+            if cfg.enable_flux or cfg.gitops_repo_url:
+                _pushsecret_names.append("backstage-fork-secrets")
+            if cfg.enable_openobserve and cfg.openobserve_admin_password:
+                _pushsecret_names.append("openobserve-creds")
+            _is_dev = pulumi.get_stack() in (
+                "dev",
+                "rancher-desktop",
+                "local",
+                "test",
+                "talos",
+                "talos-baremetal",
             )
+            if _is_dev:
+                _pushsecret_names.append("dev-secrets")
 
-        # Also verify K8s source secrets exist
-        if cfg.github_pat:
-            _test(
-                test_name="e2e-push-git-secrets-exist",
-                test_type=TEST_SECRET_EXISTS,
-                namespace=NS_OPENBAO,
-                resource_name="push-git-secrets",
-                expected_keys=["git-token", "gitops-token"],
-            )
+            for ps_name in _pushsecret_names:
+                _test(
+                    test_name=f"e2e-pushsecret-{ps_name}",
+                    test_type=TEST_CR_CONDITION,
+                    cr_group="external-secrets.io",
+                    cr_version="v1alpha1",
+                    cr_plural="pushsecrets",
+                    resource_name=ps_name,
+                    namespace=NS_OPENBAO,
+                    condition_type="Ready",
+                )
+
+            # Also verify K8s source secrets exist
+            if cfg.github_pat:
+                _test(
+                    test_name="e2e-push-git-secrets-exist",
+                    test_type=TEST_SECRET_EXISTS,
+                    namespace=NS_OPENBAO,
+                    resource_name="push-git-secrets",
+                    expected_keys=["git-token", "gitops-token"],
+                )
 
         # ─── ClusterSecretStore E2E ───────────────────────────────
         # Verify the ClusterSecretStore is Ready — ESO can talk to OpenBao.
@@ -374,6 +378,17 @@ class IntegrationTests(pulumi.ComponentResource):
             resource_name=CLUSTER_SECRET_STORE_NAME,
             condition_type="Ready",
         )
+
+        if cfg.platform.tls_issuer_mode == "gcp-cas":
+            _test(
+                test_name="e2e-gcp-cas-clusterissuer-ready",
+                test_type=TEST_CR_CONDITION,
+                cr_group="cas-issuer.jetstack.io",
+                cr_version="v1beta1",
+                cr_plural="googlecasclusterissuers",
+                resource_name="openchoreo-cas-issuer",
+                condition_type="Ready",
+            )
 
         # ─── Backstage Secret Bridge E2E ──────────────────────────
         # Verify the Backstage ExternalSecret has synced and created

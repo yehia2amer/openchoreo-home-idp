@@ -15,6 +15,7 @@ Policies
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -33,7 +34,9 @@ from pulumi_policy import (
 # ---------------------------------------------------------------------------
 
 #: Stack names that are considered development environments.
-_DEV_STACKS = ("dev", "rancher-desktop", "local", "test")
+#: Keep in sync with ``config.DEV_STACKS`` — this policy pack runs in an
+#: isolated venv and cannot import the main project's config module.
+_DEV_STACKS = frozenset(("dev", "rancher-desktop", "local", "test", "talos", "talos-baremetal", "gcp"))
 
 #: Insecure default credentials that must never appear in non-dev stacks.
 #: Mirrors the fail-fast logic in ``config.py:212-227``.
@@ -104,7 +107,11 @@ def _require_secrets_on_prod_validator(
     for resource in args.resources:
         serialized = _serialize_props(resource.props)
         for key, insecure_value in _INSECURE_DEFAULTS.items():
-            if f'"{insecure_value}"' in serialized:
+            # Match the value as a complete JSON string value to avoid false
+            # positives from substrings (e.g. "openchoreo-ca-pool-root"
+            # must NOT match the insecure value "root").
+            pattern = r':\s*"' + re.escape(insecure_value) + r'"'
+            if re.search(pattern, serialized):
                 report_violation(
                     f"Insecure default credentials detected in non-dev stack: "
                     f"{key} contains the dev-only default value. "

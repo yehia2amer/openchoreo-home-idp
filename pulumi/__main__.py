@@ -62,7 +62,8 @@ def main() -> None:
     pulumi.export("data_plane_gateway_http", cfg.dp_http_url)
     pulumi.export("data_plane_gateway_https", cfg.dp_https_url)
 
-    pulumi.export("openbao_root_token", pulumi.Output.secret(cfg.openbao_root_token))
+    if cfg.platform.secrets_backend == "openbao":
+        pulumi.export("openbao_root_token", pulumi.Output.secret(cfg.openbao_root_token))
 
     pulumi.export("kubeconfig_context", cfg.kubeconfig_context)
     pulumi.export("domain_base", cfg.domain_base)
@@ -94,7 +95,6 @@ def main() -> None:
         "OBSERVER_URL": cfg.observer_url,
         "DATA_PLANE_GATEWAY_HTTP": cfg.dp_http_url,
         "DATA_PLANE_GATEWAY_HTTPS": cfg.dp_https_url,
-        "OPENBAO_ROOT_TOKEN": cfg.openbao_root_token,
         "KUBECONFIG_CONTEXT": cfg.kubeconfig_context,
         "DOMAIN_BASE": cfg.domain_base,
         "OPENCHOREO_VERSION": cfg.openchoreo_version,
@@ -108,6 +108,8 @@ def main() -> None:
         "NS_WORKFLOW_PLANE": NS_WORKFLOW_PLANE,
         "NS_OBSERVABILITY_PLANE": NS_OBSERVABILITY_PLANE,
     }
+    if cfg.platform.secrets_backend == "openbao":
+        env_lines["OPENBAO_ROOT_TOKEN"] = cfg.openbao_root_token
 
     def _write_env(pairs: dict[str, str]) -> None:
         lines = [f"{k}={v}" for k, v in sorted(pairs.items())]

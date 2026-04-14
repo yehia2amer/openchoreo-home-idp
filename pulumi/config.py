@@ -12,6 +12,20 @@ import pulumi
 
 from platforms import PlatformProfile, resolve_platform
 
+#: Stack names considered development environments.  Shared by config loader,
+#: prerequisites component, and CrossGuard policy pack.
+DEV_STACKS: frozenset[str] = frozenset(
+    (
+        "dev",
+        "rancher-desktop",
+        "local",
+        "test",
+        "talos",
+        "talos-baremetal",
+        "gcp",
+    )
+)
+
 # ──────────────────────────────────────────────────────────────
 # Constants — single source of truth for all magic strings
 # ──────────────────────────────────────────────────────────────
@@ -121,6 +135,20 @@ class OpenChoreoConfig:
     # Credentials
     openbao_root_token: str
     github_pat: str
+
+    # GCP
+    gcp_project_id: str
+    gcp_region: str
+    gcp_zone: str
+    gcp_network_name: str
+    gcp_gke_cluster_name: str
+    gcp_gke_node_count: int
+    gcp_gke_machine_type: str
+    gcp_cas_pool_name: str
+    gcp_cas_tier: str
+    gcp_eso_service_account: str
+    gcp_cas_service_account: str
+    artifact_registry_repository_id: str
 
     # GitOps
     gitops_repo_url: str
@@ -236,18 +264,52 @@ def load_config() -> OpenChoreoConfig:
     tracing_openobserve_version = cfg.get("tracing_openobserve_version") or "0.2.1"
     odigos_version = cfg.get("odigos_version") or "1.23.0"
 
-    # Credentials — warn on non-dev stacks when using insecure defaults.
-    # Use cfg.get() for plain strings needed by dynamic providers.
+    # ── Platform profile resolution (needed early for credential guards) ──
+    platform = resolve_platform(cfg)
+
+    # Credentials — use platform profile to decide what's mandatory.
+    # OpenBao token is only required when secrets_backend is "openbao".
     stack_name = pulumi.get_stack()
-    is_dev_stack = stack_name in ("dev", "rancher-desktop", "local", "test", "talos", "talos-baremetal")
 
     openbao_root_token = cfg.get("openbao_root_token")
     if not openbao_root_token:
-        if not is_dev_stack:
-            raise pulumi.ConfigMissingError("openchoreo:openbao_root_token", secret=True)
-        openbao_root_token = "root"
+        if platform.secrets_backend == "openbao":
+            # OpenBao is the secrets backend — token is mandatory on non-dev stacks
+            if stack_name not in DEV_STACKS:
+                raise pulumi.ConfigMissingError("openchoreo:openbao_root_token", secret=True)
+            openbao_root_token = "root"
+        else:
+            # Non-OpenBao backend (e.g. gcp-sm) — token not needed, use safe placeholder
+            openbao_root_token = ""
 
     github_pat = cfg.get("github_pat") or ""
+
+    # GCP configuration
+    gcp_project_id = cfg.get("gcp_project_id") or cfg.get("project") or ""
+    gcp_region = cfg.get("gcp_region") or cfg.get("region") or "us-central1"
+    gcp_zone = cfg.get("gcp_zone") or cfg.get("zone") or f"{gcp_region}-a"
+    gcp_network_name = cfg.get("gcp_network_name") or "openchoreo-vpc"
+    gcp_gke_cluster_name = cfg.get("gcp_gke_cluster_name") or "openchoreo-gke"
+    _gcp_gke_node_count_raw = cfg.get_int("gcp_gke_node_count")
+    gcp_gke_node_count = _gcp_gke_node_count_raw if _gcp_gke_node_count_raw is not None else 3
+    gcp_gke_machine_type = cfg.get("gcp_gke_machine_type") or "e2-standard-4"
+    gcp_cas_pool_name = cfg.get("gcp_cas_pool_name") or "openchoreo-ca-pool"
+    gcp_cas_tier = cfg.get("gcp_cas_tier") or "DEVOPS"
+    gcp_eso_service_account = cfg.get("gcp_eso_service_account") or "openchoreo-eso"
+    gcp_cas_service_account = cfg.get("gcp_cas_service_account") or "openchoreo-cas"
+    artifact_registry_repository_id = cfg.get("artifact_registry_repository_id") or "openchoreo"
+
+    # Validate GCP fields when cloud_provider is "gcp"
+    if platform.cloud_provider == "gcp":
+        _required_gcp = {
+            "gcp_project_id": gcp_project_id,
+        }
+        _missing = [k for k, v in _required_gcp.items() if not v]
+        if _missing:
+            raise ValueError(
+                f"GCP platform requires these config values to be set: {', '.join(_missing)}. "
+                f"Set them via `pulumi config set openchoreo:<key> <value>`."
+            )
 
     # GitOps
     gitops_repo_url = cfg.get("gitops_repo_url") or ""
@@ -273,9 +335,6 @@ def load_config() -> OpenChoreoConfig:
 
     # k3d-specific (still needed for docker exec in observability machine-id fix)
     k3d_cluster_name = cfg.get("k3d_cluster_name") or "openchoreo"
-
-    # ── Platform profile resolution ──
-    platform = resolve_platform(cfg)
 
     # Derived values
     raw_base = f"https://raw.githubusercontent.com/openchoreo/openchoreo/{openchoreo_ref}"
@@ -346,6 +405,18 @@ def load_config() -> OpenChoreoConfig:
         odigos_version=odigos_version,
         openbao_root_token=openbao_root_token,
         github_pat=github_pat,
+        gcp_project_id=gcp_project_id,
+        gcp_region=gcp_region,
+        gcp_zone=gcp_zone,
+        gcp_network_name=gcp_network_name,
+        gcp_gke_cluster_name=gcp_gke_cluster_name,
+        gcp_gke_node_count=gcp_gke_node_count,
+        gcp_gke_machine_type=gcp_gke_machine_type,
+        gcp_cas_pool_name=gcp_cas_pool_name,
+        gcp_cas_tier=gcp_cas_tier,
+        gcp_eso_service_account=gcp_eso_service_account,
+        gcp_cas_service_account=gcp_cas_service_account,
+        artifact_registry_repository_id=artifact_registry_repository_id,
         gitops_repo_url=gitops_repo_url,
         gitops_repo_branch=gitops_repo_branch,
         enable_flux=enable_flux,

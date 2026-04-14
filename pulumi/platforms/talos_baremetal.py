@@ -10,6 +10,7 @@ def talos_baremetal(
 ) -> PlatformProfile:
     return PlatformProfile(
         name="talos-baremetal",
+        cloud_provider="none",
         gateway_mode="kgateway",
         cni_mode="cilium",
         enable_kube_proxy_replacement=True,
@@ -23,6 +24,14 @@ def talos_baremetal(
         cilium_cni_bin_path="",
         workflow_template_mode="default",
         local_registry=False,
+        registry_mode="local",
+        secrets_backend="openbao",
+        tls_issuer_mode="self-signed",
+        observability_mode="self-hosted",
+        load_balancer_mode="cilium-l2",
+        storage_class="longhorn",
+        longhorn_enabled=True,
+        external_snapshotter_enabled=True,
         workflow_template_urls=(
             "workflow-templates/checkout-source.yaml",
             "workflow-templates.yaml",
