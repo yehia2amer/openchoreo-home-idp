@@ -263,7 +263,7 @@ cas_pool = gcp.certificateauthority.CaPool(
     name=cas_pool_name,
     location=region,
     tier=cas_tier,
-    publishing_options={"publish_ca_cert": True, "publish_crl": True},
+    publishing_options={"publish_ca_cert": True, "publish_crl": False},
 )
 
 gcp.certificateauthority.CaPoolIamMember(
