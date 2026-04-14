@@ -1,10 +1,5 @@
+encryptionsalt: v1:jSHwke72hec=:v1:WmCR7cPNWBQrR/aM:jKhfjqHFEaOUehVmf8LbgwIYsJ5O0g==
 config:
-  openchoreo:platform: gke
-  openchoreo:kubeconfig_path: gke-cluster/outputs/kubeconfig
-  openchoreo:kubeconfig_context: gke_pg-ae-n-app-237049_us-central1_openchoreo-gke
-  openchoreo:domain_base: idp.aistudio.consulting
-  openchoreo:enable_flux: "true"
-  openchoreo:enable_observability: "false"
   openchoreo:gcp_project_id: pg-ae-n-app-237049
   openchoreo:gcp_region: us-central1
   openchoreo:gcp_zone: us-central1-a
@@ -19,6 +14,10 @@ config:
   openchoreo:artifact_registry_repository_id: openchoreo
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
+  openchoreo:domain_base: idp.aistudio.consulting
+  openchoreo:deletion_protection: "false"
+  gcp:project: pg-ae-n-app-237049
+  gcp:region: us-central1
+  gcp:zone: us-central1-a
   openchoreo:github_pat:
-    secure: v1:oS9gCK+1qwMIf+7T:WtQXIZ/gF6aso2NXEnrakqzFgeRZwQGv0WsLgDkUSKreDf9lT4aqLmzYpcPfI7LUWE3DoT4l/jo=
-encryptionsalt: v1:eHarLhzMUXo=:v1:uMYqSD2RCun6S1Uf:cwKEMWz+dwF2oqgAiE886OTuyIk10A==
+    secure: v1:0/N0ZnXH2pRDW35C:VVMuJDZw7D6A3e/Z02uGkduqgON4EXAvJGHKY+czywB93uTTQry9IHLtaHSP5U13EGZWBeB1saQ=

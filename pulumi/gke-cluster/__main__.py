@@ -143,10 +143,8 @@ cluster = gcp.container.Cluster(
     maintenance_policy={
         "recurring_window": {
             "recurrence": "FREQ=WEEKLY;BYDAY=TU",
-            "window": {
-                "start_time": "2025-01-01T03:00:00Z",
-                "end_time": "2025-01-01T07:00:00Z",
-            },
+            "start_time": "2025-01-01T03:00:00Z",
+            "end_time": "2025-01-01T07:00:00Z",
         }
     },
 )
@@ -235,10 +233,12 @@ def create_secret(secret_id: str, payload: dict[str, pulumi.Input[str]]) -> None
         replication={"auto": {}},
         deletion_protection=deletion_protection,
     )
+    # Resolve any Output values in the payload before JSON serialization
+    secret_data = pulumi.Output.all(**payload).apply(lambda kv: json.dumps(kv))
     gcp.secretmanager.SecretVersion(
         f"{secret_id}-version",
         secret=secret.id,
-        secret_data=json.dumps(payload),
+        secret_data=secret_data,
     )
 
 
