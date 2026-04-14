@@ -139,10 +139,12 @@ cluster = gcp.container.Cluster(
         if database_encryption_key
         else {}
     ),
-    # H6: Maintenance window — Tue 03:00–07:00 UTC (low-traffic window)
+    # H6: Maintenance window — daily 03:00–07:00 UTC (low-traffic window)
+    # GKE requires ≥48h maintenance availability per 32-day rolling window;
+    # daily 4h = 120h/month, well above threshold.
     maintenance_policy={
         "recurring_window": {
-            "recurrence": "FREQ=WEEKLY;BYDAY=TU",
+            "recurrence": "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
             "start_time": "2025-01-01T03:00:00Z",
             "end_time": "2025-01-01T07:00:00Z",
         }
