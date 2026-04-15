@@ -75,6 +75,7 @@ github_pat = cfg.get_secret("github_pat") or ""
 domain_base = cfg.get("domain_base") or "gcp.openchoreo.example.com"
 deletion_protection = cfg.get_bool("deletion_protection") or False
 skip_iam_bindings = cfg.get_bool("skip_iam_bindings") or False
+skip_sa_key_creation = cfg.get_bool("skip_sa_key_creation") or False
 master_authorized_cidr = cfg.get("gcp_gke_master_authorized_cidr") or ""
 database_encryption_key = cfg.get("gcp_gke_database_encryption_key") or ""
 
@@ -272,11 +273,6 @@ dns_gsa = gcp.serviceaccount.Account(
     display_name="OpenChoreo DNS for ExternalDNS and cert-manager",
 )
 
-dns_gsa_key = gcp.serviceaccount.Key(
-    "dns-gsa-key",
-    service_account_id=dns_gsa.name,
-)
-
 dns_key_secret = gcp.secretmanager.Secret(
     "openchoreo-dns-key",
     project=project_id,
@@ -285,11 +281,22 @@ dns_key_secret = gcp.secretmanager.Secret(
     deletion_protection=deletion_protection,
 )
 
-gcp.secretmanager.SecretVersion(
-    "openchoreo-dns-key-version",
-    secret=dns_key_secret.id,
-    secret_data=dns_gsa_key.private_key_data.apply(lambda k: __import__("base64").b64decode(k).decode("utf-8")),
-)
+# PwC org policy constraints/iam.disableServiceAccountKeyCreation can block
+# programmatic SA key creation. When skip_sa_key_creation is True, create the
+# service account and Secret Manager secret shell only, then upload the JSON
+# key manually with:
+# gcloud secrets versions add openchoreo-dns-key --project=pg-ae-n-app-173978 --data-file=/path/to/key.json
+if not skip_sa_key_creation:
+    dns_gsa_key = gcp.serviceaccount.Key(
+        "dns-gsa-key",
+        service_account_id=dns_gsa.name,
+    )
+
+    gcp.secretmanager.SecretVersion(
+        "openchoreo-dns-key-version",
+        secret=dns_key_secret.id,
+        secret_data=dns_gsa_key.private_key.apply(lambda k: __import__("base64").b64decode(k).decode("utf-8")),
+    )
 
 # ---------------------------------------------------------------------------
 # IAM bindings — guarded by skip_iam_bindings for environments where the

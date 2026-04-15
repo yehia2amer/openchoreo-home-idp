@@ -16,6 +16,7 @@ config:
   openchoreo:gitops_repo_branch: main
   openchoreo:domain_base: idp.aistudio.consulting
   openchoreo:skip_iam_bindings: "true"
+  openchoreo:skip_sa_key_creation: "true"
   openchoreo:deletion_protection: "false"
   gcp:project: pg-ae-n-app-173978
   gcp:region: europe-west1
