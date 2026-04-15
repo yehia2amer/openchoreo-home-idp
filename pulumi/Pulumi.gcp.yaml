@@ -1,13 +1,13 @@
 config:
   openchoreo:platform: gke
   openchoreo:kubeconfig_path: gke-cluster/outputs/kubeconfig
-  openchoreo:kubeconfig_context: gke_pg-ae-n-app-237049_us-central1_openchoreo-gke
+  openchoreo:kubeconfig_context: gke_pg-ae-n-app-173978_europe-west1_openchoreo-gke
   openchoreo:domain_base: idp.aistudio.consulting
   openchoreo:enable_flux: "true"
   openchoreo:enable_observability: "false"
-  openchoreo:gcp_project_id: pg-ae-n-app-237049
-  openchoreo:gcp_region: us-central1
-  openchoreo:gcp_zone: us-central1-a
+  openchoreo:gcp_project_id: pg-ae-n-app-173978
+  openchoreo:gcp_region: europe-west1
+  openchoreo:gcp_zone: europe-west1-b
   openchoreo:gcp_network_name: openchoreo-vpc
   openchoreo:gcp_gke_cluster_name: openchoreo-gke
   openchoreo:gcp_gke_node_count: "3"

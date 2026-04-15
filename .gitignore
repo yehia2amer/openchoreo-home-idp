@@ -12,3 +12,4 @@ pulumi/gke-cluster/outputs/
 .env
 docs/reference-project-docs/
 .DS_Store
+pwc_gcp_roles.json

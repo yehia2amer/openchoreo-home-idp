@@ -73,17 +73,42 @@ gitops_repo_branch = cfg.get("gitops_repo_branch") or "main"
 github_pat = cfg.get_secret("github_pat") or ""
 domain_base = cfg.get("domain_base") or "gcp.openchoreo.example.com"
 deletion_protection = cfg.get_bool("deletion_protection") or False
+skip_iam_bindings = cfg.get_bool("skip_iam_bindings") or False
 master_authorized_cidr = cfg.get("gcp_gke_master_authorized_cidr") or ""
 database_encryption_key = cfg.get("gcp_gke_database_encryption_key") or ""
 
 outputs_dir = Path(__file__).resolve().parent / "outputs"
 flux_install_manifest_path = Path(__file__).resolve().parent.parent / "flux-install.yaml"
 
+# ---------------------------------------------------------------------------
+# Enable required GCP APIs (idempotent — no-ops if already active)
+# ---------------------------------------------------------------------------
+_REQUIRED_APIS = [
+    "compute.googleapis.com",
+    "container.googleapis.com",
+    "privateca.googleapis.com",
+    "secretmanager.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "iam.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+]
+
+api_services = []
+for api in _REQUIRED_APIS:
+    svc = gcp.projects.Service(
+        f"api-{api.split('.')[0]}",
+        service=api,
+        project=project_id,
+        disable_on_destroy=False,
+    )
+    api_services.append(svc)
+
 network = gcp.compute.Network(
     "openchoreo-vpc",
     name=network_name,
     auto_create_subnetworks=False,
     project=project_id,
+    opts=pulumi.ResourceOptions(depends_on=api_services),
 )
 
 subnetwork = gcp.compute.Subnetwork(
@@ -97,6 +122,33 @@ subnetwork = gcp.compute.Subnetwork(
         {"range_name": f"{cluster_name}-pods", "ip_cidr_range": "10.20.0.0/16"},
         {"range_name": f"{cluster_name}-services", "ip_cidr_range": "10.30.0.0/20"},
     ],
+)
+
+# ---------------------------------------------------------------------------
+# Cloud Router + Cloud NAT — required for private nodes to reach the internet
+# (pull images, reach GitHub, etc.) without external IPs on VMs.
+# Org policy constraints/compute.vmExternalIpAccess = DENY requires this.
+# ---------------------------------------------------------------------------
+cloud_router = gcp.compute.Router(
+    "openchoreo-router",
+    name=f"{cluster_name}-router",
+    project=project_id,
+    region=region,
+    network=network.id,
+)
+
+cloud_nat = gcp.compute.RouterNat(
+    "openchoreo-nat",
+    name=f"{cluster_name}-nat",
+    project=project_id,
+    region=region,
+    router=cloud_router.name,
+    nat_ip_allocate_option="AUTO_ONLY",
+    source_subnetwork_ip_ranges_to_nat="ALL_SUBNETWORKS_ALL_IP_RANGES",
+    log_config={
+        "enable": True,
+        "filter": "ERRORS_ONLY",
+    },
 )
 
 cluster = gcp.container.Cluster(
@@ -117,6 +169,14 @@ cluster = gcp.container.Cluster(
     ip_allocation_policy={
         "cluster_secondary_range_name": f"{cluster_name}-pods",
         "services_secondary_range_name": f"{cluster_name}-services",
+    },
+    # Private cluster — nodes have no external IPs (satisfies org policy
+    # constraints/compute.vmExternalIpAccess DENY). Control plane stays
+    # publicly accessible so kubectl/Pulumi work from outside the VPC.
+    private_cluster_config={
+        "enable_private_nodes": True,
+        "enable_private_endpoint": False,
+        "master_ipv4_cidr_block": "172.16.0.0/28",
     },
     logging_service="logging.googleapis.com/kubernetes",
     monitoring_service="monitoring.googleapis.com/kubernetes",
@@ -149,6 +209,7 @@ cluster = gcp.container.Cluster(
             "end_time": "2025-01-01T07:00:00Z",
         }
     },
+    opts=pulumi.ResourceOptions(depends_on=[cloud_nat]),
 )
 
 node_pool = gcp.container.NodePool(
@@ -202,29 +263,39 @@ cas_gsa = gcp.serviceaccount.Account(
     display_name="OpenChoreo CAS Workload Identity",
 )
 
-# NOTE: Scoping to individual secrets (gcp.secretmanager.SecretIamMember) would be
-# tighter, but ESO needs access to ANY secret the user creates in GCP SM.
-# Project-level is the practical minimum scope for a generic secret-store operator.
-gcp.projects.IAMMember(
-    "eso-secretmanager-access",
-    project=project_id,
-    role="roles/secretmanager.secretAccessor",
-    member=eso_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
-)
+# ---------------------------------------------------------------------------
+# IAM bindings — guarded by skip_iam_bindings for environments where the
+# deployer lacks setIamPolicy permissions.  When True, an admin must run
+# prereqs/iam-setup.sh once to create these bindings manually.
+# ---------------------------------------------------------------------------
+if not skip_iam_bindings:
+    # NOTE: Scoping to individual secrets (gcp.secretmanager.SecretIamMember) would be
+    # tighter, but ESO needs access to ANY secret the user creates in GCP SM.
+    # Project-level is the practical minimum scope for a generic secret-store operator.
+    gcp.projects.IAMMember(
+        "eso-secretmanager-access",
+        project=project_id,
+        role="roles/secretmanager.secretAccessor",
+        member=eso_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
+    )
 
-gcp.serviceaccount.IAMMember(
-    "eso-workload-identity-binding",
-    service_account_id=eso_gsa.name,
-    role="roles/iam.workloadIdentityUser",
-    member=f"serviceAccount:{project_id}.svc.id.goog[{NS_EXTERNAL_SECRETS}/{SA_ESO_K8S}]",
-)
+    # Workload Identity bindings reference the GKE WI pool (project.svc.id.goog)
+    # which only exists after the cluster is created.
+    gcp.serviceaccount.IAMMember(
+        "eso-workload-identity-binding",
+        service_account_id=eso_gsa.name,
+        role="roles/iam.workloadIdentityUser",
+        member=f"serviceAccount:{project_id}.svc.id.goog[{NS_EXTERNAL_SECRETS}/{SA_ESO_K8S}]",
+        opts=pulumi.ResourceOptions(depends_on=[cluster]),
+    )
 
-gcp.serviceaccount.IAMMember(
-    "cas-workload-identity-binding",
-    service_account_id=cas_gsa.name,
-    role="roles/iam.workloadIdentityUser",
-    member=f"serviceAccount:{project_id}.svc.id.goog[{NS_CERT_MANAGER}/{SA_CAS_GCP}]",
-)
+    gcp.serviceaccount.IAMMember(
+        "cas-workload-identity-binding",
+        service_account_id=cas_gsa.name,
+        role="roles/iam.workloadIdentityUser",
+        member=f"serviceAccount:{project_id}.svc.id.goog[{NS_CERT_MANAGER}/{SA_CAS_GCP}]",
+        opts=pulumi.ResourceOptions(depends_on=[cluster]),
+    )
 
 
 def create_secret(secret_id: str, payload: dict[str, pulumi.Input[str]]) -> None:
@@ -268,13 +339,14 @@ cas_pool = gcp.certificateauthority.CaPool(
     publishing_options={"publish_ca_cert": True, "publish_crl": False},
 )
 
-gcp.certificateauthority.CaPoolIamMember(
-    "cas-certificate-requester",
-    ca_pool=cas_pool.id,
-    location=region,
-    role="roles/privateca.certificateRequester",
-    member=cas_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
-)
+if not skip_iam_bindings:
+    gcp.certificateauthority.CaPoolIamMember(
+        "cas-certificate-requester",
+        ca_pool=cas_pool.id,
+        location=region,
+        role="roles/privateca.certificateRequester",
+        member=cas_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
+    )
 
 root_ca = gcp.certificateauthority.Authority(
     "openchoreo-root-ca",

@@ -1,8 +1,8 @@
 encryptionsalt: v1:jSHwke72hec=:v1:WmCR7cPNWBQrR/aM:jKhfjqHFEaOUehVmf8LbgwIYsJ5O0g==
 config:
-  openchoreo:gcp_project_id: pg-ae-n-app-237049
-  openchoreo:gcp_region: us-central1
-  openchoreo:gcp_zone: us-central1-a
+  openchoreo:gcp_project_id: pg-ae-n-app-173978
+  openchoreo:gcp_region: europe-west1
+  openchoreo:gcp_zone: europe-west1-b
   openchoreo:gcp_network_name: openchoreo-vpc
   openchoreo:gcp_gke_cluster_name: openchoreo-gke
   openchoreo:gcp_gke_node_count: "3"
@@ -15,9 +15,10 @@ config:
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
   openchoreo:domain_base: idp.aistudio.consulting
+  openchoreo:skip_iam_bindings: "true"
   openchoreo:deletion_protection: "false"
-  gcp:project: pg-ae-n-app-237049
-  gcp:region: us-central1
-  gcp:zone: us-central1-a
+  gcp:project: pg-ae-n-app-173978
+  gcp:region: europe-west1
+  gcp:zone: europe-west1-b
   openchoreo:github_pat:
     secure: v1:0/N0ZnXH2pRDW35C:VVMuJDZw7D6A3e/Z02uGkduqgON4EXAvJGHKY+czywB93uTTQry9IHLtaHSP5U13EGZWBeB1saQ=
