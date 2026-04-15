@@ -15,7 +15,7 @@ NS_EXTERNAL_SECRETS = "external-secrets"
 NS_CERT_MANAGER = "cert-manager"
 SA_ESO_K8S = "external-secrets"  # Default ESO SA; Flux patches it with WI annotation
 SA_CAS_GCP = "google-cas-issuer"
-GATEWAY_CLASS_NAME = "gke-l7-rilb"
+GATEWAY_CLASS_NAME = "kgateway"
 CLUSTER_ISSUER_NAME = "openchoreo-cas-issuer"
 
 
@@ -67,6 +67,7 @@ cas_pool_name = cfg.get("gcp_cas_pool_name") or "openchoreo-ca-pool"
 cas_tier = cfg.get("gcp_cas_tier") or "DEVOPS"
 eso_gsa_name = cfg.get("gcp_eso_service_account") or "openchoreo-eso"
 cas_gsa_name = cfg.get("gcp_cas_service_account") or "openchoreo-cas"
+dns_gsa_name = cfg.get("gcp_dns_service_account") or "openchoreo-dns"
 artifact_registry_repository_id = cfg.get("artifact_registry_repository_id") or "openchoreo"
 gitops_repo_url = cfg.get("gitops_repo_url") or ""
 gitops_repo_branch = cfg.get("gitops_repo_branch") or "main"
@@ -86,6 +87,7 @@ flux_install_manifest_path = Path(__file__).resolve().parent.parent / "flux-inst
 _REQUIRED_APIS = [
     "compute.googleapis.com",
     "container.googleapis.com",
+    "dns.googleapis.com",
     "privateca.googleapis.com",
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
@@ -263,6 +265,32 @@ cas_gsa = gcp.serviceaccount.Account(
     display_name="OpenChoreo CAS Workload Identity",
 )
 
+dns_gsa = gcp.serviceaccount.Account(
+    "dns-gsa",
+    project=project_id,
+    account_id=dns_gsa_name,
+    display_name="OpenChoreo DNS for ExternalDNS and cert-manager",
+)
+
+dns_gsa_key = gcp.serviceaccount.Key(
+    "dns-gsa-key",
+    service_account_id=dns_gsa.name,
+)
+
+dns_key_secret = gcp.secretmanager.Secret(
+    "openchoreo-dns-key",
+    project=project_id,
+    secret_id="openchoreo-dns-key",
+    replication={"auto": {}},
+    deletion_protection=deletion_protection,
+)
+
+gcp.secretmanager.SecretVersion(
+    "openchoreo-dns-key-version",
+    secret=dns_key_secret.id,
+    secret_data=dns_gsa_key.private_key_data.apply(lambda k: __import__("base64").b64decode(k).decode("utf-8")),
+)
+
 # ---------------------------------------------------------------------------
 # IAM bindings — guarded by skip_iam_bindings for environments where the
 # deployer lacks setIamPolicy permissions.  When True, an admin must run
@@ -277,6 +305,14 @@ if not skip_iam_bindings:
         project=project_id,
         role="roles/secretmanager.secretAccessor",
         member=eso_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
+    )
+
+    # DNS admin on the DNS project (cross-project)
+    gcp.projects.IAMMember(
+        "dns-admin-binding",
+        project="pg-ae-n-app-237049",
+        role="roles/dns.admin",
+        member=dns_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
     )
 
     # Workload Identity bindings reference the GKE WI pool (project.svc.id.goog)
@@ -507,6 +543,7 @@ pulumi.export("gcp_gke_cluster_name", cluster_name)
 pulumi.export("gcp_cas_pool_name", cas_pool.name)
 pulumi.export("gcp_eso_service_account", eso_gsa.email)
 pulumi.export("gcp_cas_service_account", cas_gsa.email)
+pulumi.export("gcp_dns_service_account", dns_gsa.email)
 pulumi.export(
     "artifact_registry_url",
     pulumi.Output.concat(region, "-docker.pkg.dev/", project_id, "/", artifact_registry.repository_id),
