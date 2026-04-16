@@ -183,6 +183,8 @@ cluster = gcp.container.Cluster(
     },
     logging_service="logging.googleapis.com/kubernetes",
     monitoring_service="monitoring.googleapis.com/kubernetes",
+    # Enable GCP Managed Prometheus (GMP) for workload metrics collection.
+    monitoring_config={"managed_prometheus": {"enabled": True}},
     **(
         {
             "master_authorized_networks_config": {
@@ -441,6 +443,49 @@ artifact_registry = gcp.artifactregistry.Repository(
     format="DOCKER",
 )
 
+# ---------------------------------------------------------------------------
+# Artifact Registry push service account + key + GCP Secret Manager secret
+# Argo Workflows uses this to push built images to AR.
+# ---------------------------------------------------------------------------
+ar_push_gsa = gcp.serviceaccount.Account(
+    "ar-push-gsa",
+    project=project_id,
+    account_id="openchoreo-ar-push",
+    display_name="OpenChoreo Artifact Registry Push (Argo Workflows)",
+)
+
+if not skip_iam_bindings:
+    gcp.artifactregistry.RepositoryIamMember(
+        "ar-push-writer",
+        project=project_id,
+        location=region,
+        repository=artifact_registry.repository_id,
+        role="roles/artifactregistry.writer",
+        member=ar_push_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
+    )
+
+ar_push_key_secret = gcp.secretmanager.Secret(
+    "openchoreo-ar-push-key",
+    project=project_id,
+    secret_id="openchoreo-ar-push-key",
+    replication={"auto": {}},
+    deletion_protection=deletion_protection,
+)
+
+if not skip_sa_key_creation:
+    ar_push_gsa_key = gcp.serviceaccount.Key(
+        "ar-push-gsa-key",
+        service_account_id=ar_push_gsa.name,
+    )
+
+    gcp.secretmanager.SecretVersion(
+        "openchoreo-ar-push-key-version",
+        secret=ar_push_key_secret.id,
+        secret_data=ar_push_gsa_key.private_key.apply(
+            lambda k: __import__("base64").b64decode(k).decode("utf-8")
+        ),
+    )
+
 kubeconfig_raw = pulumi.Output.all(
     cluster.endpoint,
     cluster.master_auth,
@@ -556,6 +601,7 @@ pulumi.export(
     pulumi.Output.concat(region, "-docker.pkg.dev/", project_id, "/", artifact_registry.repository_id),
 )
 pulumi.export("artifact_registry_repository_id", artifact_registry.repository_id)
+pulumi.export("ar_push_service_account", ar_push_gsa.email)
 pulumi.export("gateway_class_name", GATEWAY_CLASS_NAME)
 pulumi.export("cluster_issuer_name", CLUSTER_ISSUER_NAME)
 pulumi.export("cas_authority_name", subordinate_ca.name)

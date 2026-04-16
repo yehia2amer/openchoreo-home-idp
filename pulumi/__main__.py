@@ -74,6 +74,7 @@ def main() -> None:
     pulumi.export("cilium_enabled", cfg.platform.gateway_mode == "cilium")
     pulumi.export("flux_enabled", cfg.enable_flux)
     pulumi.export("observability_enabled", cfg.enable_observability)
+    pulumi.export("observability_mode", cfg.platform.observability_mode)
     pulumi.export("demo_app_bootstrap_enabled", cfg.enable_demo_app_bootstrap)
 
     pulumi.export(
@@ -103,6 +104,7 @@ def main() -> None:
         "CILIUM_ENABLED": str(cfg.platform.gateway_mode == "cilium").lower(),
         "FLUX_ENABLED": str(cfg.enable_flux).lower(),
         "OBSERVABILITY_ENABLED": str(cfg.enable_observability).lower(),
+        "OBSERVABILITY_MODE": cfg.platform.observability_mode,
         "NS_CONTROL_PLANE": NS_CONTROL_PLANE,
         "NS_DATA_PLANE": NS_DATA_PLANE,
         "NS_WORKFLOW_PLANE": NS_WORKFLOW_PLANE,

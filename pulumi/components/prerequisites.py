@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 import pulumi
+import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
 
 from config import (
@@ -166,6 +169,31 @@ class Prerequisites(pulumi.ComponentResource):
             1,
             opts=self._child_opts(depends_on=base_depends),
         )
+
+        if cfg.enable_openobserve and cfg.openobserve_admin_password:
+            openobserve_admin_secret = gcp.secretmanager.Secret(
+                "openobserve-admin-credentials",
+                project=cfg.gcp_project_id,
+                secret_id="openobserve-admin-credentials",
+                replication={"auto": {}},
+                opts=self._child_opts(depends_on=base_depends),
+            )
+
+            openobserve_admin_secret_version = gcp.secretmanager.SecretVersion(
+                "openobserve-admin-credentials-version",
+                secret=openobserve_admin_secret.id,
+                secret_data=pulumi.Output.secret(
+                    pulumi.Output.all(cfg.openobserve_admin_email, cfg.openobserve_admin_password).apply(
+                        lambda args: json.dumps(
+                            {
+                                "ZO_ROOT_USER_EMAIL": args[0],
+                                "ZO_ROOT_USER_PASSWORD": args[1],
+                            }
+                        )
+                    )
+                ),
+                opts=self._child_opts(depends_on=[openobserve_admin_secret]),
+            )
 
         return SecretBackendResult(
             openbao_ready=None,

@@ -4,7 +4,7 @@ config:
   openchoreo:kubeconfig_context: gke_pg-ae-n-app-173978_europe-west1_openchoreo-gke
   openchoreo:domain_base: idp.aistudio.consulting
   openchoreo:enable_flux: "true"
-  openchoreo:enable_observability: "false"
+  openchoreo:enable_observability: "true"
   openchoreo:gcp_project_id: pg-ae-n-app-173978
   openchoreo:gcp_region: europe-west1
   openchoreo:gcp_zone: europe-west1-b
