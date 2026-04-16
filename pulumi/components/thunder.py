@@ -232,6 +232,7 @@ fi
         thunder = k8s.helm.v3.Release(
             "thunder",
             k8s.helm.v3.ReleaseArgs(
+                name="thunder",
                 chart=cfg.thunder_chart,
                 version=cfg.thunder_version,
                 namespace=NS_THUNDER,

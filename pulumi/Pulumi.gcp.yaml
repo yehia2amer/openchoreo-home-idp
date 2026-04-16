@@ -5,6 +5,8 @@ config:
   openchoreo:domain_base: idp.aistudio.consulting
   openchoreo:enable_flux: "true"
   openchoreo:enable_observability: "true"
+  openchoreo:enable_openobserve: "true"
+  openchoreo:openobserve_admin_email: admin@openchoreo.local
   openchoreo:gcp_project_id: pg-ae-n-app-173978
   openchoreo:gcp_region: europe-west1
   openchoreo:gcp_zone: europe-west1-b
@@ -21,4 +23,6 @@ config:
   openchoreo:gitops_repo_branch: main
   openchoreo:github_pat:
     secure: v1:oS9gCK+1qwMIf+7T:WtQXIZ/gF6aso2NXEnrakqzFgeRZwQGv0WsLgDkUSKreDf9lT4aqLmzYpcPfI7LUWE3DoT4l/jo=
+  openchoreo:openobserve_admin_password:
+    secure: v1:iFV7JMQ6xa/I3Bz8:8k+vQgbPygw1XnwSUnbrodYNyScYpV4QlwHjBqwyoVV6HH5XG8VM
 encryptionsalt: v1:eHarLhzMUXo=:v1:uMYqSD2RCun6S1Uf:cwKEMWz+dwF2oqgAiE886OTuyIk10A==

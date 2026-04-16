@@ -195,6 +195,22 @@ class Prerequisites(pulumi.ComponentResource):
                 opts=self._child_opts(depends_on=[openobserve_admin_secret]),
             )
 
+        observer_oauth_secret = gcp.secretmanager.Secret(
+            "observer-oauth-client-secret",
+            project=cfg.gcp_project_id,
+            secret_id="observer-oauth-client-secret",
+            replication={"auto": {}},
+            opts=self._child_opts(depends_on=base_depends),
+        )
+        gcp.secretmanager.SecretVersion(
+            "observer-oauth-client-secret-version",
+            secret=observer_oauth_secret.id,
+            secret_data=pulumi.Output.secret(
+                json.dumps({"value": "openchoreo-observer-resource-reader-client-secret"})
+            ),
+            opts=self._child_opts(depends_on=[observer_oauth_secret]),
+        )
+
         return SecretBackendResult(
             openbao_ready=None,
             cluster_secret_store=None,
