@@ -133,9 +133,11 @@ spec:
               "pkce_required": false,
               "public_client": false,
               "token": {
-                "access_token": {"expiry_time": 3600, "binding_type": "certificate"},
-                "id_token": {"expiry_time": 3600, "audiences": ["openchoreo-backstage-client"]}
-              }
+                "access_token": {"expiry_time": 3600, "binding_type": "certificate", "user_attributes": ["given_name","family_name","email","groups","name","username"]},
+                "id_token": {"expiry_time": 3600, "audiences": ["openchoreo-backstage-client"], "user_attributes": ["given_name","family_name","email","groups","name","username"]}
+              },
+              "user_info": {"user_attributes": ["given_name","family_name","email","groups","name","username"]},
+              "scope_claims": {"email": ["email","email_verified"], "profile": ["name","given_name","family_name","picture","username"], "group": ["groups"]}
             }
           }]
         }'
@@ -222,6 +224,12 @@ curl -sk -D- -o /dev/null \
 6. **The `setup.sh` in the image handles everything**: You don't need to write custom init logic — `./setup.sh` from the Thunder image orchestrates starting Thunder, running bootstrap scripts, and shutting down. The issue is that the bootstrap scripts ConfigMap has broken URLs (external HTTPS instead of localhost HTTP).
 
 7. **If PVC is deleted/recreated, ALL data is lost**: The setup must run again from scratch. This includes all users, groups, OAuth apps, and configuration.
+
+8. **OAuth apps REQUIRE explicit user_attributes and scope_claims**: Thunder does NOT auto-include user claims in tokens. Each OAuth app must configure token.access_token.user_attributes, token.id_token.user_attributes, user_info.user_attributes (all set to ["given_name","family_name","email","groups","name","username"]) and scope_claims ({"email":["email","email_verified"],"profile":["name","given_name","family_name","picture","username"],"group":["groups"]}). Without these, Backstage receives tokens with no claims → "User profile/email is undefined".
+
+9. **Playwright password input has no textbox role**: <input type="password"> does NOT have ARIA role textbox. Use page.locator("#password") instead of getByRole("textbox", {name:"Password"}). Thunder login selectors: #username, #password, button[type="submit"].
+
+10. **Backstage extractProfileFromPayload needs email+name claims**: The function at /app/plugins/auth-backend-module-openchoreo-auth/dist/oidcAuthenticator.cjs.js extracts email from payload.email ?? payload.preferred_username ?? payload.username, and displayName from payload.name ?? (given_name + family_name). Both access_token and id_token payloads are checked.
 
 ---
 

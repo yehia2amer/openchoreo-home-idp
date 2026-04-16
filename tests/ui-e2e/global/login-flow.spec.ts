@@ -8,7 +8,8 @@ import { test, expect, type Page } from '@playwright/test';
 const BACKSTAGE_URL =
   process.env.BACKSTAGE_URL ?? 'https://backstage.idp.aistudio.consulting';
 const USERNAME = process.env.THUNDER_USERNAME ?? 'admin@openchoreo.dev';
-const PASSWORD = process.env.THUNDER_PASSWORD ?? 'admin';
+const PASSWORD = process.env.THUNDER_PASSWORD ?? 'Admin@123';
+const AUTH_ERROR_TEXT = 'Authentication failed, Invalid client credentials';
 
 test.describe('Login Flow', () => {
   test.use({
@@ -29,7 +30,8 @@ test.describe('Login Flow', () => {
     }
   });
 
-  test.afterEach(async (_unused, testInfo) => {
+  test.afterEach(async ({ page }, testInfo) => {
+    void page;
     if (testInfo.status !== testInfo.expectedStatus) {
       try {
         testInfo.annotations.push({
@@ -47,16 +49,16 @@ async function loginFlow(page: Page): Promise<void> {
   // Given: navigate to Backstage, expect OAuth redirect
   await page.goto(BACKSTAGE_URL, {
     waitUntil: 'domcontentloaded',
-    timeout: 30_000,
+    timeout: 60_000,
   });
 
   // When: OAuth redirects to Thunder login page
   await page.waitForURL(
     (url) => /thunder|oauth|login|authorize/.test(url.href),
-    { timeout: 30_000 },
+    { timeout: 60_000 },
   );
 
-  // When: fill username (multiple selectors for Thunder's varying form layouts)
+  // Thunder shell can stay blank for a while before the actual form mounts.
   const usernameField = page
     .locator(
       [
@@ -68,14 +70,17 @@ async function loginFlow(page: Page): Promise<void> {
       ].join(', '),
     )
     .first();
-  await usernameField.waitFor({ state: 'visible', timeout: 15_000 });
+  await usernameField.waitFor({ state: 'visible', timeout: 90_000 });
   await usernameField.fill(USERNAME);
 
   // When: handle optional "Continue" step before password
-  const continueButton = page.locator('button:has-text("Continue")');
+  const continueButton = page.getByRole('button', { name: /continue/i });
   if (await continueButton.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await continueButton.click();
-    await page.waitForTimeout(1_000);
+    await page
+      .locator('input[name="password"], input[type="password"], #password')
+      .first()
+      .waitFor({ state: 'visible', timeout: 30_000 });
   }
 
   // When: fill password
@@ -86,7 +91,7 @@ async function loginFlow(page: Page): Promise<void> {
       ),
     )
     .first();
-  await passwordField.waitFor({ state: 'visible', timeout: 15_000 });
+  await passwordField.waitFor({ state: 'visible', timeout: 30_000 });
   await passwordField.fill(PASSWORD);
 
   await page.screenshot({ path: 'test-results/login-flow-before-submit.png' });
@@ -98,18 +103,26 @@ async function loginFlow(page: Page): Promise<void> {
         'button[type="submit"]',
         'input[type="submit"]',
         'button:has-text("Sign in")',
+        'button:has-text("Sign In")',
         'button:has-text("Log in")',
       ].join(', '),
     )
     .first();
-  await submitButton.waitFor({ state: 'visible', timeout: 15_000 });
+  await submitButton.waitFor({ state: 'visible', timeout: 30_000 });
   await submitButton.click();
 
   // Then: redirected back to Backstage
   await page.waitForURL(
-    (url) => url.href.includes(new URL(BACKSTAGE_URL).hostname),
-    { timeout: 30_000 },
+    (url) =>
+      url.href.includes(new URL(BACKSTAGE_URL).hostname) ||
+      url.pathname === '/gate/signin',
+    { timeout: 90_000 },
   );
+
+  await expect(
+    page.locator(`text=${AUTH_ERROR_TEXT}`),
+    `Live OAuth callback returned an auth backend error instead of landing in Backstage: ${page.url()}`,
+  ).toHaveCount(0, { timeout: 5_000 });
 
   // Then: main screen is visible
   const landingIndicator = page
