@@ -7,6 +7,7 @@
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
     "test:global": "npx playwright test global/",
+    "test:login": "npx playwright test global/login-flow.spec.ts",
     "test:catalog": "npx playwright test catalog/",
     "test:platform": "npx playwright test platform/",
     "test:project": "npx playwright test project/",
