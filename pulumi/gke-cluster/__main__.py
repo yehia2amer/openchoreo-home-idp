@@ -68,6 +68,7 @@ cas_tier = cfg.get("gcp_cas_tier") or "DEVOPS"
 eso_gsa_name = cfg.get("gcp_eso_service_account") or "openchoreo-eso"
 cas_gsa_name = cfg.get("gcp_cas_service_account") or "openchoreo-cas"
 dns_gsa_name = cfg.get("gcp_dns_service_account") or "openchoreo-dns"
+dns_project_id = cfg.get("gcp_dns_project_id") or project_id
 artifact_registry_repository_id = cfg.get("artifact_registry_repository_id") or "openchoreo"
 gitops_repo_url = cfg.get("gitops_repo_url") or ""
 gitops_repo_branch = cfg.get("gitops_repo_branch") or "main"
@@ -275,31 +276,42 @@ dns_gsa = gcp.serviceaccount.Account(
     display_name="OpenChoreo DNS for ExternalDNS and cert-manager",
 )
 
-dns_key_secret = gcp.secretmanager.Secret(
-    "openchoreo-dns-key",
-    project=project_id,
-    secret_id="openchoreo-dns-key",
-    replication={"auto": {}},
-    deletion_protection=deletion_protection,
-)
+# ---------------------------------------------------------------------------
+# Authentication strategy:
+# - Default (skip_iam_bindings=False): Workload Identity bindings
+#   K8s SAs authenticate directly as GCP SAs via GKE metadata server
+# - Fallback (skip_iam_bindings=True): SA key files in Secret Manager
+#   For environments where IAM binding creation is restricted
+# ---------------------------------------------------------------------------
 
-# PwC org policy constraints/iam.disableServiceAccountKeyCreation can block
-# programmatic SA key creation. When skip_sa_key_creation is True, create the
-# service account and Secret Manager secret shell only, then upload the JSON
-# key manually with:
-# gcloud secrets versions add openchoreo-dns-key --project=pg-ae-n-app-173978 --data-file=/path/to/key.json
-if not skip_sa_key_creation:
-    dns_gsa_key = gcp.serviceaccount.Key(
-        "dns-gsa-key",
-        service_account_id=dns_gsa.name,
+# When using WI (default), the SA key + Secret Manager secret are not needed.
+# When skip_iam_bindings is True (fallback), create SA keys and store them in
+# Secret Manager so that workloads can authenticate via key files.
+if skip_iam_bindings:
+    dns_key_secret = gcp.secretmanager.Secret(
+        "openchoreo-dns-key",
+        project=project_id,
+        secret_id="openchoreo-dns-key",
+        replication={"auto": {}},
+        deletion_protection=deletion_protection,
     )
 
-    gcp.secretmanager.SecretVersion(
-        "openchoreo-dns-key-version",
-        secret=dns_key_secret.id,
-        secret_data=dns_gsa_key.private_key.apply(lambda k: __import__("base64").b64decode(k).decode("utf-8")),
-    )
+    # PwC org policy constraints/iam.disableServiceAccountKeyCreation can block
+    # programmatic SA key creation. When skip_sa_key_creation is True, create the
+    # service account and Secret Manager secret shell only, then upload the JSON
+    # key manually with:
+    # gcloud secrets versions add openchoreo-dns-key --project=pg-ae-n-app-173978 --data-file=/path/to/key.json
+    if not skip_sa_key_creation:
+        dns_gsa_key = gcp.serviceaccount.Key(
+            "dns-gsa-key",
+            service_account_id=dns_gsa.name,
+        )
 
+        gcp.secretmanager.SecretVersion(
+            "openchoreo-dns-key-version",
+            secret=dns_key_secret.id,
+            secret_data=dns_gsa_key.private_key.apply(lambda k: __import__("base64").b64decode(k).decode("utf-8")),
+        )
 # ---------------------------------------------------------------------------
 # IAM bindings — guarded by skip_iam_bindings for environments where the
 # deployer lacks setIamPolicy permissions.  When True, an admin must run
@@ -319,7 +331,7 @@ if not skip_iam_bindings:
     # DNS admin on the DNS project (cross-project)
     gcp.projects.IAMMember(
         "dns-admin-binding",
-        project="pg-ae-n-app-237049",
+        project=dns_project_id,
         role="roles/dns.admin",
         member=dns_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
     )
@@ -342,6 +354,25 @@ if not skip_iam_bindings:
         opts=pulumi.ResourceOptions(depends_on=[cluster]),
     )
 
+    # WI binding: ExternalDNS KSA → DNS GSA
+    gcp.serviceaccount.IAMMember("dns-wi-externaldns",
+        service_account_id=dns_gsa.name,
+        role="roles/iam.workloadIdentityUser",
+        member=pulumi.Output.concat(
+            "serviceAccount:", project_id, ".svc.id.goog[external-dns/external-dns-google]"
+        ),
+        opts=pulumi.ResourceOptions(depends_on=[dns_gsa]),
+    )
+
+    # WI binding: cert-manager KSA → DNS GSA
+    gcp.serviceaccount.IAMMember("dns-wi-certmanager",
+        service_account_id=dns_gsa.name,
+        role="roles/iam.workloadIdentityUser",
+        member=pulumi.Output.concat(
+            "serviceAccount:", project_id, ".svc.id.goog[cert-manager/cert-manager]"
+        ),
+        opts=pulumi.ResourceOptions(depends_on=[dns_gsa]),
+    )
 
 def create_secret(secret_id: str, payload: dict[str, pulumi.Input[str]]) -> None:
     secret = gcp.secretmanager.Secret(
@@ -464,28 +495,38 @@ if not skip_iam_bindings:
         member=ar_push_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
     )
 
-ar_push_key_secret = gcp.secretmanager.Secret(
-    "openchoreo-ar-push-key",
-    project=project_id,
-    secret_id="openchoreo-ar-push-key",
-    replication={"auto": {}},
-    deletion_protection=deletion_protection,
-)
-
-if not skip_sa_key_creation:
-    ar_push_gsa_key = gcp.serviceaccount.Key(
-        "ar-push-gsa-key",
+    # WI binding: Argo workflow KSA → AR-push GSA
+    gcp.serviceaccount.IAMMember("ar-push-wi-workflow",
         service_account_id=ar_push_gsa.name,
-    )
-
-    gcp.secretmanager.SecretVersion(
-        "openchoreo-ar-push-key-version",
-        secret=ar_push_key_secret.id,
-        secret_data=ar_push_gsa_key.private_key.apply(
-            lambda k: __import__("base64").b64decode(k).decode("utf-8")
+        role="roles/iam.workloadIdentityUser",
+        member=pulumi.Output.concat(
+            "serviceAccount:", project_id, ".svc.id.goog[workflows-default/workflow-sa]"
         ),
+        opts=pulumi.ResourceOptions(depends_on=[ar_push_gsa]),
     )
 
+if skip_iam_bindings:
+    ar_push_key_secret = gcp.secretmanager.Secret(
+        "openchoreo-ar-push-key",
+        project=project_id,
+        secret_id="openchoreo-ar-push-key",
+        replication={"auto": {}},
+        deletion_protection=deletion_protection,
+    )
+
+    if not skip_sa_key_creation:
+        ar_push_gsa_key = gcp.serviceaccount.Key(
+            "ar-push-gsa-key",
+            service_account_id=ar_push_gsa.name,
+        )
+
+        gcp.secretmanager.SecretVersion(
+            "openchoreo-ar-push-key-version",
+            secret=ar_push_key_secret.id,
+            secret_data=ar_push_gsa_key.private_key.apply(
+                lambda k: __import__("base64").b64decode(k).decode("utf-8")
+            ),
+        )
 kubeconfig_raw = pulumi.Output.all(
     cluster.endpoint,
     cluster.master_auth,
@@ -602,6 +643,7 @@ pulumi.export(
 )
 pulumi.export("artifact_registry_repository_id", artifact_registry.repository_id)
 pulumi.export("ar_push_service_account", ar_push_gsa.email)
+pulumi.export("gcp_ar_push_service_account", ar_push_gsa.email)
 pulumi.export("gateway_class_name", GATEWAY_CLASS_NAME)
 pulumi.export("cluster_issuer_name", CLUSTER_ISSUER_NAME)
 pulumi.export("cas_authority_name", subordinate_ca.name)

@@ -3,6 +3,7 @@ config:
   openchoreo:gcp_project_id: pg-ae-n-app-173978
   openchoreo:gcp_region: europe-west1
   openchoreo:gcp_zone: europe-west1-b
+  openchoreo:gcp_dns_project_id: pg-ae-n-app-237049
   openchoreo:gcp_network_name: openchoreo-vpc
   openchoreo:gcp_gke_cluster_name: openchoreo-gke
   openchoreo:gcp_gke_node_count: "3"
@@ -15,7 +16,7 @@ config:
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
   openchoreo:domain_base: idp.aistudio.consulting
-  openchoreo:skip_iam_bindings: "true"
+  openchoreo:skip_iam_bindings: "false"
   openchoreo:skip_sa_key_creation: "true"
   openchoreo:deletion_protection: "false"
   gcp:project: pg-ae-n-app-173978
