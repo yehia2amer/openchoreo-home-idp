@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import pulumi
-import pulumi_gcp as gcp
 import pulumi_kubernetes as k8s
 
 from config import (
@@ -17,14 +16,14 @@ from config import (
     NS_EXTERNAL_SECRETS,
     NS_FLUX_SYSTEM,
     NS_OPENBAO,
-    SA_ESO_OPENBAO,
     SLEEP_AFTER_GATEWAY_API,
     SLEEP_AFTER_OPENBAO,
     TIMEOUT_TLS_WAIT,
     TIMEOUT_WAIT,
     OpenChoreoConfig,
 )
-from helpers.dynamic_providers import WaitCustomResourceCondition, WaitPodReady
+from helpers.component_utils import child_opts
+from helpers.dynamic_providers import WaitPodReady
 from helpers.wait import sleep
 from values.openbao import get_values as openbao_values
 
@@ -71,7 +70,7 @@ class Prerequisites(pulumi.ComponentResource):
         base_depends = extra_depends or []
         p = cfg.platform
 
-        wait_gw = sleep("gateway-api", SLEEP_AFTER_GATEWAY_API, opts=self._child_opts(depends_on=base_depends))
+        wait_gw = sleep("gateway-api", SLEEP_AFTER_GATEWAY_API, opts=child_opts(self, depends_on=base_depends))
 
         control_plane_ns = k8s.core.v1.Namespace(
             NS_CONTROL_PLANE,
@@ -83,7 +82,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/warn": "privileged",
                 },
             ),
-            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
+            opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
         )
 
         data_plane_ns = k8s.core.v1.Namespace(
@@ -96,7 +95,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/warn": "privileged",
                 },
             ),
-            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
+            opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
         )
 
         k8s.core.v1.Namespace(
@@ -109,7 +108,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/warn": "privileged",
                 },
             ),
-            opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
+            opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
         )
 
         platform_result = self._setup_secret_backend(
@@ -122,7 +121,7 @@ class Prerequisites(pulumi.ComponentResource):
             k8s.yaml.v2.ConfigGroup(
                 "coredns-rewrite",
                 files=[cfg.coredns_rewrite_url],
-                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_gw]),
+                opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
             )
 
         self.result = PrerequisitesResult(
@@ -164,10 +163,12 @@ class Prerequisites(pulumi.ComponentResource):
         resources (Thunder, control-plane) can depend on prerequisites without
         needing the actual ClusterSecretStore object.
         """
+        import pulumi_gcp as gcp
+
         gcp_sm_ready = sleep(
             "gcp-sm-flux-marker",
             1,
-            opts=self._child_opts(depends_on=base_depends),
+            opts=child_opts(self, depends_on=base_depends),
         )
 
         if cfg.enable_openobserve and cfg.openobserve_admin_password:
@@ -176,7 +177,7 @@ class Prerequisites(pulumi.ComponentResource):
                 project=cfg.gcp_project_id,
                 secret_id="openobserve-admin-credentials",
                 replication={"auto": {}},
-                opts=self._child_opts(depends_on=base_depends),
+                opts=child_opts(self, depends_on=base_depends),
             )
 
             openobserve_admin_secret_version = gcp.secretmanager.SecretVersion(
@@ -192,7 +193,7 @@ class Prerequisites(pulumi.ComponentResource):
                         )
                     )
                 ),
-                opts=self._child_opts(depends_on=[openobserve_admin_secret]),
+                opts=child_opts(self, depends_on=[openobserve_admin_secret]),
             )
 
         observer_oauth_secret = gcp.secretmanager.Secret(
@@ -200,7 +201,7 @@ class Prerequisites(pulumi.ComponentResource):
             project=cfg.gcp_project_id,
             secret_id="observer-oauth-client-secret",
             replication={"auto": {}},
-            opts=self._child_opts(depends_on=base_depends),
+            opts=child_opts(self, depends_on=base_depends),
         )
         gcp.secretmanager.SecretVersion(
             "observer-oauth-client-secret-version",
@@ -208,7 +209,7 @@ class Prerequisites(pulumi.ComponentResource):
             secret_data=pulumi.Output.secret(
                 json.dumps({"value": "openchoreo-observer-resource-reader-client-secret"})
             ),
-            opts=self._child_opts(depends_on=[observer_oauth_secret]),
+            opts=child_opts(self, depends_on=[observer_oauth_secret]),
         )
 
         return SecretBackendResult(
@@ -233,7 +234,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/warn": "privileged",
                 },
             ),
-            opts=self._child_opts(provider=k8s_provider, depends_on=base_depends),
+            opts=child_opts(self, provider=k8s_provider, depends_on=base_depends),
         )
 
         openbao = k8s.helm.v4.Chart(
@@ -245,7 +246,7 @@ class Prerequisites(pulumi.ComponentResource):
                 values=openbao_values(cfg.openbao_root_token),
             ),
             opts=pulumi.ResourceOptions.merge(
-                self._child_opts(provider=k8s_provider, depends_on=[openbao_ns]),
+                child_opts(self, provider=k8s_provider, depends_on=[openbao_ns]),
                 pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create="10m", update="10m", delete="5m")),
             ),
         )
@@ -257,13 +258,13 @@ class Prerequisites(pulumi.ComponentResource):
             pod_name="openbao-0",
             namespace=NS_OPENBAO,
             timeout=TIMEOUT_TLS_WAIT,
-            opts=self._child_opts(depends_on=[openbao]),
+            opts=child_opts(self, depends_on=[openbao]),
         )
 
         wait_poststart = sleep(
             "openbao-poststart",
             SLEEP_AFTER_OPENBAO,
-            opts=self._child_opts(depends_on=[openbao_ready]),
+            opts=child_opts(self, depends_on=[openbao_ready]),
         )
 
         push_secret_git: k8s.core.v1.Secret | None = None
@@ -272,7 +273,7 @@ class Prerequisites(pulumi.ComponentResource):
                 "push-git-secrets",
                 metadata=k8s.meta.v1.ObjectMetaArgs(name="push-git-secrets", namespace=NS_OPENBAO),
                 string_data={"git-token": cfg.github_pat, "gitops-token": cfg.github_pat},
-                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
+                opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart]),
             )
 
         push_secret_backstage_fork: k8s.core.v1.Secret | None = None
@@ -283,7 +284,7 @@ class Prerequisites(pulumi.ComponentResource):
                 string_data={
                     "backend-secret": "backstage-fork-backend-secret",
                     "client-id": "backstage-fork",
-                    "client-secret": "backstage-fork-client-secret",
+                    "client-secret": "backstage-fork-secret",
                     "auth-authorization-url": f"{cfg.thunder_url}/oauth2/authorize",
                     "jenkins-api-key": "placeholder-not-in-use",
                     "github-token": "placeholder-not-in-use",
@@ -291,7 +292,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "github-app-webhook-secret": "placeholder-not-in-use",
                     "github-app-private-key": "placeholder-not-in-use",
                 },
-                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
+                opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart]),
             )
 
         push_secret_openobserve: k8s.core.v1.Secret | None = None
@@ -303,7 +304,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "ZO_ROOT_USER_EMAIL": cfg.openobserve_admin_email,
                     "ZO_ROOT_USER_PASSWORD": cfg.openobserve_admin_password,
                 },
-                opts=self._child_opts(provider=k8s_provider, depends_on=[wait_poststart]),
+                opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart]),
             )
 
         if not cfg.github_pat and (cfg.enable_flux or cfg.gitops_repo_url):
@@ -340,7 +341,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "docker-password": "dev-password",
                     "github-pat": "fake-github-token-for-development",
                     "cloudflare-api-token": "placeholder-cloudflare-api-token",
-                    "adguard-truenas-url": "http://192.168.0.1:3000",
+                    "adguard-truenas-url": cfg.adguard_truenas_url,
                     "adguard-truenas-user": "admin",
                     "adguard-truenas-password": "placeholder-adguard-truenas-password",
                     "adguard-k8s-url": "http://adguard-home-k8s.keepalived.svc.cluster.local:3000",
@@ -348,52 +349,13 @@ class Prerequisites(pulumi.ComponentResource):
                     "adguard-k8s-password": "placeholder-adguard-k8s-password",
                     "keepalived-auth-pass": "placeholder-keepalived",
                 },
-                opts=self._child_opts(provider=k8s_provider, depends_on=[openbao_ns]),
+                opts=child_opts(self, provider=k8s_provider, depends_on=[openbao_ns]),
             )
 
-        eso_sa = k8s.core.v1.ServiceAccount(
-            SA_ESO_OPENBAO,
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=SA_ESO_OPENBAO, namespace=NS_OPENBAO),
-            opts=self._child_opts(provider=k8s_provider, depends_on=[openbao]),
-        )
-
-        cluster_secret_store = k8s.apiextensions.CustomResource(
-            "cluster-secret-store",
-            api_version="external-secrets.io/v1",
-            kind="ClusterSecretStore",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=CLUSTER_SECRET_STORE_NAME),
-            spec={
-                "provider": {
-                    "vault": {
-                        "server": f"http://openbao.{NS_OPENBAO}.svc:8200",
-                        "path": "secret",
-                        "version": "v2",
-                        "auth": {
-                            "kubernetes": {
-                                "mountPath": "kubernetes",
-                                "role": "openchoreo-secret-writer-role",
-                                "serviceAccountRef": {"name": SA_ESO_OPENBAO, "namespace": NS_OPENBAO},
-                            }
-                        },
-                    }
-                }
-            },
-            opts=self._child_opts(provider=k8s_provider, depends_on=[eso_sa, wait_poststart]),
-        )
-
-        css_ready = WaitCustomResourceCondition(
-            "wait-cluster-secret-store-ready",
-            kubeconfig_path=cfg.kubeconfig_path,
-            context=cfg.kubeconfig_context,
-            group="external-secrets.io",
-            version="v1",
-            plural="clustersecretstores",
-            resource_name=CLUSTER_SECRET_STORE_NAME,
-            namespace=None,
-            condition_type="Ready",
-            timeout=TIMEOUT_WAIT,
-            opts=self._child_opts(depends_on=[cluster_secret_store]),
-        )
+        # ClusterSecretStore + ESO SA moved to GitOps (secrets-openbao Kustomize Component).
+        # PushSecrets reference the store by name ("default") — at runtime, the GitOps-managed
+        # store must exist before PushSecrets can sync. On fresh clusters, Pulumi runs before
+        # Flux reconciles, so PushSecrets may initially fail but will retry.
 
         push_secrets: list[pulumi.Resource] = []
         if cfg.github_pat and push_secret_git is not None:
@@ -424,7 +386,7 @@ class Prerequisites(pulumi.ComponentResource):
                             },
                         ],
                     },
-                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_git]),
+                    opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart, push_secret_git]),
                 )
             )
 
@@ -477,7 +439,7 @@ class Prerequisites(pulumi.ComponentResource):
                             },
                         ],
                     },
-                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_backstage_fork]),
+                    opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart, push_secret_backstage_fork]),
                 )
             )
 
@@ -515,7 +477,7 @@ class Prerequisites(pulumi.ComponentResource):
                             },
                         ],
                     },
-                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_openobserve]),
+                    opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart, push_secret_openobserve]),
                 )
             )
 
@@ -646,36 +608,21 @@ class Prerequisites(pulumi.ComponentResource):
                             },
                         ],
                     },
-                    opts=self._child_opts(provider=k8s_provider, depends_on=[css_ready, push_secret_dev]),
+                    opts=child_opts(self, provider=k8s_provider, depends_on=[wait_poststart, push_secret_dev]),
                 )
             )
 
         push_sync_wait = sleep(
             "pushsecret-sync",
             15,
-            opts=self._child_opts(depends_on=push_secrets + [css_ready]),
+            opts=child_opts(self, depends_on=push_secrets + [wait_poststart]),
         )
 
         return SecretBackendResult(
             openbao_ready=openbao_ready,
-            cluster_secret_store=cluster_secret_store,
+            cluster_secret_store=None,
             cluster_secret_store_ready=push_sync_wait,
         )
-
-    def _child_opts(
-        self,
-        depends_on: list[pulumi.Resource] | None = None,
-        provider: k8s.Provider | None = None,
-    ) -> pulumi.ResourceOptions:
-        opts_kwargs = {
-            "parent": self,
-            "aliases": [pulumi.Alias(parent=pulumi.ROOT_STACK_RESOURCE)],
-        }
-        if depends_on:
-            opts_kwargs["depends_on"] = depends_on
-        if provider:
-            opts_kwargs["provider"] = provider
-        return pulumi.ResourceOptions(**opts_kwargs)
 
 
 def deploy(
