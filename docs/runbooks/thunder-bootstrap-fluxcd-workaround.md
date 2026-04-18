@@ -375,3 +375,49 @@ Update the `redirect_uris` array in the setup pod's curl payload accordingly.
 | **Now** | Run manual setup pod after each deployment | 5 min per environment |
 | **Next sprint** | Add initContainer to HelmRelease via postRenderers | 1-2 days |
 | **Next quarter** | Migrate to PostgreSQL + upstream PR | 1-2 weeks |
+
+---
+
+## Fixes Applied (2026-04-18 Session)
+
+### Fix 1: Bootstrap Skip Logic Prevented OAuth App Updates
+**Problem**: `bootstrap.sh` line 679 checked if `openchoreo-backstage-client` exists and if so, `exit 0` — skipping ALL `ensure_app()` calls. This meant redirect URI changes in the configmap never got applied to the Thunder DB.
+
+**Fix**: Changed the skip logic to only skip user/group creation (truly one-time), but ALWAYS run `ensure_app()` which does PUT (update) for existing apps. This ensures redirect URIs, client secrets, and other OAuth config changes are applied on every pod restart.
+
+**Commit**: `a792e23` — `fix(thunder): always update OAuth apps on bootstrap — don't skip ensure_app when apps exist`
+
+**Impact**: Both GKE and baremetal. Every future config change to OAuth apps in the bootstrap configmap will now be automatically applied on the next Thunder pod restart — no manual intervention needed.
+
+### Fix 2: Flux Variable Substitution in Bootstrap Scripts
+**Problem**: `$${BACKSTAGE_URL}` and `$${BACKSTAGE_FORK_URL}` in `values-configmap.yaml` were double-escaped. Flux produces `${BACKSTAGE_URL}` (a shell variable), but there's no such shell variable in the container — so redirect URIs became empty → HTTP 400.
+
+**Fix**: Changed `$${BACKSTAGE_URL}` → `${BACKSTAGE_URL}` and `$${BACKSTAGE_FORK_URL}` → `${BACKSTAGE_FORK_URL}` in `infrastructure/base/03-platform/thunder/values-configmap.yaml` lines 255 and 357. Now Flux substitutes the actual URLs at reconciliation time.
+
+### Fix 3: Client Secret Mismatch (backstage-fork)
+**Problem**: Pulumi seeded OpenBao with `client-secret: backstage-fork-client-secret` but Thunder's bootstrap script registered with `client_secret: backstage-fork-secret`. Token exchange returned 401 Invalid client credentials.
+
+**Fix**: Changed `prerequisites.py` line 287 from `"client-secret": "backstage-fork-client-secret"` to `"client-secret": "backstage-fork-secret"` to match what Thunder's bootstrap registers. Updated OpenBao value directly as well.
+
+**Commit**: `06d7242` — `fix(pulumi): align backstage-fork client-secret with Thunder bootstrap`
+
+### Fix 4: NetworkPolicy Blocking Token Exchange
+**Problem**: backstage-fork's NetworkPolicy only allowed egress to ports 8080 (control-plane), 53 (DNS), and 443 (external HTTPS). Thunder's token endpoint at port 8090 on internal ClusterIP was blocked.
+
+**Fix**: Added egress rule to `infrastructure/backstage-fork/networkpolicy.yaml` allowing TCP port 8090 to the `thunder` namespace.
+
+**Commit**: `854fe51` — `fix(backstage-fork): allow egress to Thunder port 8090 for OAuth token exchange`
+
+### Fix 5: GKE Redirect URIs Stuck at http://:8080
+**Problem**: GKE Thunder DB had `http://backstage.idp.aistudio.consulting:8080/...` as redirect URI instead of `https://backstage.idp.aistudio.consulting/...`. This was because the bootstrap ran with stale values before the gitops fixes, and Fix 1's skip logic prevented the update.
+
+**Fix**: Fix 1 (bootstrap skip logic) resolved this. After deploying Fix 1, restarting Thunder on GKE triggered the bootstrap which PUT-updated all apps with the correct HTTPS redirect URIs.
+
+### Summary of Root Causes
+| Issue | Root Cause | Fix Location |
+|-------|-----------|-------------|
+| Thunder bootstrap skips app updates | `exit 0` when apps exist | `bootstrap-configmap.yaml` |
+| Flux `$${}` double-escape | Produces empty shell vars | `values-configmap.yaml` |
+| backstage-fork 401 | Pulumi seeds different secret | `prerequisites.py` |
+| backstage-fork 504 | NetworkPolicy blocks port 8090 | `networkpolicy.yaml` |
+| GKE wrong redirect URIs | Bootstrap ran with stale values + skip logic | `bootstrap-configmap.yaml` |
