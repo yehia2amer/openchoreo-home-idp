@@ -76,6 +76,7 @@ github_pat = cfg.get_secret("github_pat") or ""
 domain_base = cfg.get("domain_base") or "gcp.openchoreo.example.com"
 deletion_protection = cfg.get_bool("deletion_protection") or False
 skip_iam_bindings = cfg.get_bool("skip_iam_bindings") or False
+skip_project_iam_bindings = cfg.get_bool("skip_project_iam_bindings") or False
 skip_sa_key_creation = cfg.get_bool("skip_sa_key_creation") or False
 master_authorized_cidr = cfg.get("gcp_gke_master_authorized_cidr") or ""
 database_encryption_key = cfg.get("gcp_gke_database_encryption_key") or ""
@@ -282,6 +283,11 @@ dns_gsa = gcp.serviceaccount.Account(
 #   K8s SAs authenticate directly as GCP SAs via GKE metadata server
 # - Fallback (skip_iam_bindings=True): SA key files in Secret Manager
 #   For environments where IAM binding creation is restricted
+#
+# Project-level IAM bindings (skip_project_iam_bindings):
+#   Separate from WI bindings because they require
+#   resourcemanager.projects.setIamPolicy which the deployer may lack.
+#   These bindings can be created manually and then skipped here.
 # ---------------------------------------------------------------------------
 
 # When using WI (default), the SA key + Secret Manager secret are not needed.
@@ -312,12 +318,13 @@ if skip_iam_bindings:
             secret=dns_key_secret.id,
             secret_data=dns_gsa_key.private_key.apply(lambda k: __import__("base64").b64decode(k).decode("utf-8")),
         )
+
 # ---------------------------------------------------------------------------
-# IAM bindings — guarded by skip_iam_bindings for environments where the
-# deployer lacks setIamPolicy permissions.  When True, an admin must run
-# prereqs/iam-setup.sh once to create these bindings manually.
+# Project-level IAM bindings — guarded by skip_project_iam_bindings for
+# environments where the deployer lacks setIamPolicy permissions.
+# These bindings already exist in GCP (created manually by an admin).
 # ---------------------------------------------------------------------------
-if not skip_iam_bindings:
+if not skip_project_iam_bindings:
     # NOTE: Scoping to individual secrets (gcp.secretmanager.SecretIamMember) would be
     # tighter, but ESO needs access to ANY secret the user creates in GCP SM.
     # Project-level is the practical minimum scope for a generic secret-store operator.
@@ -335,7 +342,12 @@ if not skip_iam_bindings:
         role="roles/dns.admin",
         member=dns_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
     )
-
+# ---------------------------------------------------------------------------
+# Workload Identity bindings — guarded by skip_iam_bindings.
+# These are service-account-level IAM (not project-level) so they don't
+# require setIamPolicy on the project.
+# ---------------------------------------------------------------------------
+if not skip_iam_bindings:
     # Workload Identity bindings reference the GKE WI pool (project.svc.id.goog)
     # which only exists after the cluster is created.
     gcp.serviceaccount.IAMMember(
@@ -415,7 +427,7 @@ cas_pool = gcp.certificateauthority.CaPool(
     publishing_options={"publish_ca_cert": True, "publish_crl": False},
 )
 
-if not skip_iam_bindings:
+if not skip_project_iam_bindings:
     gcp.certificateauthority.CaPoolIamMember(
         "cas-certificate-requester",
         ca_pool=cas_pool.id,
@@ -485,7 +497,7 @@ ar_push_gsa = gcp.serviceaccount.Account(
     display_name="OpenChoreo Artifact Registry Push (Argo Workflows)",
 )
 
-if not skip_iam_bindings:
+if not skip_project_iam_bindings:
     gcp.artifactregistry.RepositoryIamMember(
         "ar-push-writer",
         project=project_id,
@@ -495,6 +507,7 @@ if not skip_iam_bindings:
         member=ar_push_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
     )
 
+if not skip_iam_bindings:
     # WI binding: Argo workflow KSA → AR-push GSA
     gcp.serviceaccount.IAMMember("ar-push-wi-workflow",
         service_account_id=ar_push_gsa.name,
