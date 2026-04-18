@@ -12,6 +12,8 @@ const PASSWORD = process.env.THUNDER_PASSWORD ?? 'Admin@123';
 const AUTH_ERROR_TEXT = 'Authentication failed, Invalid client credentials';
 
 test.describe('Login Flow', () => {
+  // Full OAuth roundtrip through Cloudflare tunnel needs more than the default 60s
+  test.setTimeout(120_000);
   test.use({
     ignoreHTTPSErrors: true,
     storageState: undefined,
@@ -51,6 +53,20 @@ async function loginFlow(page: Page): Promise<void> {
     waitUntil: 'domcontentloaded',
     timeout: 60_000,
   });
+
+  // Debug: capture page state after goto
+  await page.screenshot({ path: 'test-results/login-flow-after-goto.png' });
+  console.log(`[LOGIN-FLOW] After goto URL: ${page.url()}`);
+
+  // Handle Backstage sign-in page if present (backstage-fork shows a Sign In button
+  // instead of auto-redirecting to Thunder). Wait up to 15s for the page to render.
+  const signInButton = page.locator('button:has-text("Sign In"), button:has-text("Sign in")').first();
+  const signInFound = await signInButton.isVisible({ timeout: 15_000 }).catch(() => false);
+  console.log(`[LOGIN-FLOW] Sign-in button found: ${signInFound}`);
+  if (signInFound) {
+    await signInButton.click();
+    console.log(`[LOGIN-FLOW] Clicked Sign In, URL now: ${page.url()}`);
+  }
 
   // When: OAuth redirects to Thunder login page
   await page.waitForURL(

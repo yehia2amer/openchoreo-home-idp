@@ -45,7 +45,39 @@ setup("authenticate via Thunder OAuth", async ({ page }) => {
     );
     console.log(`[TEST] After waitForURL, URL is: ${page.url()}`);
   } else {
-    console.log(`[TEST] Not on Thunder, checking if already authenticated. URL: ${page.url()}`);
+    // Check for Backstage sign-in page (shows "Sign In" button before redirecting to Thunder)
+    const signInButton = page.locator('button:has-text("Sign In"), button:has-text("Sign in")').first();
+    
+    if (await signInButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      console.log("[TEST] On Backstage sign-in page, clicking Sign In button...");
+      await signInButton.click();
+      
+      // Wait for redirect to Thunder
+      await page.waitForURL(
+        (url) => /thunder|oauth|gate|authorize/.test(url.href),
+        { timeout: 60000 },
+      );
+      console.log(`[TEST] Redirected to Thunder: ${page.url()}`);
+      
+      // Fill Thunder login form
+      const usernameInput = page.locator("#username");
+      await usernameInput.waitFor({ state: "visible", timeout: 30000 });
+      console.log("[TEST] Username field visible, filling...");
+      await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@openchoreo.dev");
+      await page.locator("#password").fill(process.env.THUNDER_PASSWORD || "Admin@123");
+      
+      console.log("[TEST] Clicking Sign In on Thunder...");
+      await page.locator('button[type="submit"]').click();
+      
+      console.log(`[TEST] After Thunder submit, waiting for redirect back... URL: ${page.url()}`);
+      await page.waitForURL(
+        (url) => !url.href.includes("thunder") && !url.href.includes("gate"),
+        { timeout: 60000 },
+      );
+      console.log(`[TEST] Back at Backstage: ${page.url()}`);
+    } else {
+      console.log(`[TEST] Already authenticated or unknown state. URL: ${page.url()}`);
+    }
   }
 
   // Take a screenshot to see what we got
@@ -61,7 +93,6 @@ setup("authenticate via Thunder OAuth", async ({ page }) => {
       .or(page.locator("text=Platform Overview"))
       .or(page.locator("text=OpenChoreo"))
       .or(page.locator("text=My Company Catalog"))
-      .or(page.locator("nav"))
       .first()
   ).toBeVisible({ timeout: 30000 });
 
