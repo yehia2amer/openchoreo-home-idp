@@ -93,7 +93,12 @@ def _from_name(name: str, cfg: pulumi.Config) -> PlatformProfile:
     if name in ("talos-baremetal", "talos_baremetal"):
         from platforms.talos_baremetal import talos_baremetal
 
-        return talos_baremetal()
+        l2_cidrs = cfg.get("cilium_l2_ip_pool_cidrs") or ""
+        l2_ifaces = cfg.get("cilium_l2_interfaces") or ""
+        return talos_baremetal(
+            l2_ip_pool_cidrs=tuple(l2_cidrs.split(",")) if l2_cidrs else ("192.168.0.10-192.168.0.99",),
+            l2_interfaces=tuple(l2_ifaces.split(",")) if l2_ifaces else ("enp7s0", "enp0s1", "enp0s25"),
+        )
 
     raise ValueError(
         f"Unknown platform '{name}'. Supported values: gke, k3d, rancher-desktop, talos, talos-baremetal"

@@ -13,3 +13,12 @@
 - Added pytest coverage for all 8 patch renderers in pulumi/talos-cluster-baremetal/patches.py.
 - Fixed pyproject requires-python to >=3.12 so uv sync works on system Python 3.14.x.
 - The test suite validates JSON patch structure with json.loads and checks raw YAML patch strings directly.
+
+## Task 12 — Baremetal E2E Validation (2026-04-17)
+- All 8 wave kustomizations (00-05 + 03b, 03c) are Ready=True on baremetal
+- oc-infrastructure fully removed — no trace remains
+- sample-gitops refs exist only in 4 app-level kustomizations (expected, documented)
+- All control-plane deployments healthy (5/5), Thunder healthy (1/1)
+- Zero unsubstituted variables in httproutes
+- Pre-existing issue: oc-platform webhook failure (controller-manager dial tcp error) — not wave-related, likely needs separate investigation
+ - Managed Prometheus on GKE can return 500 with a PrometheusRule CRD error; UI e2e tests should treat that as an environment limitation and skip downstream metric-rule assertions.

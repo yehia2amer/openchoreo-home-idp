@@ -65,6 +65,29 @@ def main() -> None:
             depends=[prereqs_result.cluster_secret_store_ready],
         )
 
+    observer_infra = None
+    if cfg.enable_backstage_infra and cfg.platform.cloud_provider == "gcp" and backstage_infra is not None:
+        from components.observer_infra import ObserverInfra
+
+        observer_infra = ObserverInfra(
+            "observer-infra",
+            cfg=cfg,
+            pg_instance_name=backstage_infra.pg_instance_name,
+            pg_instance_private_ip=backstage_infra.pg_instance_private_ip,
+            depends=[backstage_infra],
+        )
+
+    thunder_infra = None
+    if cfg.enable_backstage_infra and cfg.platform.cloud_provider == "gcp" and backstage_infra is not None:
+        from components.thunder_infra import ThunderInfra
+
+        thunder_infra = ThunderInfra(
+            "thunder-infra",
+            cfg=cfg,
+            pg_instance_name=backstage_infra.pg_instance_name,
+            pg_instance_private_ip=backstage_infra.pg_instance_private_ip,
+            depends=[backstage_infra] + ([observer_infra] if observer_infra else []),
+        )
     pulumi.export("backstage_url", cfg.backstage_url)
     pulumi.export("api_url", cfg.api_url)
     pulumi.export("thunder_url", cfg.thunder_url)

@@ -69,17 +69,22 @@ All observability resources live in a single Kustomize Component following ADR-0
 ```
 infrastructure/components/observability-cloud/   (kind: Component)
 ├── kustomization.yaml
-├── openobserve-helmrepository.yaml
-├── openobserve-helmrelease.yaml          # Lightweight; fluent-bit disabled
-├── openobserve-externalsecret.yaml       # Admin credentials from GCP Secret Manager
-├── observer-oauth-externalsecret.yaml    # Observer OAuth credentials
-├── openobserve-httproute.yaml            # Backstage UI access
-├── odigos-namespace.yaml
-├── odigos-helmrepository.yaml
-├── odigos-helmrelease.yaml
+├── obs-observer-externalsecret.yaml      # Observer OAuth credentials
+├── obs-observer-referencegrant.yaml      # Cross-namespace reference grant
+├── obs-openobserve-externalsecret.yaml   # Admin credentials from GCP Secret Manager
+├── obs-openobserve-helmrelease.yaml      # Lightweight; fluent-bit disabled
+├── obs-openobserve-ui-httproute.yaml     # Backstage UI access
+├── obs-platform-helmrelease.yaml         # Platform observability chart
+├── obs-values-configmap.yaml             # Shared observability values
 ├── odigos-action.yaml                    # OpenChoreo label extraction
-├── odigos-destination-googlecloud.yaml   # Cloud Trace destination
-└── odigos-destination-otlp.yaml          # OpenObserve destination
+├── odigos-destination-cloud-trace.yaml   # Cloud Trace destination
+├── odigos-destination-openobserve.yaml   # OpenObserve destination
+├── odigos-helmrelease.yaml
+├── odigos-helmrepository.yaml
+├── odigos-namespace.yaml
+├── tracing-adapter-configmap.yaml        # Cloud Trace → OpenObserve adapter config
+├── tracing-adapter-deployment.yaml       # Cloud Trace → OpenObserve adapter
+└── tracing-adapter-service.yaml          # Adapter service endpoint
 ```
 
 The component is activated in the GCP platform overlay only:

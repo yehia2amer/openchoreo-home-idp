@@ -1,46 +1,6 @@
 {
-  "active_plan": "/Users/yamer003/Desktop/personal-projects/openchoreo-home-idp/.sisyphus/plans/httproute-fixes.md",
-  "started_at": "2026-04-16T00:39:31Z",
-  "session_ids": [
-    "ses_2735fee60ffebsCYK9DORMBsS4",
-    "ses_26c0991fbffekir5Wi3Q7yihmm",
-    "ses_26ad2a0d6ffe9nDBwsDtTX1Ch8",
-    "ses_26ad2a0cdffe7iP0ALHHFArkg4"
-  ],
-  "plan_name": "httproute-fixes",
-  "session_origins": {
-    "ses_2735fee60ffebsCYK9DORMBsS4": "direct",
-    "ses_26c0991fbffekir5Wi3Q7yihmm": "appended",
-    "ses_26ad2a0d6ffe9nDBwsDtTX1Ch8": "appended",
-    "ses_26ad2a0cdffe7iP0ALHHFArkg4": "appended"
-  },
-  "task_sessions": {
-    "todo:1": {
-      "task_key": "todo:1",
-      "task_label": "1",
-      "task_title": "Add ReferenceGrants to GKE gateway kustomization",
-      "session_id": "ses_26c4419acffeYwK6sv1KHkM27l",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-16T00:43:15.868Z"
-    },
-    "todo:2": {
-      "task_key": "todo:2",
-      "task_label": "2",
-      "task_title": "Templatize argo HTTPRoute port",
-      "session_id": "ses_26c411285ffeeSTEt2M7C2KbeD",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-16T00:48:12.658Z"
-    },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "Push and verify",
-      "session_id": "ses_26c3c7124ffeqn12gTESn9ZRgz",
-      "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-16T00:56:48.694Z"
-    }
-  }
+  "active_plan": "/Users/yamer003/Desktop/personal-projects/OpenChoreo-IDP/openchoreo-home-idp/.sisyphus/plans/backstage-fork-image-delivery.md",
+  "started_at": "2026-04-18T02:09:17.802Z",
+  "session_ids": ["ses_263e4b6f6ffeUZzAvZAPUsDfcy"],
+  "plan_name": "backstage-fork-image-delivery"
 }
