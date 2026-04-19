@@ -6,6 +6,7 @@ const BACKSTAGE_URL =
   process.env.BACKSTAGE_URL || "https://backstage.idp.aistudio.consulting";
 
 setup("authenticate via Thunder OAuth", async ({ page }) => {
+  setup.setTimeout(120_000);
   const authDir = path.join(__dirname, ".auth");
   if (!fs.existsSync(authDir)) {
     fs.mkdirSync(authDir, { recursive: true });
@@ -28,8 +29,9 @@ setup("authenticate via Thunder OAuth", async ({ page }) => {
   // If we ended up on Thunder login, fill and submit
   if (page.url().includes("thunder") || page.url().includes("gate")) {
     console.log("[TEST] On Thunder login page, filling form...");
+    await page.waitForLoadState("domcontentloaded");
     const usernameInput = page.locator("#username");
-    await usernameInput.waitFor({ state: "visible", timeout: 30000 });
+    await usernameInput.waitFor({ state: "visible", timeout: 60000 });
     console.log("[TEST] Username field visible, filling...");
     
     await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@openchoreo.dev");
@@ -60,8 +62,9 @@ setup("authenticate via Thunder OAuth", async ({ page }) => {
       console.log(`[TEST] Redirected to Thunder: ${page.url()}`);
       
       // Fill Thunder login form
+      await page.waitForLoadState("domcontentloaded");
       const usernameInput = page.locator("#username");
-      await usernameInput.waitFor({ state: "visible", timeout: 30000 });
+      await usernameInput.waitFor({ state: "visible", timeout: 60000 });
       console.log("[TEST] Username field visible, filling...");
       await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@openchoreo.dev");
       await page.locator("#password").fill(process.env.THUNDER_PASSWORD || "Admin@123");

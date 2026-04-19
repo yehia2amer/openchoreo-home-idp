@@ -13,11 +13,15 @@
     "test:project": "npx playwright test project/",
     "test:component": "npx playwright test component/",
     "test:create": "npx playwright test create/",
+    "test:observer": "npx playwright test observer/ --project=observer-api",
+    "test:observer:debug": "npx playwright test observer/ --project=observer-api --debug",
     "report": "npx playwright show-report"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@types/node": "^25.5.2",
+    "dotenv": "^16.6.1",
+    "tsx": "^4.0.0",
     "typescript": "^5.5.0"
   }
 }

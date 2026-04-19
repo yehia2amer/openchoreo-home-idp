@@ -1,4 +1,8 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
+
+export const OBSERVER_URL =
+  process.env.OBSERVER_URL || "https://observer.openchoreo.local:8443";
 
 export default defineConfig({
   testDir: ".",
@@ -25,9 +29,20 @@ export default defineConfig({
     // All UI tests depend on auth
     {
       name: "chromium",
+      testIgnore: ["observer/**"],
       use: {
         ...devices["Desktop Chrome"],
         storageState: ".auth/state.json",
+      },
+      dependencies: ["auth-setup"],
+    },
+    {
+      name: "observer-api",
+      testMatch: "observer/**/*.spec.ts",
+      use: {
+        storageState: ".auth/state.json",
+        baseURL: OBSERVER_URL,
+        ignoreHTTPSErrors: true,
       },
       dependencies: ["auth-setup"],
     },

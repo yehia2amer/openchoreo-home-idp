@@ -1,0 +1,32 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ObservabilityAlertRule
+metadata:
+  name: e2e-test-log-alert
+  namespace: oc-system-homelab-tools-development
+  labels:
+    openchoreo.dev/component-uid: "00000000-0000-0000-0000-000000000001"
+    openchoreo.dev/project-uid: "00000000-0000-0000-0000-000000000002"
+    openchoreo.dev/environment-uid: "00000000-0000-0000-0000-000000000003"
+    openchoreo.dev/component-name: obs-test-gen
+    openchoreo.dev/project-name: homelab-tools
+    openchoreo.dev/environment-name: development
+    openchoreo.dev/namespace-name: default
+spec:
+  name: e2e-test-log-alert
+  description: "E2E test alert rule - created by automated tests"
+  severity: warning
+  enabled: true
+  source:
+    type: log
+    query: "error"
+  condition:
+    window: 5m
+    interval: 1m
+    operator: gt
+    threshold: 0
+  actions:
+    notifications:
+      channels: []
+    incident:
+      enabled: true
+      triggerAiRca: false
