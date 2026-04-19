@@ -394,7 +394,11 @@ def check_service_http(
         return {"passed": False, "error": f"HTTP request failed: {last_err}"}
     finally:
         pf.terminate()
-        pf.wait(timeout=5)
+        try:
+            pf.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pf.kill()
+            pf.wait(timeout=2)
 
 
 def check_deployment_ready(

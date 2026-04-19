@@ -12,6 +12,23 @@ import pulumi
 
 from platforms import PlatformProfile, resolve_platform
 
+
+def _parse_version(v: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in v.lstrip("v").split("."))
+
+
+def _validate_version_constraints(cfg: "OpenChoreoConfig") -> None:
+    constraints = {
+        "cert_manager_version": ("1.12.0", cfg.cert_manager_version),
+        "external_secrets_version": ("0.9.0", cfg.external_secrets_version),
+    }
+    for name, (minimum, actual) in constraints.items():
+        if _parse_version(actual) < _parse_version(minimum):
+            raise ValueError(
+                f"{name} version {actual} < minimum {minimum} "
+                f"(required by OpenChoreo deployment-topology docs)"
+            )
+
 #: Stack names considered development environments.  Shared by config loader,
 #: prerequisites component, and CrossGuard policy pack.
 DEV_STACKS: frozenset[str] = frozenset(
@@ -409,7 +426,7 @@ def load_config() -> OpenChoreoConfig:
             f"{wt_base}/workflow-templates/generate-workload-k3d.yaml",
         ]
 
-    return OpenChoreoConfig(
+    config = OpenChoreoConfig(
         platform=platform,
         kubeconfig_path=kubeconfig_path,
         kubeconfig_context=kubeconfig_context,
@@ -492,3 +509,6 @@ def load_config() -> OpenChoreoConfig:
         thunder_values_url=thunder_values_url,
         workflow_templates_urls=workflow_templates_urls,
     )
+
+    _validate_version_constraints(config)
+    return config

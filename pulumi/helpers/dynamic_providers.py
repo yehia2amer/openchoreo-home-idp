@@ -12,6 +12,7 @@ that use the kubernetes Python client directly, providing:
 
 from __future__ import annotations
 
+import socket
 from typing import Any
 
 import pulumi
@@ -24,6 +25,18 @@ def _input_diff(olds: dict[str, Any], news: dict[str, Any], keys: list[str]) -> 
     """Compare specific input keys and return a DiffResult."""
     changes = any(olds.get(k) != news.get(k) for k in keys)
     return DiffResult(changes=changes, replaces=[], stables=[], delete_before_replace=False)
+
+
+def _wait_for_port(host: str, port: int, timeout: float = 30.0) -> None:
+    """Poll until a TCP port is accepting connections."""
+    deadline = _time.monotonic() + timeout
+    while _time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=2):
+                return
+        except (ConnectionRefusedError, OSError):
+            _time.sleep(0.5)
+    raise TimeoutError(f"Port {host}:{port} not ready after {timeout}s")
 
 
 # ──────────────────────────────────────────────────────────────
@@ -215,7 +228,7 @@ class _OpenBaoSecretsProvider(ResourceProvider):
             stderr=subprocess.DEVNULL,
         )
         try:
-            _time.sleep(3)  # wait for port-forward to establish
+            _wait_for_port("127.0.0.1", port)
             client = hvac.Client(
                 url=f"http://127.0.0.1:{port}",
                 token=inputs["root_token"],

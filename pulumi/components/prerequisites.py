@@ -80,6 +80,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/enforce": "privileged",
                     "pod-security.kubernetes.io/audit": "privileged",
                     "pod-security.kubernetes.io/warn": "privileged",
+                    "openchoreo.dev/control-plane": "true",
                 },
             ),
             opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
@@ -93,6 +94,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/enforce": "privileged",
                     "pod-security.kubernetes.io/audit": "privileged",
                     "pod-security.kubernetes.io/warn": "privileged",
+                    "openchoreo.dev/control-plane": "true",
                 },
             ),
             opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
@@ -106,6 +108,7 @@ class Prerequisites(pulumi.ComponentResource):
                     "pod-security.kubernetes.io/enforce": "privileged",
                     "pod-security.kubernetes.io/audit": "privileged",
                     "pod-security.kubernetes.io/warn": "privileged",
+                    "openchoreo.dev/control-plane": "true",
                 },
             ),
             opts=child_opts(self, provider=k8s_provider, depends_on=[wait_gw]),
@@ -228,11 +231,12 @@ class Prerequisites(pulumi.ComponentResource):
             NS_OPENBAO,
             metadata=k8s.meta.v1.ObjectMetaArgs(
                 name=NS_OPENBAO,
-                labels={
-                    "pod-security.kubernetes.io/enforce": "privileged",
-                    "pod-security.kubernetes.io/audit": "privileged",
-                    "pod-security.kubernetes.io/warn": "privileged",
-                },
+            labels={
+                "pod-security.kubernetes.io/enforce": "privileged",
+                "pod-security.kubernetes.io/audit": "privileged",
+                "pod-security.kubernetes.io/warn": "privileged",
+                "openchoreo.dev/control-plane": "true",
+            },
             ),
             opts=child_opts(self, provider=k8s_provider, depends_on=base_depends),
         )
@@ -348,6 +352,8 @@ class Prerequisites(pulumi.ComponentResource):
                     "adguard-k8s-user": "admin",
                     "adguard-k8s-password": "placeholder-adguard-k8s-password",
                     "keepalived-auth-pass": "placeholder-keepalived",
+                    "thunder-client-secret": "thunder-client-dev-secret",
+                    "adguard-admin-password-hash": "$2y$10$EDd1nOPNyxYgyPP0hY9H8O6H1gQ/fZTm4l6mu5I66puygsLdscqjy",
                 },
                 opts=child_opts(self, provider=k8s_provider, depends_on=[openbao_ns]),
             )
@@ -604,6 +610,18 @@ class Prerequisites(pulumi.ComponentResource):
                                 "match": {
                                     "secretKey": "keepalived-auth-pass",
                                     "remoteRef": {"remoteKey": "apps/external-dns/keepalived", "property": "auth-pass"},
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "thunder-client-secret",
+                                    "remoteRef": {"remoteKey": "thunder-client-secret", "property": "value"},
+                                }
+                            },
+                            {
+                                "match": {
+                                    "secretKey": "adguard-admin-password-hash",
+                                    "remoteRef": {"remoteKey": "apps/adguard-home/admin", "property": "password-hash"},
                                 }
                             },
                         ],

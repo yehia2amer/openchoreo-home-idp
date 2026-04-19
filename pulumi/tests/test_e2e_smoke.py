@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 import os
 
-from config import NS_CONTROL_PLANE, NS_THUNDER
+from config import NS_CERT_MANAGER, NS_CONTROL_PLANE, NS_DATA_PLANE, NS_EXTERNAL_SECRETS, NS_THUNDER, NS_WORKFLOW_PLANE
 from helpers.k8s_ops import (
     check_crd_exists,
     check_deployment_ready,
@@ -72,4 +72,44 @@ def test_backstage_secret_exists(kubeconfig: str, kube_context: str) -> None:
         namespace,
         expected_keys=["backend-secret", "client-secret"],
     )
+    assert result["passed"], result
+
+
+@pytest.mark.e2e
+@pytest.mark.timeout(120)
+def test_data_plane_agent_deployment_ready(kubeconfig: str, kube_context: str) -> None:
+    """Data plane agent should be running."""
+    namespace = os.getenv("E2E_DP_NAMESPACE", NS_DATA_PLANE)
+    deployment_name = os.getenv("E2E_DP_DEPLOYMENT", "openchoreo-data-plane-agent")
+    result = check_deployment_ready(kubeconfig, kube_context, deployment_name, namespace)
+    assert result["passed"], result
+
+
+@pytest.mark.e2e
+@pytest.mark.timeout(120)
+def test_workflow_plane_argo_server_ready(kubeconfig: str, kube_context: str) -> None:
+    """Argo server should be running in workflow plane."""
+    namespace = os.getenv("E2E_WP_NAMESPACE", NS_WORKFLOW_PLANE)
+    deployment_name = os.getenv("E2E_WP_ARGO_DEPLOYMENT", "argo-server")
+    result = check_deployment_ready(kubeconfig, kube_context, deployment_name, namespace)
+    assert result["passed"], result
+
+
+@pytest.mark.e2e
+@pytest.mark.timeout(120)
+def test_external_secrets_operator_ready(kubeconfig: str, kube_context: str) -> None:
+    """ESO controller should be running."""
+    namespace = os.getenv("E2E_ESO_NAMESPACE", NS_EXTERNAL_SECRETS)
+    deployment_name = os.getenv("E2E_ESO_DEPLOYMENT", "external-secrets")
+    result = check_deployment_ready(kubeconfig, kube_context, deployment_name, namespace)
+    assert result["passed"], result
+
+
+@pytest.mark.e2e
+@pytest.mark.timeout(120)
+def test_cert_manager_ready(kubeconfig: str, kube_context: str) -> None:
+    """cert-manager should be running."""
+    namespace = os.getenv("E2E_CERT_MANAGER_NAMESPACE", NS_CERT_MANAGER)
+    deployment_name = os.getenv("E2E_CERT_MANAGER_DEPLOYMENT", "cert-manager")
+    result = check_deployment_ready(kubeconfig, kube_context, deployment_name, namespace)
     assert result["passed"], result

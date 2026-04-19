@@ -30,11 +30,6 @@ def _kubectl(kubeconfig: str, context: str, *args: str, timeout: int = 30) -> st
     return result.stdout.strip()
 
 
-def _input_diff(olds: dict[str, Any], news: dict[str, Any], keys: list[str]) -> DiffResult:
-    """Always re-run (changes=True) — these are imperative actions."""
-    return DiffResult(changes=True)
-
-
 # ──────────────────────────────────────────────────────────────
 # TriggerWorkflowRun
 # ──────────────────────────────────────────────────────────────
@@ -197,6 +192,7 @@ class TriggerWorkflowRun(pulumi.dynamic.Resource):
 
 class _MergeGitHubPRProvider(ResourceProvider):
     def create(self, inputs: dict[str, Any]) -> CreateResult:
+        import urllib.error
         import urllib.request
 
         token = inputs["github_token"]
@@ -265,8 +261,20 @@ class _MergeGitHubPRProvider(ResourceProvider):
             headers={**headers, "Content-Type": "application/json"},
             method="PUT",
         )
-        with urllib.request.urlopen(merge_req, timeout=30) as resp:
-            merge_result = json.loads(resp.read())
+        merge_result: dict[str, Any] | None = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(merge_req, timeout=30) as resp:
+                    merge_result = json.loads(resp.read())
+                break
+            except urllib.error.HTTPError as e:
+                if attempt < 2 and e.code in (502, 503, 504):
+                    time.sleep(2 ** attempt)
+                    continue
+                raise
+
+        if merge_result is None:
+            raise RuntimeError(f"Failed to merge PR #{pr_number}: no response from GitHub")
 
         if not merge_result.get("merged"):
             raise RuntimeError(f"Failed to merge PR #{pr_number}: {merge_result.get('message', 'unknown error')}")
@@ -346,6 +354,7 @@ class _ForceFluxReconcileProvider(ResourceProvider):
         wait_timeout = inputs.get("timeout", 180)
         time.sleep(5)  # Give Flux a moment to detect the annotation
         deadline = time.time() + wait_timeout
+        ready = None
         while time.time() < deadline:
             try:
                 ready = _kubectl(
@@ -365,6 +374,14 @@ class _ForceFluxReconcileProvider(ResourceProvider):
             except Exception:
                 pass
             time.sleep(10)
+        else:
+            not_ready = []
+            if ready:
+                not_ready = [p.split("=")[0] for p in ready.split() if "=True" not in p]
+            raise TimeoutError(
+                f"Flux reconciliation timed out after {wait_timeout}s. "
+                f"Not ready: {not_ready}"
+            )
 
         return CreateResult(id_=f"flux-reconcile/{git_repo_name}", outs=inputs)
 

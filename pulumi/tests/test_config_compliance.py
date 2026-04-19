@@ -352,3 +352,55 @@ def test_dev_stacks_is_frozenset():
     from config import DEV_STACKS
 
     assert isinstance(DEV_STACKS, frozenset)
+
+
+# ──────────────────────────────────────────────────────────────
+# Platform profile field validation (B4.1)
+# ──────────────────────────────────────────────────────────────
+
+
+def test_k3d_profile_local_specific_fields():
+    """k3d profile must set all local-dev-specific PlatformProfile fields."""
+    from platforms.k3d import K3D
+
+    assert K3D.cni_mode == "flannel"
+    assert K3D.gateway_mode == "kgateway"
+    assert K3D.secrets_backend == "openbao"
+    assert K3D.tls_issuer_mode == "self-signed"
+    assert K3D.registry_mode == "local"
+    assert K3D.local_registry is True
+    assert K3D.load_balancer_mode == "local"
+    assert K3D.storage_class == "local-path"
+    assert K3D.longhorn_enabled is False
+
+
+def test_rancher_desktop_profile_fields():
+    """Rancher Desktop profile must match Cilium-based local development defaults."""
+    from platforms.rancher_desktop import rancher_desktop
+
+    p = rancher_desktop()
+    assert p.cni_mode == "cilium"
+    assert p.gateway_mode == "cilium"
+    assert p.enable_kube_proxy_replacement is True
+    assert p.secrets_backend == "openbao"
+    assert p.tls_issuer_mode == "self-signed"
+    assert p.registry_mode == "local"
+    assert p.local_registry is True
+    assert p.load_balancer_mode == "local"
+    assert p.requires_bpf_mount_fix is True
+
+
+def test_talos_profile_fields():
+    """Talos VM profile must match Cilium-based self-hosted infrastructure defaults."""
+    from platforms.talos import talos
+
+    p = talos()
+    assert p.cni_mode == "cilium"
+    assert p.gateway_mode == "cilium"
+    assert p.enable_kube_proxy_replacement is True
+    assert p.secrets_backend == "openbao"
+    assert p.tls_issuer_mode == "self-signed"
+    assert p.registry_mode == "local"
+    assert p.local_registry is True
+    assert p.k8s_service_port == 7445  # Talos KubePrism port
+    assert p.requires_bpf_mount_fix is False
