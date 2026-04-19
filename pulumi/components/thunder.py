@@ -11,6 +11,7 @@ import pulumi_kubernetes as k8s
 import yaml
 
 from config import NS_THUNDER, SLEEP_AFTER_THUNDER, TIMEOUT_DEFAULT, OpenChoreoConfig
+from helpers.component_utils import child_opts
 from helpers.wait import sleep
 
 
@@ -49,7 +50,7 @@ class Thunder(pulumi.ComponentResource):
         thunder_ns = k8s.core.v1.Namespace(
             NS_THUNDER,
             metadata=k8s.meta.v1.ObjectMetaArgs(name=NS_THUNDER),
-            opts=self._child_opts(provider=k8s_provider, depends_on=depends or []),
+            opts=child_opts(self, provider=k8s_provider, depends_on=depends or []),
         )
 
         thunder_values = _fetch_yaml(cfg.thunder_values_url)
@@ -224,9 +225,15 @@ fi
 
         thunder_bootstrap = k8s.core.v1.ConfigMap(
             "thunder-bootstrap-managed",
-            metadata=k8s.meta.v1.ObjectMetaArgs(name=thunder_bootstrap_cm_name, namespace=NS_THUNDER),
+            metadata=k8s.meta.v1.ObjectMetaArgs(
+                name=thunder_bootstrap_cm_name,
+                namespace=NS_THUNDER,
+                annotations={
+                    "pulumi.com/patchForce": "true",
+                },
+            ),
             data=thunder_bootstrap_scripts,
-            opts=self._child_opts(provider=k8s_provider, depends_on=[thunder_ns]),
+            opts=child_opts(self, provider=k8s_provider, depends_on=[thunder_ns]),
         )
 
         thunder = k8s.helm.v3.Release(
@@ -241,12 +248,14 @@ fi
                 wait_for_jobs=True,
             ),
             opts=pulumi.ResourceOptions.merge(
-                self._child_opts(provider=k8s_provider, depends_on=[thunder_bootstrap]),
-                pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_DEFAULT}s")),
+                child_opts(self, provider=k8s_provider, depends_on=[thunder_bootstrap]),
+                pulumi.ResourceOptions(
+                    custom_timeouts=pulumi.CustomTimeouts(create=f"{TIMEOUT_DEFAULT}s"),
+                ),
             ),
         )
 
-        wait_thunder = sleep("thunder", SLEEP_AFTER_THUNDER, opts=self._child_opts(depends_on=[thunder]))
+        wait_thunder = sleep("thunder", SLEEP_AFTER_THUNDER, opts=child_opts(self, depends_on=[thunder]))
 
         thunder_bootstrap_checksum = hashlib.sha256(
             json.dumps(thunder_bootstrap_scripts, sort_keys=True).encode("utf-8")
@@ -366,7 +375,7 @@ fi
                 ),
             ),
             opts=pulumi.ResourceOptions.merge(
-                self._child_opts(provider=k8s_provider, depends_on=[wait_thunder]),
+                child_opts(self, provider=k8s_provider, depends_on=[wait_thunder]),
                 pulumi.ResourceOptions(
                     delete_before_replace=True,
                     replace_on_changes=["metadata.annotations", "spec"],
@@ -377,21 +386,6 @@ fi
 
         self.result = ThunderResult(thunder=thunder, wait_thunder=wait_thunder)
         self.register_outputs({})
-
-    def _child_opts(
-        self,
-        depends_on: list[pulumi.Resource] | None = None,
-        provider: k8s.Provider | None = None,
-    ) -> pulumi.ResourceOptions:
-        opts_kwargs = {
-            "parent": self,
-            "aliases": [pulumi.Alias(parent=pulumi.ROOT_STACK_RESOURCE)],
-        }
-        if depends_on:
-            opts_kwargs["depends_on"] = depends_on
-        if provider:
-            opts_kwargs["provider"] = provider
-        return pulumi.ResourceOptions(**opts_kwargs)
 
 
 def deploy(
