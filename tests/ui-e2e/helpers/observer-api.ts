@@ -187,7 +187,10 @@ export interface AlertRuleRequest {
 
 export interface AlertRuleResponse {
   metadata: AlertRuleRequest["metadata"];
-  source: AlertRuleRequest["source"];
+  source: {
+    metric: string;
+    query?: string;
+  };
   condition: AlertRuleRequest["condition"];
 }
 

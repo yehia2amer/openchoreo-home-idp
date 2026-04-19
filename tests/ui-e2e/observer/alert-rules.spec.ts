@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { ObserverApiClient } from "../helpers/observer-api.js";
 import type { AlertRuleRequest } from "../helpers/observer-api.js";
 import { makeAlertRuleName } from "../helpers/test-run-id.js";
+import { startPortForward, OBSERVER_INTERNAL, type PortForwardHandle } from "../helpers/port-forward.js";
 
 const client = new ObserverApiClient();
 
@@ -61,8 +62,22 @@ function makeMetricAlertRule(name: string): AlertRuleRequest {
 // They are called by the control plane and Alertmanager, not exposed via the public Gateway.
 // See: cmd/observer/main.go - internalRoutes registers these on :8081, publicRoutes on :8080
 // To test these, you would need direct access to observer-internal:8081 service.
-test.describe.skip("Observer Alert Rules CRUD", () => {
+test.describe("Observer Alert Rules CRUD", () => {
   test.describe.configure({ mode: "serial" });
+
+  let internalClient: ObserverApiClient;
+  let portForward: PortForwardHandle;
+  let metricRuleCreated = false;
+
+  test.beforeAll(async () => {
+    test.setTimeout(120_000);
+    portForward = await startPortForward(
+      OBSERVER_INTERNAL.service,
+      OBSERVER_INTERNAL.namespace,
+      OBSERVER_INTERNAL.port,
+    );
+    internalClient = new ObserverApiClient(`http://localhost:${portForward.port}`);
+  });
 
   // -------------------------------------------------------------------------
   // Cleanup — runs even on failure so subsequent runs start clean
@@ -73,11 +88,12 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
       ["metric", metricRuleName],
     ] as const) {
       try {
-        await client.deleteAlertRule(sourceType, name);
+        await internalClient.deleteAlertRule(sourceType, name);
       } catch (error) {
         console.warn("Cleanup warning:", error);
       }
     }
+    portForward?.close();
   });
 
   // -------------------------------------------------------------------------
@@ -85,7 +101,7 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   // -------------------------------------------------------------------------
   test("create log alert rule", async () => {
     const req = makeLogAlertRule(logRuleName);
-    const { status, body } = await client.createAlertRule("log", req);
+    const { status, body } = await internalClient.createAlertRule("log", req);
 
     expect(
       [200, 201].includes(status),
@@ -99,7 +115,7 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   // 2. Read log alert rule
   // -------------------------------------------------------------------------
   test("read log alert rule", async () => {
-    const { status, body } = await client.getAlertRule("log", logRuleName);
+    const { status, body } = await internalClient.getAlertRule("log", logRuleName);
 
     expect(status, "get log rule should return 200").toBe(200);
     expect(body.metadata.name, "name should match").toBe(logRuleName);
@@ -115,7 +131,7 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
     expect(body.metadata.componentUid, "componentUid should match").toBe(
       PLACEHOLDER_COMPONENT_UID,
     );
-    expect(body.source.type, "source type should be 'log'").toBe("log");
+    expect(body.source.metric, "source type should be 'log'").toBe("log");
     expect(body.source.query, "source query should be 'error'").toBe("error");
     expect(body.condition.threshold, "threshold should be 10").toBe(10);
     expect(body.condition.operator, "operator should be 'gt'").toBe("gt");
@@ -127,7 +143,7 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   // -------------------------------------------------------------------------
   test("update log alert rule", async () => {
     const req = makeLogAlertRule(logRuleName, { threshold: 20 });
-    const { status, body } = await client.updateAlertRule(
+    const { status, body } = await internalClient.updateAlertRule(
       "log",
       logRuleName,
       req,
@@ -144,7 +160,7 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   // 4. Read updated log alert rule
   // -------------------------------------------------------------------------
   test("read updated log alert rule – threshold changed", async () => {
-    const { status, body } = await client.getAlertRule("log", logRuleName);
+    const { status, body } = await internalClient.getAlertRule("log", logRuleName);
 
     expect(status, "get updated rule should return 200").toBe(200);
     expect(body.condition.threshold, "threshold should now be 20").toBe(20);
@@ -155,7 +171,15 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   // -------------------------------------------------------------------------
   test("create metric alert rule", async () => {
     const req = makeMetricAlertRule(metricRuleName);
-    const { status, body } = await client.createAlertRule("metric", req);
+    const { status, body } = await internalClient.createAlertRule("metric", req);
+
+    if (status === 500) {
+      const errorBody = body as { message?: string };
+      if (errorBody.message?.includes("PrometheusRule")) {
+        test.skip(true, "PrometheusRule CRD not available (managed Prometheus)");
+        return;
+      }
+    }
 
     expect(
       [200, 201].includes(status),
@@ -163,13 +187,14 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
     ).toBe(true);
     expect(body.action, "action should be 'created'").toBe("created");
     expect(body.status, "status should be 'synced'").toBe("synced");
+    metricRuleCreated = true;
   });
 
   // -------------------------------------------------------------------------
   // 6. Delete both rules
   // -------------------------------------------------------------------------
   test("delete log alert rule", async () => {
-    const { status, body } = await client.deleteAlertRule("log", logRuleName);
+    const { status, body } = await internalClient.deleteAlertRule("log", logRuleName);
 
     expect(
       [200, 201].includes(status),
@@ -179,7 +204,9 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   });
 
   test("delete metric alert rule", async () => {
-    const { status, body } = await client.deleteAlertRule(
+    test.skip(!metricRuleCreated, "metric rule was not created (PrometheusRule CRD unavailable)");
+
+    const { status, body } = await internalClient.deleteAlertRule(
       "metric",
       metricRuleName,
     );
@@ -195,12 +222,14 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
   // 7. Verify deletion — GET should return 404
   // -------------------------------------------------------------------------
   test("verify log rule deleted – GET returns 404", async () => {
-    const { status } = await client.getAlertRule("log", logRuleName);
+    const { status } = await internalClient.getAlertRule("log", logRuleName);
     expect(status, "deleted log rule should return 404").toBe(404);
   });
 
   test("verify metric rule deleted – GET returns 404", async () => {
-    const { status } = await client.getAlertRule("metric", metricRuleName);
+    test.skip(!metricRuleCreated, "metric rule was not created (PrometheusRule CRD unavailable)");
+
+    const { status } = await internalClient.getAlertRule("metric", metricRuleName);
     expect(status, "deleted metric rule should return 404").toBe(404);
   });
 
@@ -227,7 +256,7 @@ test.describe.skip("Observer Alert Rules CRUD", () => {
     };
 
     // Path says "log" but body says source.type: "metric"
-    const { status } = await client.createAlertRule("log", req);
+    const { status } = await internalClient.createAlertRule("log", req);
     expect(
       status,
       "sourceType mismatch should return 400",

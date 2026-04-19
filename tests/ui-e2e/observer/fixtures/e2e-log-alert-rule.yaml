@@ -2,11 +2,11 @@ apiVersion: openchoreo.dev/v1alpha1
 kind: ObservabilityAlertRule
 metadata:
   name: e2e-test-log-alert
-  namespace: oc-system-homelab-tools-development
+  namespace: dp-default-homelab-tools-development-9c449072
   labels:
-    openchoreo.dev/component-uid: "00000000-0000-0000-0000-000000000001"
-    openchoreo.dev/project-uid: "00000000-0000-0000-0000-000000000002"
-    openchoreo.dev/environment-uid: "00000000-0000-0000-0000-000000000003"
+    openchoreo.dev/component-uid: "bb220750-4565-4daf-9c0f-d0042dba000c"
+    openchoreo.dev/project-uid: "08372a26-7109-4ce0-b864-bcfedf566e20"
+    openchoreo.dev/environment-uid: "e96273ed-bec4-4ecd-a6a5-ef269acfb046"
     openchoreo.dev/component-name: obs-test-gen
     openchoreo.dev/project-name: homelab-tools
     openchoreo.dev/environment-name: development
@@ -26,7 +26,8 @@ spec:
     threshold: 0
   actions:
     notifications:
-      channels: []
+      channels:
+        - "e2e-test-webhook-channel"
     incident:
       enabled: true
       triggerAiRca: false

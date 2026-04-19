@@ -1,0 +1,11 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ObservabilityAlertsNotificationChannel
+metadata:
+  name: e2e-test-webhook-channel
+  namespace: dp-default-homelab-tools-development-9c449072
+spec:
+  type: webhook
+  environment: development
+  isEnvDefault: false
+  webhookConfig:
+    url: "http://localhost:9999/e2e-test-sink"

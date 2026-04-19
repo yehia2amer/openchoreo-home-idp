@@ -5,11 +5,12 @@ import { readFileSync } from "fs";
 import { execSync } from "child_process";
 import * as path from "path";
 import { makeAlertRuleName } from "../helpers/test-run-id.js";
+import { startPortForward, OBSERVER_INTERNAL, type PortForwardHandle } from "../helpers/port-forward.js";
 
 const client = new ObserverApiClient();
 
 const CR_NAME = makeAlertRuleName("webhook-alert");
-const CR_NAMESPACE = "oc-system-homelab-tools-development";
+const CR_NAMESPACE = "dp-default-homelab-tools-development-9c449072";
 const FIXTURE_PATH = path.resolve(
   __dirname,
   "fixtures/e2e-log-alert-rule.yaml",
@@ -18,14 +19,30 @@ const FIXTURE_PATH = path.resolve(
 // Alert webhook endpoint is on the Observer internal port (8081) only.
 // It receives alerts from Alertmanager/control plane, not from external clients.
 // See: cmd/observer/main.go - internalRoutes registers webhook on :8081
-test.describe.skip("Observer Alert Webhook", () => {
+test.describe("Observer Alert Webhook", () => {
   test.describe.configure({ mode: "serial" });
 
+  let internalClient: ObserverApiClient;
+  let portForward: PortForwardHandle;
+
   // ---------------------------------------------------------------------------
-  // Setup — apply the ObservabilityAlertRule CR from the fixture
+  // Setup — port-forward + apply the ObservabilityAlertRule CR from the fixture
   // ---------------------------------------------------------------------------
   test.beforeAll(async () => {
+    test.setTimeout(120_000);
+    portForward = await startPortForward(
+      OBSERVER_INTERNAL.service,
+      OBSERVER_INTERNAL.namespace,
+      OBSERVER_INTERNAL.port,
+    );
+    internalClient = new ObserverApiClient(`http://localhost:${portForward.port}`);
+
     try {
+      execSync("kubectl apply -f observer/fixtures/e2e-notification-channel.yaml", {
+        cwd: path.resolve(__dirname, ".."),
+        stdio: "pipe",
+      });
+
       const fixtureContent = readFileSync(FIXTURE_PATH, "utf8").replace(
         /name: e2e-test-log-alert/g,
         `name: ${CR_NAME}`,
@@ -41,19 +58,27 @@ test.describe.skip("Observer Alert Webhook", () => {
     }
   });
 
-  // ---------------------------------------------------------------------------
-  // Cleanup — delete the CR so subsequent runs start clean
-  // ---------------------------------------------------------------------------
   test.afterAll(async () => {
+    portForward?.close();
+
     try {
-      execSync(
-        `kubectl delete observabilityalertrule ${CR_NAME} -n ${CR_NAMESPACE} --ignore-not-found`,
-        {
+      execSync(`kubectl delete observabilityalertrule ${CR_NAME} -n ${CR_NAMESPACE} --ignore-not-found --timeout=10s`, {
+        cwd: path.resolve(__dirname, ".."),
         stdio: "pipe",
-        },
-      );
+        timeout: 15_000,
+      });
     } catch (error) {
-      console.warn("Cleanup warning:", error);
+      console.warn("Cleanup warning: alert rule:", String(error).substring(0, 100));
+    }
+
+    try {
+      execSync("kubectl delete -f observer/fixtures/e2e-notification-channel.yaml --ignore-not-found --timeout=10s", {
+        cwd: path.resolve(__dirname, ".."),
+        stdio: "pipe",
+        timeout: 15_000,
+      });
+    } catch (error) {
+      console.warn("Cleanup warning: channel:", String(error).substring(0, 100));
     }
   });
 
@@ -68,7 +93,7 @@ test.describe.skip("Observer Alert Webhook", () => {
       alertTimestamp: new Date().toISOString(),
     };
 
-    const { status, body } = await client.sendAlertWebhook(req);
+    const { status, body } = await internalClient.sendAlertWebhook(req);
 
     expect(status, "webhook should return 200").toBe(200);
     expect(body.status, "response status should be 'success'").toBe("success");
@@ -86,7 +111,7 @@ test.describe.skip("Observer Alert Webhook", () => {
     };
 
     // Use rawRequest to have full control over headers — no Authorization
-    const { status, body } = await client.rawRequest(
+    const { status, body } = await internalClient.rawRequest(
       "POST",
       "/api/v1alpha1/alerts/webhook",
       req,
@@ -112,7 +137,7 @@ test.describe.skip("Observer Alert Webhook", () => {
       alertTimestamp: new Date().toISOString(),
     };
 
-    const { status } = await client.sendAlertWebhook(req);
+    const { status } = await internalClient.sendAlertWebhook(req);
 
     expect(
       status >= 400,
