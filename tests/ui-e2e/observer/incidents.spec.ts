@@ -4,146 +4,62 @@ import type {
   IncidentsQueryRequest,
   IncidentPutRequest,
 } from "../helpers/observer-api.js";
-import { readFileSync } from "fs";
-import { pollUntil, POLL_BUDGETS } from "../helpers/polling.js";
-import { execSync } from "child_process";
-import * as path from "path";
-import { makeAlertRuleName } from "../helpers/test-run-id.js";
 
 const client = new ObserverApiClient();
 
-const CR_NAME = makeAlertRuleName("incident-alert");
-const CR_NAMESPACE = "oc-system-homelab-tools-development";
-const FIXTURE_PATH = path.resolve(
-  __dirname,
-  "fixtures/e2e-log-alert-rule.yaml",
-);
-
-// SKIP: Depends on webhook which returns 404 on GKE. Namespace oc-system-homelab-tools-development doesn't exist yet.
-test.describe.skip("Observer Incidents", () => {
+test.describe("Observer Incidents", () => {
   test.describe.configure({ mode: "serial" });
 
-  /** Shared across serial tests — set by the first query test. */
-  let incidentId: string | undefined;
+  /** Shared across serial tests — set by the first query test if data exists. */
+  let sharedIncidentId: string | undefined;
 
   // ---------------------------------------------------------------------------
-  // Setup — apply CR and fire webhook to trigger alert + incident creation
+  // 1. Query incidents — returns valid response structure
   // ---------------------------------------------------------------------------
-  test.beforeAll(async () => {
-    // 1. Apply the ObservabilityAlertRule CR (incident.enabled: true)
-    try {
-      const fixtureContent = readFileSync(FIXTURE_PATH, "utf8").replace(
-        /name: e2e-test-log-alert/g,
-        `name: ${CR_NAME}`,
-      );
-
-      execSync(`kubectl apply -f -`, {
-        input: fixtureContent,
-        stdio: "pipe",
-      });
-    } catch (error) {
-      console.warn("Failed to apply ObservabilityAlertRule CR:", error);
-    }
-
-    // 2. Fire the webhook to create an alert + incident
-    const { status } = await client.sendAlertWebhook({
-      ruleName: CR_NAME,
-      ruleNamespace: CR_NAMESPACE,
-      alertValue: 99,
-      alertTimestamp: new Date().toISOString(),
-    });
-
-    if (status !== 200) {
-      console.warn(`Webhook returned status ${status} during setup`);
-    }
-
-    // 3. Brief wait for incident to be persisted
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
-  });
-
-  // ---------------------------------------------------------------------------
-  // Cleanup — delete the CR
-  // ---------------------------------------------------------------------------
-  test.afterAll(async () => {
-    try {
-      execSync(
-        `kubectl delete observabilityalertrule ${CR_NAME} -n ${CR_NAMESPACE} --ignore-not-found`,
-        {
-        stdio: "pipe",
-        },
-      );
-    } catch (error) {
-      console.warn("Cleanup warning:", error);
-    }
-  });
-
-  // ---------------------------------------------------------------------------
-  // 1. Query incidents — poll until at least one appears
-  // ---------------------------------------------------------------------------
-  test("query incidents returns incident created by webhook", async () => {
+  test("query incidents returns valid response structure", async () => {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1_000);
 
-    const req: IncidentsQueryRequest = {
+    const { status, body } = await client.queryIncidents({
       startTime: oneHourAgo.toISOString(),
       endTime: now.toISOString(),
-      limit: 50,
-      sortOrder: "desc",
+      limit: 10,
       searchScope: {
         namespace: "default",
         project: "homelab-tools",
         environment: "development",
       },
-    };
+    });
 
-    // Poll until at least one incident appears
-    const { body } = await pollUntil(
-      () => client.queryIncidents(req),
-      (res) => res.body.total > 0,
-      {
-        ...POLL_BUDGETS.incidents,
-        description: "waiting for incident to appear",
-      },
+    expect(status, "status should be 200").toBe(200);
+    expect(body).toHaveProperty("incidents");
+    expect(body).toHaveProperty("total");
+    expect(body).toHaveProperty("tookMs");
+    expect(Array.isArray(body.incidents), "incidents should be an array").toBe(
+      true,
     );
 
-    // If polling succeeded but no incidents, skip the rest of the suite
-    if (body.incidents.length === 0) {
-      test.skip(true, "No incidents found — skipping incident lifecycle tests");
-      return;
+    // Store incidentId if any exist, for update tests
+    if (body.incidents.length > 0) {
+      sharedIncidentId = body.incidents[0].incidentId;
     }
-
-    expect(body.total, "total should be > 0").toBeGreaterThan(0);
-    expect(
-      body.incidents.length,
-      "incidents array should have items",
-    ).toBeGreaterThan(0);
-    expect(typeof body.tookMs, "tookMs should be a number").toBe("number");
-
-    const incident = body.incidents[0];
-    expect(incident.incidentId, "incident should have incidentId").toBeTruthy();
-    expect(incident.status, "incident should have status").toBeTruthy();
-    expect(
-      incident.triggeredAt,
-      "incident should have triggeredAt",
-    ).toBeTruthy();
-    expect(incident.labels, "incident should have labels").toBeTruthy();
-
-    // Store for subsequent tests
-    incidentId = incident.incidentId;
   });
 
   // ---------------------------------------------------------------------------
   // 2. Update incident — acknowledge
   // ---------------------------------------------------------------------------
   test("update incident to acknowledged", async () => {
-    test.skip(!incidentId, "No incidentId from previous test — skipping");
+    test.skip(!sharedIncidentId, "no incidents available to update");
 
     const req: IncidentPutRequest = {
       status: "acknowledged",
       notes: "E2E test acknowledgment",
     };
 
-    const { status, body } = await client.updateIncident(incidentId!, req);
+    const { status, body } = await client.updateIncident(
+      sharedIncidentId!,
+      req,
+    );
 
     expect(status, "acknowledge should return 200").toBe(200);
     expect(body.status, "status should be acknowledged").toBe("acknowledged");
@@ -153,14 +69,17 @@ test.describe.skip("Observer Incidents", () => {
   // 3. Update incident — resolve
   // ---------------------------------------------------------------------------
   test("update incident to resolved", async () => {
-    test.skip(!incidentId, "No incidentId from previous test — skipping");
+    test.skip(!sharedIncidentId, "no incidents available to update");
 
     const req: IncidentPutRequest = {
       status: "resolved",
       description: "Resolved by E2E test",
     };
 
-    const { status, body } = await client.updateIncident(incidentId!, req);
+    const { status, body } = await client.updateIncident(
+      sharedIncidentId!,
+      req,
+    );
 
     expect(status, "resolve should return 200").toBe(200);
     expect(body.status, "status should be resolved").toBe("resolved");
@@ -170,7 +89,7 @@ test.describe.skip("Observer Incidents", () => {
   // 4. Read resolved incident — verify status and resolvedAt
   // ---------------------------------------------------------------------------
   test("query incidents shows resolved status and resolvedAt", async () => {
-    test.skip(!incidentId, "No incidentId from previous test — skipping");
+    test.skip(!sharedIncidentId, "no incidents available to verify");
 
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1_000);
@@ -191,7 +110,9 @@ test.describe.skip("Observer Incidents", () => {
 
     expect(status, "query should return 200").toBe(200);
 
-    const resolved = body.incidents.find((i) => i.incidentId === incidentId);
+    const resolved = body.incidents.find(
+      (i) => i.incidentId === sharedIncidentId,
+    );
     expect(resolved, "resolved incident should be in results").toBeTruthy();
     expect(resolved!.status, "status should be resolved").toBe("resolved");
     expect(resolved!.resolvedAt, "resolvedAt should be set").toBeTruthy();
@@ -203,7 +124,7 @@ test.describe.skip("Observer Incidents", () => {
   test("update incident with invalid status returns 400", async () => {
     const { status, body } = await client.rawRequest(
       "PUT",
-      `/api/v1alpha1/incidents/${incidentId ?? "any-id"}`,
+      `/api/v1alpha1/incidents/${sharedIncidentId ?? "any-id"}`,
       { status: "invalid" },
       {
         "Content-Type": "application/json",
@@ -214,7 +135,10 @@ test.describe.skip("Observer Incidents", () => {
     expect(status, "invalid status should return 400").toBe(400);
 
     const errorBody = body as { title?: string; message?: string };
-    expect(errorBody.title ?? errorBody.message, "error should have details").toBeTruthy();
+    expect(
+      errorBody.title ?? errorBody.message,
+      "error should have details",
+    ).toBeTruthy();
   });
 
   // ---------------------------------------------------------------------------

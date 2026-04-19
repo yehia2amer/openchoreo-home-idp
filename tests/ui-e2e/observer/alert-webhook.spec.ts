@@ -15,7 +15,9 @@ const FIXTURE_PATH = path.resolve(
   "fixtures/e2e-log-alert-rule.yaml",
 );
 
-// SKIP: Webhook endpoint returns 404 on GKE — not deployed. Namespace oc-system-homelab-tools-development doesn't exist yet.
+// Alert webhook endpoint is on the Observer internal port (8081) only.
+// It receives alerts from Alertmanager/control plane, not from external clients.
+// See: cmd/observer/main.go - internalRoutes registers webhook on :8081
 test.describe.skip("Observer Alert Webhook", () => {
   test.describe.configure({ mode: "serial" });
 

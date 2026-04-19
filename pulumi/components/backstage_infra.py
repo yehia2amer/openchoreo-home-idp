@@ -4,7 +4,7 @@
 
 Provisions GCP-managed infrastructure for the backstage-fork service:
 1. Cloud SQL PostgreSQL instance, database, and user
-2. GCS bucket for TechDocs with S3-compatible HMAC keys
+2. GCS bucket for TechDocs with Workload Identity access
 3. Credentials stored in GCP Secret Manager
 """
 
@@ -25,9 +25,11 @@ class BackstageInfraResult:
         self,
         pg_instance_name: pulumi.Output[str],
         techdocs_bucket_name: pulumi.Output[str],
+        techdocs_sa_email: pulumi.Output[str],
     ):
         self.pg_instance_name = pg_instance_name
         self.techdocs_bucket_name = techdocs_bucket_name
+        self.techdocs_sa_email = techdocs_sa_email
 
 
 class BackstageInfra(pulumi.ComponentResource):
@@ -44,6 +46,32 @@ class BackstageInfra(pulumi.ComponentResource):
         base_depends = depends or []
         instance_name = cfg.backstage_pg_instance_name or f"{cfg.gcp_gke_cluster_name}-backstage-pg"
 
+        # Private services connection for Cloud SQL
+        # Creates a VPC peering with Google's service networking
+        # so Cloud SQL can use private IPs within our VPC.
+        private_ip_range = gcp.compute.GlobalAddress(
+            "backstage-pg-private-ip-range",
+            project=cfg.gcp_project_id,
+            name=f"{instance_name}-private-ip",
+            purpose="VPC_PEERING",
+            address_type="INTERNAL",
+            prefix_length=16,
+            network=pulumi.Output.concat(
+                "projects/", cfg.gcp_project_id, "/global/networks/", cfg.gcp_network_name
+            ),
+            opts=child_opts(self, depends_on=base_depends),
+        )
+
+        private_services_connection = gcp.servicenetworking.Connection(
+            "backstage-pg-private-connection",
+            network=pulumi.Output.concat(
+                "projects/", cfg.gcp_project_id, "/global/networks/", cfg.gcp_network_name
+            ),
+            service="servicenetworking.googleapis.com",
+            reserved_peering_ranges=[private_ip_range.name],
+            opts=child_opts(self, depends_on=[private_ip_range]),
+        )
+
         # ──────────────────────────────────────────────────────────────
         # Part A: Cloud SQL PostgreSQL
         # ──────────────────────────────────────────────────────────────
@@ -58,7 +86,11 @@ class BackstageInfra(pulumi.ComponentResource):
             settings=gcp.sql.DatabaseInstanceSettingsArgs(
                 tier=cfg.backstage_pg_tier,
                 ip_configuration=gcp.sql.DatabaseInstanceSettingsIpConfigurationArgs(
-                    ipv4_enabled=True,
+                    ipv4_enabled=False,
+                    private_network=pulumi.Output.concat(
+                        "projects/", cfg.gcp_project_id, "/global/networks/", cfg.gcp_network_name
+                    ),
+                    enable_private_path_for_google_cloud_services=True,
                 ),
                 disk_autoresize=True,
                 disk_size=10,
@@ -68,7 +100,7 @@ class BackstageInfra(pulumi.ComponentResource):
                     start_time="03:00",
                 ),
             ),
-            opts=child_opts(self, depends_on=base_depends),
+            opts=child_opts(self, depends_on=[*base_depends, private_services_connection]),
         )
 
         pg_database = gcp.sql.Database(
@@ -104,7 +136,7 @@ class BackstageInfra(pulumi.ComponentResource):
             "backstage-fork-pg-credentials-version",
             secret=pg_creds_secret.id,
             secret_data=pulumi.Output.secret(
-                pg_instance.public_ip_address.apply(
+                pg_instance.private_ip_address.apply(
                     lambda ip: json.dumps(
                         {
                             "pg-host": ip,
@@ -120,7 +152,7 @@ class BackstageInfra(pulumi.ComponentResource):
         )
 
         # ──────────────────────────────────────────────────────────────
-        # Part B: GCS Bucket for TechDocs (S3-compatible via HMAC)
+        # Part B: GCS Bucket for TechDocs (native GCS via Workload Identity)
         # ──────────────────────────────────────────────────────────────
 
         techdocs_bucket_name = f"{cfg.gcp_project_id}-backstage-techdocs"
@@ -138,7 +170,7 @@ class BackstageInfra(pulumi.ComponentResource):
         techdocs_sa = gcp.serviceaccount.Account(
             "backstage-techdocs-sa",
             account_id="backstage-techdocs",
-            display_name="Backstage TechDocs S3 Access",
+            display_name="Backstage TechDocs GCS Access",
             project=cfg.gcp_project_id,
             opts=child_opts(self, depends_on=base_depends),
         )
@@ -151,14 +183,20 @@ class BackstageInfra(pulumi.ComponentResource):
             opts=child_opts(self, depends_on=[techdocs_bucket, techdocs_sa]),
         )
 
-        hmac_key = gcp.storage.HmacKey(
-            "backstage-techdocs-hmac-key",
-            service_account_email=techdocs_sa.email,
-            project=cfg.gcp_project_id,
+        # Workload Identity: let K8s SA impersonate this GCP SA
+        gcp.serviceaccount.IAMMember(
+            "backstage-techdocs-wi-binding",
+            service_account_id=techdocs_sa.name,
+            role="roles/iam.workloadIdentityUser",
+            member=pulumi.Output.concat(
+                "serviceAccount:",
+                cfg.gcp_project_id,
+                ".svc.id.goog[backstage-fork/backstage-fork]",
+            ),
             opts=child_opts(self, depends_on=[techdocs_sa]),
         )
 
-        # Store TechDocs S3-compatible credentials in GCP Secret Manager
+        # Store TechDocs GCS config in GCP Secret Manager
         techdocs_creds_secret = gcp.secretmanager.Secret(
             "backstage-fork-techdocs-s3-credentials",
             project=cfg.gcp_project_id,
@@ -172,21 +210,18 @@ class BackstageInfra(pulumi.ComponentResource):
             secret=techdocs_creds_secret.id,
             secret_data=pulumi.Output.secret(
                 pulumi.Output.all(
-                    hmac_key.access_id,
-                    hmac_key.secret,
                     techdocs_bucket.name,
+                    techdocs_sa.email,
                 ).apply(
                     lambda args: json.dumps(
                         {
-                            "techdocs-s3-access-key": args[0],
-                            "techdocs-s3-secret-key": args[1],
-                            "techdocs-s3-bucket-name": args[2],
-                            "techdocs-s3-region": cfg.gcp_region,
+                            "techdocs-gcs-bucket-name": args[0],
+                            "techdocs-gcs-sa-email": args[1],
                         }
                     )
                 )
             ),
-            opts=child_opts(self, depends_on=[techdocs_creds_secret, hmac_key, techdocs_bucket]),
+            opts=child_opts(self, depends_on=[techdocs_creds_secret, techdocs_bucket, techdocs_sa]),
         )
 
         # ──────────────────────────────────────────────────────────────
@@ -233,13 +268,16 @@ class BackstageInfra(pulumi.ComponentResource):
 
         self.pg_instance_name = pg_instance.name
         self.techdocs_bucket_name = techdocs_bucket.name
+        self.techdocs_sa_email = techdocs_sa.email
         self.result = BackstageInfraResult(
             pg_instance_name=pg_instance.name,
             techdocs_bucket_name=techdocs_bucket.name,
+            techdocs_sa_email=techdocs_sa.email,
         )
         self.register_outputs(
             {
                 "pg_instance_name": pg_instance.name,
                 "techdocs_bucket_name": techdocs_bucket.name,
+                "techdocs_sa_email": techdocs_sa.email,
             }
         )

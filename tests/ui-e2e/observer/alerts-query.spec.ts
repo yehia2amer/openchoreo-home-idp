@@ -3,121 +3,41 @@ import { ObserverApiClient } from "../helpers/observer-api.js";
 import type {
   AlertsQueryRequest,
 } from "../helpers/observer-api.js";
-import { readFileSync } from "fs";
-import { pollUntil, POLL_BUDGETS } from "../helpers/polling.js";
-import { execSync } from "child_process";
-import * as path from "path";
-import { makeAlertRuleName } from "../helpers/test-run-id.js";
 
 const client = new ObserverApiClient();
 
-const CR_NAME = makeAlertRuleName("query-alert");
-const CR_NAMESPACE = "oc-system-homelab-tools-development";
-const FIXTURE_PATH = path.resolve(
-  __dirname,
-  "fixtures/e2e-log-alert-rule.yaml",
-);
-
-// SKIP: Depends on webhook which returns 404 on GKE. Namespace oc-system-homelab-tools-development doesn't exist yet.
-test.describe.skip("Observer Alerts Query", () => {
-  test.describe.configure({ mode: "serial" });
-
+test.describe("Observer Alerts Query", () => {
   // ---------------------------------------------------------------------------
-  // Setup — apply CR and fire webhook so there is at least one alert record
+  // 1. Happy path — query returns valid response structure
   // ---------------------------------------------------------------------------
-  test.beforeAll(async () => {
-    // 1. Apply the ObservabilityAlertRule CR
-    try {
-      const fixtureContent = readFileSync(FIXTURE_PATH, "utf8").replace(
-        /name: e2e-test-log-alert/g,
-        `name: ${CR_NAME}`,
-      );
-
-      execSync(`kubectl apply -f -`, {
-        input: fixtureContent,
-        stdio: "pipe",
-      });
-    } catch (error) {
-      console.warn("Failed to apply ObservabilityAlertRule CR:", error);
-    }
-
-    // 2. Fire the webhook to create an alert record
-    const { status } = await client.sendAlertWebhook({
-      ruleName: CR_NAME,
-      ruleNamespace: CR_NAMESPACE,
-      alertValue: 99,
-      alertTimestamp: new Date().toISOString(),
-    });
-
-    if (status !== 200) {
-      console.warn(`Webhook returned status ${status} during setup`);
-    }
-
-    // 3. Brief wait for the alert to be stored
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
-  });
-
-  // ---------------------------------------------------------------------------
-  // Cleanup — delete the CR
-  // ---------------------------------------------------------------------------
-  test.afterAll(async () => {
-    try {
-      execSync(
-        `kubectl delete observabilityalertrule ${CR_NAME} -n ${CR_NAMESPACE} --ignore-not-found`,
-        {
-        stdio: "pipe",
-        },
-      );
-    } catch (error) {
-      console.warn("Cleanup warning:", error);
-    }
-  });
-
-  // ---------------------------------------------------------------------------
-  // 1. Happy path — query returns alert data from webhook
-  // ---------------------------------------------------------------------------
-  test("query alerts returns alert data created by webhook", async () => {
+  test("query alerts returns valid response structure", async () => {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1_000);
 
-    const req: AlertsQueryRequest = {
+    const { status, body } = await client.queryAlerts({
       startTime: oneHourAgo.toISOString(),
       endTime: now.toISOString(),
-      limit: 50,
-      sortOrder: "desc",
+      limit: 10,
       searchScope: {
         namespace: "default",
         project: "homelab-tools",
         environment: "development",
       },
-    };
+    });
 
-    // Poll until at least one alert appears
-    const { body } = await pollUntil(
-      () => client.queryAlerts(req),
-      (res) => res.body.total > 0,
-      { ...POLL_BUDGETS.alerts, description: "waiting for alert to appear" },
-    );
+    expect(status, "status should be 200").toBe(200);
+    expect(body).toHaveProperty("alerts");
+    expect(body).toHaveProperty("total");
+    expect(body).toHaveProperty("tookMs");
+    expect(Array.isArray(body.alerts), "alerts should be an array").toBe(true);
+    expect(typeof body.total, "total should be a number").toBe("number");
 
-    expect(body.total, "total should be > 0").toBeGreaterThan(0);
-    expect(body.alerts.length, "alerts array should have items").toBeGreaterThan(
-      0,
-    );
-    expect(typeof body.tookMs, "tookMs should be a number").toBe("number");
-
-    const alert = body.alerts[0];
-    expect(alert.timestamp, "alert should have timestamp").toBeTruthy();
-    expect(alert.alertId, "alert should have alertId").toBeTruthy();
-    expect(
-      alert.alertValue !== undefined,
-      "alert should have alertValue",
-    ).toBe(true);
-
-    // Verify metadata.alertRule has name
-    expect(
-      alert.metadata?.alertRule?.name,
-      "alertRule should have name",
-    ).toBeTruthy();
+    // If alerts exist, validate structure
+    if (body.alerts.length > 0) {
+      const alert = body.alerts[0];
+      expect(alert, "alert should have timestamp").toHaveProperty("timestamp");
+      expect(alert, "alert should have alertId").toHaveProperty("alertId");
+    }
   });
 
   // ---------------------------------------------------------------------------

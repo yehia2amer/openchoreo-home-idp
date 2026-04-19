@@ -57,7 +57,10 @@ function makeMetricAlertRule(name: string): AlertRuleRequest {
   };
 }
 
-// SKIP: Alert rules CRUD endpoints return 404 on GKE — not deployed in current Observer version
+// Alert rules CRUD endpoints are on the Observer internal port (8081) only.
+// They are called by the control plane and Alertmanager, not exposed via the public Gateway.
+// See: cmd/observer/main.go - internalRoutes registers these on :8081, publicRoutes on :8080
+// To test these, you would need direct access to observer-internal:8081 service.
 test.describe.skip("Observer Alert Rules CRUD", () => {
   test.describe.configure({ mode: "serial" });
 
