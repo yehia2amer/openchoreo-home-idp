@@ -157,6 +157,18 @@ class OpenChoreoConfig:
     enable_observability: bool
     enable_demo_app_bootstrap: bool
 
+    # Backstage infra (Cloud SQL + GCS TechDocs)
+    enable_backstage_infra: bool
+    backstage_pg_tier: str
+    backstage_pg_instance_name: str
+
+    # GitHub App credentials for Backstage (encrypted in Pulumi config)
+    backstage_github_app_id: str
+    backstage_github_app_client_id: str
+    backstage_github_app_client_secret: str | pulumi.Output[str]
+    backstage_github_app_webhook_secret: str | pulumi.Output[str]
+    backstage_github_private_key: str | pulumi.Output[str]
+
     # OpenObserve (replaces OpenSearch for logs + traces)
     enable_openobserve: bool
     openobserve_admin_email: str
@@ -174,6 +186,9 @@ class OpenChoreoConfig:
 
     # k3d-specific (used by observability machine-id fix)
     k3d_cluster_name: str
+
+    # Homelab-specific
+    adguard_truenas_url: str
 
     # Derived values
     raw_base: str
@@ -318,6 +333,22 @@ def load_config() -> OpenChoreoConfig:
     enable_observability = cfg.get_bool("enable_observability") or False
     enable_demo_app_bootstrap = cfg.get_bool("enable_demo_app_bootstrap") or False
 
+    # Backstage infra (Cloud SQL + GCS TechDocs)
+    enable_backstage_infra = cfg.get_bool("enable_backstage_infra") or False
+    backstage_pg_tier = cfg.get("backstage_pg_tier") or "db-f1-micro"
+    backstage_pg_instance_name = cfg.get("backstage_pg_instance_name") or ""
+
+    # GitHub App credentials for Backstage
+    backstage_github_app_id = cfg.get("backstage_github_app_id") or ""
+    backstage_github_app_client_id = cfg.get("backstage_github_app_client_id") or ""
+    backstage_github_app_client_secret = (
+        cfg.get_secret("backstage_github_app_client_secret") or pulumi.Output.from_input("")
+    )
+    backstage_github_app_webhook_secret = (
+        cfg.get_secret("backstage_github_app_webhook_secret") or pulumi.Output.from_input("")
+    )
+    backstage_github_private_key = cfg.get_secret("backstage_github_private_key") or pulumi.Output.from_input("")
+
     # OpenObserve (replaces OpenSearch for logs + traces)
     enable_openobserve = cfg.get_bool("enable_openobserve") or False
     openobserve_admin_email = cfg.get("openobserve_admin_email") or "admin@openchoreo.local"
@@ -335,6 +366,9 @@ def load_config() -> OpenChoreoConfig:
 
     # k3d-specific (still needed for docker exec in observability machine-id fix)
     k3d_cluster_name = cfg.get("k3d_cluster_name") or "openchoreo"
+
+    # Homelab-specific
+    adguard_truenas_url = cfg.get("adguard_truenas_url") or "http://192.168.0.1:3000"
 
     # Derived values
     raw_base = f"https://raw.githubusercontent.com/openchoreo/openchoreo/{openchoreo_ref}"
@@ -422,6 +456,14 @@ def load_config() -> OpenChoreoConfig:
         enable_flux=enable_flux,
         enable_observability=enable_observability,
         enable_demo_app_bootstrap=enable_demo_app_bootstrap,
+        enable_backstage_infra=enable_backstage_infra,
+        backstage_pg_tier=backstage_pg_tier,
+        backstage_pg_instance_name=backstage_pg_instance_name,
+        backstage_github_app_id=backstage_github_app_id,
+        backstage_github_app_client_id=backstage_github_app_client_id,
+        backstage_github_app_client_secret=backstage_github_app_client_secret,
+        backstage_github_app_webhook_secret=backstage_github_app_webhook_secret,
+        backstage_github_private_key=backstage_github_private_key,
         enable_openobserve=enable_openobserve,
         openobserve_admin_email=openobserve_admin_email,
         openobserve_admin_password=openobserve_admin_password,
@@ -432,6 +474,7 @@ def load_config() -> OpenChoreoConfig:
         flux_telegram_bot_token=flux_telegram_bot_token,
         flux_telegram_chat_id=flux_telegram_chat_id,
         k3d_cluster_name=k3d_cluster_name,
+        adguard_truenas_url=adguard_truenas_url,
         raw_base=raw_base,
         scheme=scheme,
         cp_port=cp_port,

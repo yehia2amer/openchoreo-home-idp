@@ -19,6 +19,7 @@ config:
   openchoreo:gcp_eso_service_account: openchoreo-eso
   openchoreo:gcp_cas_service_account: openchoreo-cas
   openchoreo:artifact_registry_repository_id: openchoreo
+  openchoreo:enable_backstage_infra: "true"
   openchoreo:gitops_repo_url: https://github.com/yehia2amer/openchoreo-gitops
   openchoreo:gitops_repo_branch: main
   openchoreo:github_pat:

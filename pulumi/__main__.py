@@ -54,6 +54,17 @@ def main() -> None:
     )
     thunder_component.result
 
+    backstage_infra = None
+    if cfg.enable_backstage_infra and cfg.platform.cloud_provider == "gcp":
+        from components.backstage_infra import BackstageInfra
+
+        backstage_infra = BackstageInfra(
+            "backstage-infra",
+            cfg=cfg,
+            k8s_provider=k8s_provider,
+            depends=[prereqs_result.cluster_secret_store_ready],
+        )
+
     pulumi.export("backstage_url", cfg.backstage_url)
     pulumi.export("api_url", cfg.api_url)
     pulumi.export("thunder_url", cfg.thunder_url)
@@ -76,6 +87,10 @@ def main() -> None:
     pulumi.export("observability_enabled", cfg.enable_observability)
     pulumi.export("observability_mode", cfg.platform.observability_mode)
     pulumi.export("demo_app_bootstrap_enabled", cfg.enable_demo_app_bootstrap)
+
+    if cfg.enable_backstage_infra and backstage_infra is not None:
+        pulumi.export("backstage_pg_instance_name", backstage_infra.pg_instance_name)
+        pulumi.export("backstage_techdocs_bucket_name", backstage_infra.techdocs_bucket_name)
 
     pulumi.export(
         "namespaces",
