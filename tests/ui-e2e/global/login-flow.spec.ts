@@ -7,7 +7,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 const BACKSTAGE_URL =
   process.env.BACKSTAGE_URL ?? 'https://backstage.idp.aistudio.consulting';
-const USERNAME = process.env.THUNDER_USERNAME ?? 'admin@openchoreo.dev';
+const USERNAME = process.env.THUNDER_USERNAME ?? 'admin@pwc.com';
 const PASSWORD = process.env.THUNDER_PASSWORD ?? 'Admin@123';
 const AUTH_ERROR_TEXT = 'Authentication failed, Invalid client credentials';
 

@@ -34,7 +34,7 @@ setup("authenticate via Thunder OAuth", async ({ page }) => {
     await usernameInput.waitFor({ state: "visible", timeout: 60000 });
     console.log("[TEST] Username field visible, filling...");
     
-    await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@openchoreo.dev");
+    await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@pwc.com");
     await page.locator("#password").fill(process.env.THUNDER_PASSWORD || "Admin@123");
     
     console.log("[TEST] Clicking Sign In...");
@@ -66,7 +66,7 @@ setup("authenticate via Thunder OAuth", async ({ page }) => {
       const usernameInput = page.locator("#username");
       await usernameInput.waitFor({ state: "visible", timeout: 60000 });
       console.log("[TEST] Username field visible, filling...");
-      await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@openchoreo.dev");
+      await usernameInput.fill(process.env.THUNDER_USERNAME || "admin@pwc.com");
       await page.locator("#password").fill(process.env.THUNDER_PASSWORD || "Admin@123");
       
       console.log("[TEST] Clicking Sign In on Thunder...");

@@ -183,7 +183,7 @@ def main():
     secret_hint = " (pulumi stack output --show-secrets)"
     for label, value in [
         (" OpenBao Token", secret_hint),
-        (" Default Login", " admin@openchoreo.dev / Admin@123"),
+        (" Default Login", " admin@pwc.com / Admin@123"),
     ]:
         print(row.format(label, value))
     print("\u255a" + "\u2550" * L + "\u2569" + "\u2550" * R + "\u255d")
