@@ -240,6 +240,7 @@ def _build_data(cfg: OpenChoreoConfig, overrides: dict[str, str] | None = None) 
                 "LETSENCRYPT_EMAIL": letsencrypt_email,
                 "CLUSTER_ISSUER_NAME": cluster_issuer_name,
                 "PROMETHEUS_ADDRESS": "http://gmp-frontend.openchoreo-observability-plane.svc.cluster.local:9090",
+                "GCP_MONITORING_SERVICE_ACCOUNT": f"openchoreo-monitoring@{cfg.gcp_project_id}.iam.gserviceaccount.com",
             }
         )
 

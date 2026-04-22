@@ -277,6 +277,13 @@ dns_gsa = gcp.serviceaccount.Account(
     display_name="OpenChoreo DNS for ExternalDNS and cert-manager",
 )
 
+monitoring_gsa = gcp.serviceaccount.Account(
+    "monitoring-gsa",
+    project=project_id,
+    account_id="openchoreo-monitoring",
+    display_name="OpenChoreo GMP Frontend — monitoring.viewer for Observer metrics",
+)
+
 # ---------------------------------------------------------------------------
 # Authentication strategy:
 # - Default (skip_iam_bindings=False): Workload Identity bindings
@@ -342,6 +349,13 @@ if not skip_project_iam_bindings:
         role="roles/dns.admin",
         member=dns_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
     )
+
+    gcp.projects.IAMMember(
+        "monitoring-viewer-binding",
+        project=project_id,
+        role="roles/monitoring.viewer",
+        member=monitoring_gsa.email.apply(lambda email: f"serviceAccount:{email}"),
+    )
 # ---------------------------------------------------------------------------
 # Workload Identity bindings — guarded by skip_iam_bindings.
 # These are service-account-level IAM (not project-level) so they don't
@@ -384,6 +398,14 @@ if not skip_iam_bindings:
             "serviceAccount:", project_id, ".svc.id.goog[cert-manager/cert-manager]"
         ),
         opts=pulumi.ResourceOptions(depends_on=[dns_gsa]),
+    )
+
+    # WI binding: GMP Frontend KSA → monitoring GSA
+    gcp.serviceaccount.IAMMember("monitoring-wi-gmp-frontend",
+        service_account_id=monitoring_gsa.name,
+        role="roles/iam.workloadIdentityUser",
+        member=f"serviceAccount:{project_id}.svc.id.goog[openchoreo-observability-plane/gmp-frontend]",
+        opts=pulumi.ResourceOptions(depends_on=[monitoring_gsa, cluster]),
     )
 
 def create_secret(secret_id: str, payload: dict[str, pulumi.Input[str]]) -> None:
